@@ -1,6 +1,6 @@
 # feelvonRoll
 
-An interactive wellbeing survey for the [Von Roll campus](https://www.phbern.ch) at PHBern. Visitors place pins on a 3D model of the building to share how they feel in different spaces and why.
+An interactive wellbeing survey tool for the **vonRoll campus** at [PHBern](https://www.phbern.ch). Visitors place pins on a 3D model of the campus to share how they feel in different spaces and why.
 
 The project consists of three components:
 
@@ -21,7 +21,7 @@ graph LR
   AdminUser["Admin (Browser)"] --> Admin
 ```
 
-The **webapp** lets visitors navigate a 3D model of the Von Roll building, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). Submitted pins are stored via the **API**.
+The **webapp** lets visitors navigate a 3D model of the vonRoll campus, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). Submitted pins are stored via the **API**.
 
 The **admin panel** authenticates via JWT and provides tools to review/approve pins, configure the questionnaire and its translations, manage users, and export data as CSV.
 
