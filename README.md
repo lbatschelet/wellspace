@@ -1,6 +1,10 @@
 # feelvonRoll
 
-An interactive wellbeing survey tool for the **vonRoll campus** at [PHBern](https://www.phbern.ch). Visitors place pins on a 3D model of the campus to share how they feel in different spaces and why.
+An interactive wellbeing mapping tool for the [vonRoll campus](https://www.phbern.ch/ueber-die-phbern/standorte/vonroll) at [PHBern](https://www.phbern.ch). Visitors place pins on a 3D model of the building to share how they feel in different spaces -- and why.
+
+feelvonRoll is developed as part of [**RealTransform**](https://sustainability.uzh.ch/de/forschung-lehre/forschung/realtransform.html), a cross-university project funded by [swissuniversities](https://www.swissuniversities.ch/) that fosters sustainability culture at Swiss higher education institutions through participatory real-world experiments. At PHBern, the project takes the form of [*Stationen des Wandels*](https://www.phbern.ch/ueber-die-phbern/bildung-fuer-nachhaltige-entwicklung/stationen-des-wandels-nachhaltigkeit-im-dialog) -- interactive installations that invite students, staff, and visitors to reflect on sustainability and wellbeing on campus.
+
+## Components
 
 The project consists of three components:
 
@@ -21,7 +25,7 @@ graph LR
   AdminUser["Admin (Browser)"] --> Admin
 ```
 
-The **webapp** lets visitors navigate a 3D model of the vonRoll campus, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). Submitted pins are stored via the **API**.
+The **webapp** lets visitors navigate a 3D model of the vonRoll building, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). Submitted pins are stored via the **API**.
 
 The **admin panel** authenticates via JWT and provides tools to review/approve pins, configure the questionnaire and its translations, manage users, and export data as CSV.
 
@@ -159,4 +163,6 @@ This project is licensed under the [GNU Affero General Public License v3.0](LICE
 
 ## Credits
 
-Developed by [Lukas Batschelet](https://lukasbatschelet.ch) for [PHBern](https://www.phbern.ch).
+Developed by [Lukas Batschelet](https://lukasbatschelet.ch) for [PHBern](https://www.phbern.ch) as part of the [RealTransform](https://sustainability.uzh.ch/de/forschung-lehre/forschung/realtransform.html) project.
+
+RealTransform is led by the University of Zurich in cooperation with the University of Bern, PHBern, and OST -- Ostschweizer Fachhochschule, with the support of the [td-net](https://transdisciplinarity.ch/) Network for Transdisciplinary Research.
