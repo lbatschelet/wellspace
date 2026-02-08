@@ -4,11 +4,11 @@ An interactive wellbeing survey for the [Von Roll campus](https://www.phbern.ch)
 
 The project consists of three components:
 
-| Component | Stack | Description |
-|-----------|-------|-------------|
-| [feelvonroll-webapp](./feelvonroll-webapp/) | Vite + Three.js | Public-facing 3D webapp where users place pins |
-| [feelvonroll-api](./feelvonroll-api/) | PHP 8.1 + MySQL | REST API for pins, questionnaire config, and translations |
-| [feelvonroll-admin](./feelvonroll-admin/) | Vite + vanilla JS | Admin panel for reviewing pins, managing the questionnaire, users, and languages |
+| Component                                                               | Stack             | Description                                                                      |
+| ----------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
+| [feelvonroll-webapp](https://github.com/lbatschelet/feelvonroll-webapp) | Vite + Three.js   | Public-facing 3D webapp where users place pins                                   |
+| [feelvonroll-api](https://github.com/lbatschelet/feelvonroll-api)       | PHP 8.1 + MySQL   | REST API for pins, questionnaire config, and translations                        |
+| [feelvonroll-admin](https://github.com/lbatschelet/feelvonroll-admin)   | Vite + vanilla JS | Admin panel for reviewing pins, managing the questionnaire, users, and languages |
 
 ## Architecture
 
