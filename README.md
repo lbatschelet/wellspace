@@ -1,8 +1,8 @@
-# feelvonRoll
+# *feel***vonRoll**
 
 An interactive wellbeing mapping tool for the [vonRoll campus](https://www.phbern.ch/ueber-die-phbern/standorte/vonroll) at [PHBern](https://www.phbern.ch). Visitors place pins on a 3D model of the building to share how they feel in different spaces -- and why.
 
-feelvonRoll is developed as part of [**RealTransform**](https://sustainability.uzh.ch/de/forschung-lehre/forschung/realtransform.html), a cross-university project funded by [swissuniversities](https://www.swissuniversities.ch/) that fosters sustainability culture at Swiss higher education institutions through participatory real-world experiments. At PHBern, the project takes the form of [*Stationen des Wandels*](https://www.phbern.ch/ueber-die-phbern/bildung-fuer-nachhaltige-entwicklung/stationen-des-wandels-nachhaltigkeit-im-dialog) -- interactive installations that invite students, staff, and visitors to reflect on sustainability and wellbeing on campus.
+*feel***vonRoll** is developed as part of [**RealTransform**](https://sustainability.uzh.ch/de/forschung-lehre/forschung/realtransform.html), a cross-university project funded by [swissuniversities](https://www.swissuniversities.ch/) that fosters sustainability culture at Swiss higher education institutions through participatory real-world experiments. At PHBern, the project takes the form of [*Stationen des Wandels*](https://www.phbern.ch/ueber-die-phbern/bildung-fuer-nachhaltige-entwicklung/stationen-des-wandels-nachhaltigkeit-im-dialog) -- interactive installations that invite students, staff, and visitors to reflect on sustainability and wellbeing on campus.
 
 ## Components
 
@@ -159,7 +159,7 @@ feelvonroll/
 
 ## License
 
-This project is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+*feel***vonRoll** is licensed under the [GNU Affero General Public License v3.0](LICENSE).
 
 ## Credits
 
