@@ -1,4 +1,4 @@
-# *feel***vonRoll**
+![](logo_header.svg)
 
 An interactive wellbeing mapping tool for the [vonRoll campus](https://www.phbern.ch/ueber-die-phbern/standorte/vonroll) at [PHBern](https://www.phbern.ch). Visitors place pins on a 3D model of the building to share how they feel in different spaces -- and why.
 
@@ -128,6 +128,42 @@ Set `VITE_API_BASE` at build time if the API is not served from `/api`:
 ```bash
 VITE_API_BASE=https://api.example.com npm run build
 ```
+
+### Email (SMTP) Setup
+
+The admin panel can send password-reset emails. This requires an SMTP server.
+
+1. **Install PHP dependencies** on the server (requires [Composer](https://getcomposer.org/)):
+
+   ```bash
+   cd feelvonroll-api
+   composer install --no-dev
+   ```
+
+   > **Shared hosting**: If Composer is not available via SSH, run `composer install --no-dev` locally and upload the resulting `vendor/` directory to the server.
+
+2. **Configure SMTP** in `config.local.php`:
+
+   ```php
+   'smtp_host'      => 'smtp.example.com',
+   'smtp_port'      => 587,          // 587 for STARTTLS, 465 for SMTPS
+   'smtp_user'      => 'you@example.com',
+   'smtp_pass'      => 'your-smtp-password',
+   'smtp_from'      => 'noreply@example.com',
+   'smtp_from_name' => 'feelvonRoll Admin',
+   'app_url'        => 'https://admin.example.com',
+   ```
+
+   | Setting | Description |
+   | --- | --- |
+   | `smtp_host` | SMTP server hostname |
+   | `smtp_port` | `587` (STARTTLS) or `465` (SMTPS) -- the encryption method is chosen automatically |
+   | `smtp_user` / `smtp_pass` | SMTP credentials |
+   | `smtp_from` | Sender address shown in emails |
+   | `smtp_from_name` | Sender display name |
+   | `app_url` | Public URL of the admin frontend (used to build reset links) |
+
+   Without SMTP configuration, the admin panel still works -- reset links can be generated and copied manually instead of being sent by email.
 
 ## Project Structure
 
