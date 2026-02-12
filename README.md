@@ -11,8 +11,8 @@ The project consists of three components:
 | Component                                                               | Stack             | Description                                                                      |
 | ----------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
 | [feelvonroll-webapp](https://github.com/lbatschelet/feelvonroll-webapp) | Vite + Three.js   | Public-facing 3D webapp where users place pins                                   |
-| [feelvonroll-api](https://github.com/lbatschelet/feelvonroll-api)       | PHP 8.1 + MySQL   | REST API for pins, questionnaire config, and translations                        |
-| [feelvonroll-admin](https://github.com/lbatschelet/feelvonroll-admin)   | Vite + vanilla JS | Admin panel for reviewing pins, managing the questionnaire, users, and languages |
+| [feelvonroll-api](https://github.com/lbatschelet/feelvonroll-api)       | PHP 8.1 + MySQL   | REST API for pins, questionnaires, stations, content, and translations           |
+| [feelvonroll-admin](https://github.com/lbatschelet/feelvonroll-admin)   | Vite + vanilla JS | Admin panel for pins, questions, questionnaires, stations, users, and content    |
 
 ## Architecture
 
@@ -25,11 +25,11 @@ graph LR
   AdminUser["Admin (Browser)"] --> Admin
 ```
 
-The **webapp** lets visitors navigate a 3D model of the vonRoll building, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). Submitted pins are stored via the **API**.
+The **webapp** lets visitors navigate a 3D model of the vonRoll building, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). QR-code stations can pre-position the camera and assign a station-specific questionnaire. Submitted pins are stored via the **API** and colored by a configurable slider value.
 
-The **admin panel** authenticates via JWT and provides tools to review/approve pins, configure the questionnaire and its translations, manage users, and export data as CSV.
+The **admin panel** authenticates via JWT and provides tools to review/approve pins, manage a question library, compose questionnaires, configure QR-code stations, edit content pages, manage users and languages, and export data as CSV.
 
-The **API** serves both public endpoints (pins, questions, languages, translations) and authenticated admin endpoints (pin management, user management, audit logging).
+The **API** serves public endpoints (pins, questions, questionnaires, stations, content, languages, translations) and authenticated admin endpoints (full CRUD for all resources, user management, audit logging).
 
 ## Getting Started
 
@@ -58,15 +58,8 @@ git submodule update --init --recursive
 ```bash
 cd feelvonroll-api
 
-# Create the database schema
+# Create the database schema (consolidated, includes all migrations)
 mysql -u root your_db_name < schema.sql
-
-# Apply migrations
-mysql -u root your_db_name < migrations/001_questionnaire.sql
-mysql -u root your_db_name < migrations/002_slider_percent.sql
-mysql -u root your_db_name < migrations/003_admin_users.sql
-mysql -u root your_db_name < migrations/004_admin_token_version.sql
-mysql -u root your_db_name < migrations/005_admin_roles_profile.sql
 
 # Configure credentials
 cp config.example.php config.local.php
@@ -75,6 +68,8 @@ cp config.example.php config.local.php
 # Start a local PHP server (for development)
 php -S localhost:8080
 ```
+
+> **Upgrading an existing database?** Apply only the migrations you haven't run yet from the `migrations/` directory (001 through 008).
 
 ### 2. Start the webapp
 
@@ -178,11 +173,18 @@ feelvonroll/
   feelvonroll-api/          PHP REST API
     pins.php                Public pin endpoints
     questions.php           Questionnaire config endpoint
+    questionnaire.php       Resolve questionnaire by key
+    stations.php            Station info endpoint
+    content.php             Content page endpoint
     admin_auth.php          JWT authentication
     admin_pins.php          Pin management
     admin_users.php         User management
+    admin_questionnaires.php Questionnaire & slot management
+    admin_stations.php      Station management
+    admin_content.php       Content page management
     services/               Business logic layer
-    migrations/             SQL migration files
+    schema.sql              Consolidated database schema
+    migrations/             Incremental SQL migration files
   feelvonroll-admin/        Admin panel (vanilla JS)
     src/
       main.js               Entry point, view assembly
