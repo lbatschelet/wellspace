@@ -195,9 +195,7 @@ export async function createGltfBuilding(scene, { modelUrl, debugSimulateFloors 
     slabTopByFloorIndex.set(idx, findSlabTopWorldY(group))
   })
 
-  // Hide exported base planes so the visual overlap with our procedural
-  // ground plane doesn't create z-fighting artifacts.
-  hideBasePlanesForFloorGroups({ floorGroups })
+  // Baseplane removal is handled in the model pipeline (offline).
 
   return {
     source: 'gltf',
@@ -264,7 +262,6 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
   const proceduralFloorStepY = FLOOR.height + FLOOR.slabThickness
 
   const itemsMeta = []
-  const inferredHeights = []
   for (const item of loaded) {
     const root = item.gltf.scene || item.gltf.scenes?.[0]
     if (!root) continue
@@ -273,29 +270,33 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
     const center = box.getCenter(new THREE.Vector3())
     const minY = box.min.y
     const size = box.getSize(new THREE.Vector3())
-    // Heuristic: smallest bbox dimension is the most likely floor "height".
-    const inferredHeight = Math.min(size.x, size.y, size.z)
-    if (Number.isFinite(inferredHeight) && inferredHeight > 0) inferredHeights.push(inferredHeight)
-    itemsMeta.push({ floorIndex: item.floorIndex, root, center, minY, size, inferredHeight })
+    itemsMeta.push({ floorIndex: item.floorIndex, root, center, minY, size })
   }
 
   const floorIndices = itemsMeta.map((m) => m.floorIndex)
   const refIndex = itemsMeta.find((m) => m.floorIndex === 0)?.floorIndex ?? Math.min(...floorIndices)
-  const medianInferredHeight = inferredHeights.length
-    ? inferredHeights.slice().sort((a, b) => a - b)[Math.floor(inferredHeights.length / 2)]
-    : proceduralFloorStepY
-  // Unit-aware step:
-  // - meter exports: inferredHeight is usually near 2.5-3 -> procedural 2.82 stays plausible
-  // - centimeter exports: inferredHeight is ~250-300 -> we must stack in that scale
-  const floorStepY = Math.max(proceduralFloorStepY, medianInferredHeight)
+  // Unit-aware step without being affected by tall objects (e.g. trees).
+  // Sweet Home exports are often in meters, but can also end up in centimeters.
+  // We infer the scale from the overall footprint size.
+  const sampleSize = itemsMeta.find((m) => m.floorIndex === refIndex)?.size
+    || itemsMeta[0]?.size
+    || new THREE.Vector3(1, 1, 1)
+  const footprint = Math.max(sampleSize.x, sampleSize.z)
+  const unitScale = footprint > 2000 ? 100 : 1
+  const floorStepY = proceduralFloorStepY * unitScale
+
+  // Use a shared X/Z centering based on the reference floor so mixed
+  // versions (e.g. trees added) don't shift relative to each other.
+  const refMeta = itemsMeta.find((m) => m.floorIndex === refIndex) || itemsMeta[0]
+  const refCenter = refMeta?.center || new THREE.Vector3()
 
   // Normalize + add each floor root.
   for (const meta of itemsMeta) {
-    const { floorIndex, root, center, minY, size, inferredHeight } = meta
+    const { floorIndex, root, center, minY, size } = meta
 
-    // Center in X/Z for consistent camera framing.
-    root.position.x -= center.x
-    root.position.z -= center.z
+    // Shared center in X/Z.
+    root.position.x -= refCenter.x
+    root.position.z -= refCenter.z
 
     // Normalize base: lowest point to Y=0.
     root.position.y -= minY
@@ -322,7 +323,6 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
       const afterSize = afterBox.getSize(new THREE.Vector3())
       console.debug('[gltfStack]', {
         floorIndex,
-        inferredHeight,
         floorStepY,
         sizeY: size.y,
         rootY: root.position.y,
@@ -352,8 +352,7 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
     }
   }
 
-  // Hide exported base planes per floor.
-  hideBasePlanesForFloorGroups({ floorGroups })
+  // Baseplane removal is handled in the model pipeline (offline).
 
   const minFloor = Math.min(...floorIndices)
   const maxFloor = Math.max(...floorIndices)
