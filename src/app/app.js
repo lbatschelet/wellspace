@@ -16,6 +16,7 @@ import { createDashboardController } from '../controllers/dashboardController'
 import { createProfileController } from '../controllers/profileController'
 import { createQuestionnairesController } from '../controllers/questionnairesController'
 import { createStationsController } from '../controllers/stationsController'
+import { createLv95CalibrationController } from '../controllers/lv95CalibrationController'
 
 export function initApp({ state, views }) {
   const pageRegistry = {
@@ -24,6 +25,7 @@ export function initApp({ state, views }) {
     questionnaire: [views.questionnaireView.element],
     questionnaires: [views.questionnairesView.element],
     stations: [views.stationsView.element],
+    calibration: [views.lv95CalibrationView.element],
     languages: [views.languagesView.element],
     users: [views.usersView.element],
     audit: [views.auditView.element],
@@ -89,6 +91,11 @@ export function initApp({ state, views }) {
     upsertStation: api.upsertStation,
     deleteStation: api.deleteStation,
   }
+  const lv95CalibrationApi = {
+    fetchLv95CalibrationActive: api.fetchLv95CalibrationActive,
+    previewLv95Calibration: api.previewLv95Calibration,
+    saveLv95Calibration: api.saveLv95Calibration,
+  }
 
   const dashboardController = createDashboardController({ state, views })
   const router = createRouter()
@@ -147,6 +154,9 @@ export function initApp({ state, views }) {
   const stationsController = createStationsController({
     state, views, api: stationsApi, questionnairesApi, shell,
   })
+  const lv95CalibrationController = createLv95CalibrationController({
+    state, views, api: lv95CalibrationApi, shell,
+  })
 
   const pageHandlers = {
     dashboard: dashboardController.renderDashboard,
@@ -156,6 +166,7 @@ export function initApp({ state, views }) {
     content: contentController.loadContent,
     questionnaires: questionnairesController.loadQuestionnaires,
     stations: stationsController.loadStations,
+    calibration: lv95CalibrationController.loadLv95Calibration,
   }
   shell.setOnPageChange((page) => {
     const handler = pageHandlers[page]
@@ -184,6 +195,7 @@ export function initApp({ state, views }) {
   contentController.bindEvents()
   questionnairesController.bindEvents()
   stationsController.bindEvents()
+  lv95CalibrationController.bindEvents()
 
   authController.init()
 }

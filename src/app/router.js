@@ -13,6 +13,7 @@ const ROUTES = {
   '/questionnaire': 'questionnaire',
   '/questionnaires': 'questionnaires',
   '/stations': 'stations',
+  '/calibration': 'calibration',
   '/languages': 'languages',
   '/users': 'users',
   '/audit': 'audit',

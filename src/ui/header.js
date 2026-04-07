@@ -17,6 +17,7 @@ export function createHeader() {
       <button class="nav-button" data-page="questionnaire">Questions</button>
       <button class="nav-button" data-page="questionnaires">Questionnaires</button>
       <button class="nav-button" data-page="stations">Stations</button>
+      <button class="nav-button" data-page="calibration" data-admin-only="true">Calibration</button>
       <button class="nav-button" data-page="languages">Languages</button>
       <button class="nav-button" data-page="users" data-admin-only="true">Users</button>
       <button class="nav-button" data-page="audit" data-admin-only="true">Audit</button>

@@ -66,6 +66,7 @@ async function bootAdminApp() {
   const { createQuestionnaireView } = await import('./ui/questionnaireView')
   const { createQuestionnairesView } = await import('./ui/questionnairesView')
   const { createStationsView } = await import('./ui/stationsView')
+  const { createLv95CalibrationView } = await import('./ui/lv95CalibrationView')
   const { createUsersView } = await import('./ui/usersView')
   const { createAuditView } = await import('./ui/auditView')
   const { createContentView } = await import('./ui/contentView')
@@ -108,6 +109,9 @@ async function bootAdminApp() {
   const stationsView = createStationsView()
   pages.appendChild(stationsView.element)
 
+  const lv95CalibrationView = createLv95CalibrationView()
+  pages.appendChild(lv95CalibrationView.element)
+
   const usersView = createUsersView()
   pages.appendChild(usersView.element)
 
@@ -140,6 +144,7 @@ async function bootAdminApp() {
     questionnaireView,
     questionnairesView,
     stationsView,
+    lv95CalibrationView,
     usersView,
     auditView,
     contentView,
