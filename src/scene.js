@@ -36,8 +36,9 @@ export function createCamera() {
 export function createControls(camera, domElement) {
   const controls = new OrbitControls(camera, domElement)
   controls.enableDamping = true
-  controls.dampingFactor = 0.3
-  controls.panSpeed = 1.2
+  controls.dampingFactor = 0.05
+  controls.zoomSpeed = 1
+  controls.panSpeed = 1
   controls.enablePan = true
   controls.enableZoom = true
   controls.enableRotate = true

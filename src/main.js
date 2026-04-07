@@ -71,49 +71,40 @@ try {
   building = await createBuildingProvider(scene, 'procedural')
 }
 
-// If the loaded model is huge (e.g. meter-calibrated Sweet Home exports),
-// expand camera range so the geometry isn't clipped.
-if (building?.suggestedCameraDistance) {
-  controls.maxDistance = building.suggestedCameraDistance
-  if (typeof building.suggestedCameraFar === 'number') {
-    camera.far = building.suggestedCameraFar
-  } else {
-    camera.far = building.suggestedCameraDistance * 6
-  }
-  camera.updateProjectionMatrix()
-}
+/**
+ * Imported (glTF) models: single source of truth for zoom limits + clipping planes.
+ * Clear min/max distance (hard stop), no overlapping contradictory blocks.
+ */
+function applyImportedModelCameraLimits(b) {
+  const D = b?.suggestedCameraDistance
+  if (!D || !Number.isFinite(D)) return
 
-// Keep the ground visible for large models (provides an interaction
-// reference / background). It's already slightly offset below Y=0 in
-// scene.js to reduce z-fighting.
+  const minDist = THREE.MathUtils.clamp(D * 0.08, 3, 60)
+  const maxDist = Math.max(D * 6, minDist * 5, 120)
 
-// Adjust zoom bounds for huge imported models:
-// - keep the default "from the other corner" view
-// - but allow zooming closer than the procedural defaults
-if (building?.suggestedCameraDistance) {
-  controls.minDistance = Math.min(controls.minDistance, Math.max(0.5, building.suggestedCameraDistance * 0.05))
-  controls.maxDistance = Math.max(controls.maxDistance, building.suggestedCameraDistance * 6)
+  controls.minDistance = minDist
+  controls.maxDistance = maxDist
 
-  // Keep clipping planes wide enough so parts don't disappear while zooming.
-  camera.near = 0.01
-  camera.far = typeof building.suggestedCameraFar === 'number' ? building.suggestedCameraFar : building.suggestedCameraDistance * 10
+  camera.near = THREE.MathUtils.clamp(D * 0.0002, 0.05, 2)
+  const farHint =
+    typeof b.suggestedCameraFar === 'number' ? b.suggestedCameraFar : D * 6
+  camera.far = Math.max(farHint, maxDist * 2.5, D * 10)
   camera.updateProjectionMatrix()
 
-  // If we're currently zoomed in too much on load (trackpad gestures
-  // / initial model alignment), only ever push the camera further away
-  // to the suggested distance. This avoids "jumping out" during normal use.
-  const target = controls.target.clone()
-  const dir = camera.position.clone().sub(target)
-  const currentDist = dir.length()
-  if (currentDist > 1e-6) {
-    const nextDist = Math.max(currentDist, building.suggestedCameraDistance)
-    dir.normalize()
-    camera.position.copy(target.add(dir.multiplyScalar(nextDist)))
-    controls.update()
+  const target = controls.target
+  const cp = camera.position
+  const dist = cp.distanceTo(target)
+  if (dist < 1e-6) return
+  const dir = new THREE.Vector3().subVectors(cp, target).normalize()
+  if (dist < minDist) {
+    cp.copy(target.clone().addScaledVector(dir, minDist))
+  } else if (dist > maxDist) {
+    cp.copy(target.clone().addScaledVector(dir, maxDist))
   }
-
   controls.update()
 }
+
+applyImportedModelCameraLimits(building)
 
 // Resize the ground plane to cover the full imported model bounds,
 // so you don't see an edge "cut-off" while moving/zooming.
@@ -156,13 +147,6 @@ let selectedFloor = 0
 let currentTargetY = (building?.source === 'gltf')
   ? controls.target.y
   : building.getTargetYForFloor(selectedFloor)
-
-// OrbitControls pan in perspective mode scales with camera-target distance.
-// We counter-balance that so panning feels more consistent across zoom levels.
-const PAN_REFERENCE_DISTANCE = Math.max(1, camera.position.distanceTo(controls.target))
-const PAN_REFERENCE_SPEED = controls.panSpeed
-const PAN_SPEED_MIN = 0.25
-const PAN_SPEED_MAX = 4.0
 
 const { floorButtons, ui: floorSelectorUi } = createFloorSelector(
   building.maxBasements,
@@ -614,11 +598,6 @@ function handleResize() {
 
 function animate() {
   requestAnimationFrame(animate)
-
-  // Adaptive pan speed: zoom-in shouldn't feel "stuck", zoom-out shouldn't jump.
-  const camDistance = Math.max(0.001, camera.position.distanceTo(controls.target))
-  const adaptivePanSpeed = PAN_REFERENCE_SPEED * (PAN_REFERENCE_DISTANCE / camDistance)
-  controls.panSpeed = Math.min(PAN_SPEED_MAX, Math.max(PAN_SPEED_MIN, adaptivePanSpeed))
 
   controls.update()
 
