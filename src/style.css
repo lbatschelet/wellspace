@@ -275,7 +275,8 @@ canvas {
   background: #ffffff;
   border-radius: 16px;
   padding: 0;
-  width: min(90vw, 360px);
+  /* Pin form + influence sliders need a bit more width than 360px on phones in landscape / tablets */
+  width: min(92vw, 400px);
   max-height: min(85%, 600px);
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
   display: flex;
@@ -292,6 +293,7 @@ canvas {
   padding: 28px 18px 18px;
   overflow-y: auto;
   min-height: 0;
+  min-width: 0;
   flex: 1 1 auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -352,6 +354,10 @@ canvas {
   display: block;
 }
 
+.ui-form-group {
+  min-width: 0;
+}
+
 .ui-form-content.is-hidden {
   display: none;
 }
@@ -365,23 +371,24 @@ canvas {
   margin-top: 4px;
 }
 
-/* Influence: flex row [label grows | fixed track width] — avoids grid overlap bugs */
+/*
+ * Influence: modal is ~400px max — never use vw for column width (overflow + overlap).
+ * Stacked layout: label row, then slider row (indented). Legend aligns with slider column only.
+ */
 .ui-form-influence {
-  --ui-influence-track: clamp(200px, 38vw, 560px);
   width: 100%;
-  max-width: min(960px, 100%);
+  max-width: 100%;
   margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
 }
 
 .ui-influence-scale-header {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: clamp(12px, 2.5vw, 28px);
-  padding-bottom: 6px;
+  display: block;
+  padding: 0 0 8px;
+  margin-top: 4px;
 }
 
 .ui-influence-scale-header.is-collapsed {
@@ -389,36 +396,45 @@ canvas {
 }
 
 .ui-influence-label-col-spacer {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 1px;
+  display: none;
 }
 
 .ui-influence-legend-col {
-  flex: 0 0 var(--ui-influence-track);
-  width: var(--ui-influence-track);
+  width: 100%;
   max-width: 100%;
-  min-width: 0;
+  padding-left: 28px;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .ui-influence-track-legend {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.72rem;
   color: #64748b;
-  margin: 0 0 2px;
+  margin: 0;
   width: 100%;
+  min-width: 0;
+}
+
+.ui-influence-track-legend .ui-slider-legend-low,
+.ui-influence-track-legend .ui-slider-legend-high {
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .ui-influence-row {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: clamp(12px, 2.5vw, 28px);
-  min-height: 44px;
-  padding: 8px 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px 0;
   border-bottom: 1px solid #e2e8f0;
+  min-width: 0;
 }
 
 .ui-influence-row:last-child {
@@ -429,7 +445,7 @@ canvas {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   cursor: pointer;
   font-weight: 500;
@@ -449,68 +465,28 @@ canvas {
   flex: 1 1 auto;
   min-width: 0;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .ui-influence-slider-col {
-  flex: 0 0 var(--ui-influence-track);
-  width: var(--ui-influence-track);
+  width: 100%;
   max-width: 100%;
-  min-width: 0;
+  padding-left: 28px;
   box-sizing: border-box;
+  flex: none;
+  min-width: 0;
 }
 
 .ui-influence-slider-wrap input[type='range'] {
+  display: block;
   width: 100%;
+  max-width: 100%;
   margin: 0;
-  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .ui-influence-slider-wrap.is-collapsed {
   display: none;
-}
-
-@media (max-width: 520px) {
-  .ui-form-influence {
-    --ui-influence-track: 100%;
-  }
-
-  .ui-influence-scale-header {
-    flex-wrap: wrap;
-  }
-
-  .ui-influence-label-col-spacer {
-    display: none;
-  }
-
-  .ui-influence-legend-col {
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-    padding-left: 28px;
-    box-sizing: border-box;
-  }
-
-  .ui-influence-track-legend {
-    margin-bottom: 4px;
-  }
-
-  .ui-influence-row {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    padding: 10px 0;
-  }
-
-  .ui-influence-label-col {
-    flex: 1 1 100%;
-  }
-
-  .ui-influence-slider-col {
-    flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
-    padding-left: 28px;
-    box-sizing: border-box;
-  }
 }
 
 .ui-form-reasons {
@@ -527,9 +503,20 @@ canvas {
 .ui-slider-legend {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.72rem;
   color: #64748b;
   margin-top: 4px;
+  min-width: 0;
+}
+
+.ui-slider-legend-low,
+.ui-slider-legend-high {
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .ui-checkbox {
