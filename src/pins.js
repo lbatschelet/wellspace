@@ -29,6 +29,7 @@ import {
 export function createPinSystem({
   scene,
   camera,
+  renderer,
   domElement,
   controls,
   getSelectedFloor,
@@ -36,8 +37,13 @@ export function createPinSystem({
   getPinScale,
   getPinLift,
   questions,
+  requestFrame,
 }) {
   const state = createPinState(getSelectedFloor())
+
+  function needRender() {
+    if (typeof requestFrame === 'function') requestFrame()
+  }
 
   const pinGroup = new THREE.Group()
   scene.add(pinGroup)
@@ -107,6 +113,7 @@ export function createPinSystem({
     colorMode.updateLegend()
     colorMode.refreshPinColors()
     colorMode.updatePreviewColor()
+    needRender()
   })
 
   // ── Camera pan to reveal pin behind modal ───────────────────
@@ -151,6 +158,9 @@ export function createPinSystem({
       controls.target.copy(startTarget).addScaledVector(worldDelta, eased)
       camera.position.copy(startCamPos).addScaledVector(worldDelta, eased)
       controls.update()
+      if (renderer) {
+        renderer.render(scene, camera)
+      }
 
       if (progress < 1) {
         panTween = requestAnimationFrame(animate)
@@ -234,6 +244,7 @@ export function createPinSystem({
   form.addEventListener('input', () => {
     colorMode.updatePreviewColor()
     colorMode.refreshPendingPinColor()
+    needRender()
   })
 
   // ── Init ────────────────────────────────────────────────────
@@ -249,10 +260,13 @@ export function createPinSystem({
       renderPins()
     },
     update: () => {
+      let needFrame = false
+
       const distance = camera.position.distanceTo(controls.target)
       if (state.lastClusterDistance === null || Math.abs(distance - state.lastClusterDistance) > 0.6) {
         state.lastClusterDistance = distance
         renderPins()
+        needFrame = true
       }
 
       // Hover animation: smooth lift + emissive glow
@@ -260,14 +274,17 @@ export function createPinSystem({
         if (group.userData.baseY === undefined) return
         const targetY = group.userData.hovered ? group.userData.baseY + 0.08 : group.userData.baseY
         group.position.y = THREE.MathUtils.lerp(group.position.y, targetY, 0.1)
+        if (Math.abs(group.position.y - targetY) > 1e-4) needFrame = true
         const orb = group.userData.orb
         if (orb) {
           const targetGlow = group.userData.hovered ? 0.5 : 0.25
           orb.material.emissiveIntensity = THREE.MathUtils.lerp(
             orb.material.emissiveIntensity, targetGlow, 0.1
           )
+          if (Math.abs(orb.material.emissiveIntensity - targetGlow) > 0.02) needFrame = true
         }
       })
+      return needFrame
     },
     setQuestions,
     setGlobalColorQuestions,
@@ -292,6 +309,7 @@ export function createPinSystem({
     applyQuestionLabels(state, uiRefs, colorMode.updateColorModeButtons)
     colorMode.updateLegend()
     colorMode.refreshPinColors()
+    needRender()
   }
 
   /**
@@ -373,6 +391,7 @@ export function createPinSystem({
       }
     })
     updatePinVisibility()
+    needRender()
   }
 
   function updatePinVisibility() {
@@ -410,12 +429,14 @@ export function createPinSystem({
     mesh.userData.baseY = baseY
     pinGroup.add(mesh)
     state.pendingMesh = mesh
+    needRender()
   }
 
   function removePendingPin() {
     if (!state.pendingMesh) return
     pinGroup.remove(state.pendingMesh)
     state.pendingMesh = null
+    needRender()
   }
 
   function finalizePendingPin(savedPin) {
@@ -496,6 +517,7 @@ export function createPinSystem({
 
     colorMode.updatePreviewColor()
     backdrop.classList.add('is-visible')
+    needRender()
   }
 
   function closeForm() {
@@ -515,5 +537,6 @@ export function createPinSystem({
     toggleButton.textContent = t('ui.pinToggleIdle')
     controls.enabled = true
     document.body.classList.remove('pin-mode')
+    needRender()
   }
 }

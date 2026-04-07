@@ -157,6 +157,7 @@ rotButtons.forEach((btn) => {
     if (typeof controls._rotateLeft === 'function') {
       controls._rotateLeft(dir * Math.PI / 18)
       controls.update()
+      scheduleFrame()
     }
   })
 })
@@ -194,12 +195,55 @@ languageSwitcher.infoButton.addEventListener('click', () => {
   loadAboutContent(getLanguage(), true)
 })
 
+// ── Render-on-demand (keeps Orbit-Damping + Pin-Hover snappy, kein Dauer-Rendering) ──
+let rafId = null
+const tickCam = new THREE.Vector3()
+const tickTarget = new THREE.Vector3()
+
+function scheduleFrame() {
+  if (rafId != null) return
+  rafId = requestAnimationFrame(tick)
+}
+
+function tick() {
+  rafId = null
+  if (typeof document !== 'undefined' && document.hidden) return
+
+  tickCam.copy(camera.position)
+  tickTarget.copy(controls.target)
+
+  controls.update()
+  clampPanToNavigationBounds()
+
+  if (building?.source !== 'gltf') {
+    const deltaY = currentTargetY - controls.target.y
+    if (Math.abs(deltaY) > 1e-6) {
+      controls.target.y += deltaY
+      camera.position.y += deltaY
+    }
+  }
+
+  const pinsNeedFrame = pinSystem.update()
+
+  const moved =
+    camera.position.distanceToSquared(tickCam) > 1e-8 ||
+    controls.target.distanceToSquared(tickTarget) > 1e-8
+
+  renderer.render(scene, camera)
+
+  if (moved || pinsNeedFrame) {
+    scheduleFrame()
+  }
+}
+
 // ── Pin system ──────────────────────────────────────────────
 const pinSystem = createPinSystem({
   scene,
   camera,
+  renderer,
   domElement: renderer.domElement,
   controls,
+  requestFrame: scheduleFrame,
   getSelectedFloor: () => selectedFloor,
   getFloorSlabTopY: (floorIndex) => building.getFloorSlabTopY(floorIndex),
   getPinScale: () => {
@@ -227,7 +271,17 @@ floorButtons.forEach((button) => {
 
 setSelectedFloor(selectedFloor)
 window.addEventListener('resize', handleResize)
-animate()
+document.addEventListener('visibilitychange', () => {
+  if (typeof document !== 'undefined' && !document.hidden) {
+    scheduleFrame()
+  }
+})
+const canvas = renderer.domElement
+canvas.addEventListener('pointerdown', scheduleFrame, { passive: true })
+canvas.addEventListener('wheel', scheduleFrame, { passive: true })
+canvas.addEventListener('pointermove', scheduleFrame, { passive: true })
+controls.addEventListener('change', scheduleFrame)
+scheduleFrame()
 
 onLanguageChange((language) => {
   languageSwitcher.setActiveLanguage(language)
@@ -464,6 +518,7 @@ async function bootStationMode(key) {
       controls.target.set(station.target.x, currentTargetY, station.target.z)
       camera.position.set(station.camera.x, currentTargetY + camOffsetY, station.camera.z)
       controls.update()
+      scheduleFrame()
     }
 
     // Store global color questions before setting station-specific ones
@@ -591,6 +646,7 @@ function updateFloorVisibility() {
       .sort((a, b) => Number(a.floorIndex) - Number(b.floorIndex))
     console.log('[floorVisibility]', JSON.stringify({ selectedFloor, snapshot }))
   }
+  scheduleFrame()
 }
 
 function setSelectedFloor(nextIndex) {
@@ -613,6 +669,7 @@ function handleResize() {
   camera.updateProjectionMatrix()
   renderer.setSize(w, h)
   renderer.setPixelRatio(getPreferredPixelRatio())
+  scheduleFrame()
 }
 
 function clampPanToNavigationBounds() {
@@ -635,32 +692,3 @@ function clampPanToNavigationBounds() {
   }
 }
 
-function animate() {
-  // Kein Dauer-Rendering im Hintergrundtab → deutlich weniger Akku/CPU (Smartphone & Laptop)
-  if (typeof document !== 'undefined' && document.hidden) {
-    return
-  }
-
-  controls.update()
-  clampPanToNavigationBounds()
-
-  // Floor-level Y-forcing: keep camera and target locked to the active floor
-  if (building?.source !== 'gltf') {
-    const deltaY = currentTargetY - controls.target.y
-    if (Math.abs(deltaY) > 1e-6) {
-      controls.target.y += deltaY
-      camera.position.y += deltaY
-    }
-  }
-
-  pinSystem.update()
-  renderer.render(scene, camera)
-
-  requestAnimationFrame(animate)
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (typeof document !== 'undefined' && !document.hidden) {
-    requestAnimationFrame(animate)
-  }
-})
