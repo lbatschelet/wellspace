@@ -83,8 +83,8 @@ function applyImportedModelCameraLimits(b) {
   const z = ORBIT_GLTF_ZOOM
   const minDist = THREE.MathUtils.clamp(
     D * z.closestZoom,
-    z.closestClampMin,
-    z.closestClampMax
+    D * z.closestRelativeMin,
+    D * z.closestRelativeMax
   )
   const maxDist = Math.max(
     D * z.farthestZoom,
