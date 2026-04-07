@@ -1,2 +1,6 @@
 .DS_Store
 *.local
+
+# Model pipeline
+model-pipeline/**/node_modules/
+model-pipeline/**/package-lock.json
