@@ -179,6 +179,7 @@ export function createQuestionnaireController({ state, views, api, shell, render
     shell.setStatus('Saving...', false)
     try {
       await actions.saveSingleQuestion(updated, translationsByLang)
+      await actions.saveOptionTranslationsFromModal(v.questionModalOptions)
       closeModal()
       shell.setStatus('Question saved', false)
       await actions.reloadAndRender()
@@ -363,6 +364,31 @@ export function createQuestionnaireController({ state, views, api, shell, render
       if (!questionKey || !optionKey) return
       handleOptionActiveToggle(questionKey, optionKey, checkbox.checked)
     })
+
+    views.questionnaireView.questionModalOptions.addEventListener(
+      'focusout',
+      async (event) => {
+        const input = event.target
+        if (!(input instanceof HTMLInputElement)) return
+        if (input.dataset.field !== 'option-translation') return
+        const lang = input.dataset.lang
+        const translationKey = input.dataset.translationKey
+        if (!lang || !translationKey) return
+        try {
+          await api.upsertTranslation({
+            token: state.token,
+            translation_key: translationKey,
+            lang,
+            text: input.value.trim(),
+          })
+          await data.loadTranslations()
+          render.renderQuestionsList()
+        } catch (error) {
+          shell.setStatus(error.message, true)
+        }
+      },
+      true
+    )
 
     // Option drag-and-drop within the modal
     views.questionnaireView.questionModalOptions.addEventListener('dragstart', (event) => {

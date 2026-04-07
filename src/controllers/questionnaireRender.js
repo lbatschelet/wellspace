@@ -178,7 +178,7 @@ export function createQuestionnaireRender({ state, views }) {
     section.className = 'options-section'
     const title = document.createElement('div')
     title.className = 'section-title'
-    title.textContent = 'Options'
+    title.textContent = 'Options (key + label per language)'
     section.appendChild(title)
 
     if (options.length > 0) {

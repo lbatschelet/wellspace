@@ -176,6 +176,25 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
     return translationsByLang
   }
 
+  /**
+   * Persists all option label fields from the question modal (Key + one column per language).
+   */
+  const saveOptionTranslationsFromModal = async (questionModalOptions) => {
+    if (!questionModalOptions) return
+    const optionInputs = questionModalOptions.querySelectorAll('input[data-field="option-translation"]')
+    for (const input of optionInputs) {
+      const lang = input.dataset.lang
+      const translationKey = input.dataset.translationKey
+      if (!lang || !translationKey) continue
+      await api.upsertTranslation({
+        token: state.token,
+        translation_key: translationKey,
+        lang,
+        text: input.value.trim(),
+      })
+    }
+  }
+
   const resetNewQuestionForm = () => {
     const {
       newQuestionKey,
@@ -206,6 +225,7 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
   return {
     saveOptionOrder,
     saveSingleQuestion,
+    saveOptionTranslationsFromModal,
     deleteQuestion,
     reloadAndRender,
     collectNewQuestionTranslations,
