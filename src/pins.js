@@ -26,7 +26,15 @@ import {
   clearFormError,
 } from './pins/pinForm'
 
-export function createPinSystem({ scene, camera, domElement, controls, getSelectedFloor, questions }) {
+export function createPinSystem({
+  scene,
+  camera,
+  domElement,
+  controls,
+  getSelectedFloor,
+  getFloorSlabTopY,
+  questions,
+}) {
   const state = createPinState(getSelectedFloor())
 
   const pinGroup = new THREE.Group()
@@ -159,6 +167,7 @@ export function createPinSystem({ scene, camera, domElement, controls, getSelect
     pinGroup,
     getState: () => state,
     getSelectedFloor,
+    getFloorSlabTopY,
     onPinClick: (pin) => openForm({ pin }),
     onFloorClick: ({ floorIndex, position }) => {
       placePendingPin({ floorIndex, position })
@@ -172,6 +181,7 @@ export function createPinSystem({ scene, camera, domElement, controls, getSelect
     domElement,
     getState: () => state,
     getSelectedFloor,
+    getFloorSlabTopY,
     controls,
     onFloorClick: ({ floorIndex, position }) => {
       placePendingPin({ floorIndex, position })
@@ -306,12 +316,14 @@ export function createPinSystem({ scene, camera, domElement, controls, getSelect
     const allPins = [...state.pins, ...state.localPins].filter(
       (pin) => pin.floor_index === state.activeFloor
     )
-    const clusters = buildClusters(allPins, camera, controls, domElement)
+    const clusters = buildClusters(allPins, camera, controls, domElement, getFloorSlabTopY)
     clusters.forEach((cluster) => {
       if (cluster.pins.length === 1) {
         const pin = cluster.pins[0]
         const mesh = createPinMesh(pin, colorMode.getPinColor(pin))
-        const baseY = pin.position_y + 0.35
+        const slabTopY =
+          typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(pin.floor_index) : pin.position_y
+        const baseY = slabTopY + 0.35
         mesh.position.set(pin.position_x, baseY, pin.position_z)
         mesh.userData.floorIndex = pin.floor_index
         mesh.userData.pinId = pin.id

@@ -3,7 +3,6 @@
  * Exports: setupPinRaycaster.
  */
 import * as THREE from 'three'
-import { getFloorSlabTopY } from '../floors'
 
 /**
  * Collect all hit-sphere meshes from a pin group (for hover raycasting).
@@ -29,10 +28,20 @@ function getHitSpheres(pinGroup) {
  * @param {THREE.Group} deps.pinGroup
  * @param {Function} deps.getState - Returns current pin state.
  * @param {Function} deps.getSelectedFloor - Returns the current floor index.
+ * @param {Function} deps.getFloorSlabTopY - Returns the slab top Y for a floor.
  * @param {Function} deps.onPinClick - Called when an existing pin is clicked.
  * @param {Function} deps.onFloorClick - Called when the floor is clicked in pin mode.
  */
-export function setupPinRaycaster({ camera, domElement, pinGroup, getState, getSelectedFloor, onPinClick, onFloorClick }) {
+export function setupPinRaycaster({
+  camera,
+  domElement,
+  pinGroup,
+  getState,
+  getSelectedFloor,
+  getFloorSlabTopY,
+  onPinClick,
+  onFloorClick,
+}) {
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
 
@@ -60,7 +69,7 @@ export function setupPinRaycaster({ camera, domElement, pinGroup, getState, getS
     }
 
     const floorIndex = getSelectedFloor()
-    const planeY = getFloorSlabTopY(floorIndex)
+    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
 
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
     const point = new THREE.Vector3()

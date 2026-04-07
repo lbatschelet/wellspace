@@ -6,7 +6,6 @@
  * Exports: setupLongPress.
  */
 import * as THREE from 'three'
-import { getFloorSlabTopY } from '../floors'
 
 const HOLD_MS = 600
 const MOVE_THRESHOLD = 10 // px
@@ -17,10 +16,19 @@ const MOVE_THRESHOLD = 10 // px
  * @param {HTMLElement} deps.domElement
  * @param {Function} deps.getState — returns current pin state
  * @param {Function} deps.getSelectedFloor — returns current floor index
+ * @param {Function} deps.getFloorSlabTopY — returns slab top Y for a floor
  * @param {object} deps.controls — OrbitControls instance
  * @param {Function} deps.onFloorClick — called with { floorIndex, position }
  */
-export function setupLongPress({ camera, domElement, getState, getSelectedFloor, controls, onFloorClick }) {
+export function setupLongPress({
+  camera,
+  domElement,
+  getState,
+  getSelectedFloor,
+  getFloorSlabTopY,
+  controls,
+  onFloorClick,
+}) {
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
 
@@ -74,7 +82,7 @@ export function setupLongPress({ camera, domElement, getState, getSelectedFloor,
     raycaster.setFromCamera(pointer, camera)
 
     const floorIndex = getSelectedFloor()
-    const planeY = getFloorSlabTopY(floorIndex)
+    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
     const point = new THREE.Vector3()
 

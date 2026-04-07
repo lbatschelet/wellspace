@@ -197,6 +197,7 @@ const pinSystem = createPinSystem({
   domElement: renderer.domElement,
   controls,
   getSelectedFloor: () => selectedFloor,
+  getFloorSlabTopY: (floorIndex) => building.getFloorSlabTopY(floorIndex),
   questions: [],
 })
 app.appendChild(pinSystem.ui)

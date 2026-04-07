@@ -10,9 +10,10 @@ import * as THREE from 'three'
  * @param {THREE.Camera} camera - The scene camera.
  * @param {THREE.OrbitControls} controls - The orbit controls (used for distance calculation).
  * @param {HTMLElement} domElement - The renderer's DOM element (used for screen projection).
+ * @param {Function} [getFloorSlabTopY] - Optional: maps floor index -> slab top Y.
  * @returns {Array} Array of cluster objects { pins, screen, worldSum, worldPosition }.
  */
-export function buildClusters(pins, camera, controls, domElement) {
+export function buildClusters(pins, camera, controls, domElement, getFloorSlabTopY) {
   const rect = domElement.getBoundingClientRect()
   const distance = camera.position.distanceTo(controls.target)
   // No clustering when zoomed in close (distance < 10), scales up when zoomed out
@@ -21,7 +22,9 @@ export function buildClusters(pins, camera, controls, domElement) {
   const clusters = []
 
   pins.forEach((pin) => {
-    const world = new THREE.Vector3(pin.position_x, pin.position_y + 0.35, pin.position_z)
+    const slabTopY =
+      typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(pin.floor_index) : pin.position_y
+    const world = new THREE.Vector3(pin.position_x, slabTopY + 0.35, pin.position_z)
     const projected = world.clone().project(camera)
     const screen = {
       x: (projected.x * 0.5 + 0.5) * rect.width,
