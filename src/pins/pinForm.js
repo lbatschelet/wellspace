@@ -111,10 +111,17 @@ export function renderQuestions(questions, formContent, questionElements) {
       legendCol.appendChild(legend)
       scaleHeader.appendChild(labelColSpacer)
       scaleHeader.appendChild(legendCol)
+      scaleHeader.classList.add('is-collapsed')
+      scaleHeader.setAttribute('aria-hidden', 'true')
       wrap.appendChild(scaleHeader)
 
       const options = Array.isArray(question.options) ? question.options : []
       const optionRows = []
+      const syncInfluenceScaleHeader = () => {
+        const anyChecked = optionRows.some((r) => r.checkbox.checked)
+        scaleHeader.classList.toggle('is-collapsed', !anyChecked)
+        scaleHeader.setAttribute('aria-hidden', anyChecked ? 'false' : 'true')
+      }
       options.forEach((option) => {
         const row = document.createElement('div')
         row.className = 'ui-influence-row'
@@ -149,6 +156,7 @@ export function renderQuestions(questions, formContent, questionElements) {
           if (!on) {
             slider.value = String(getSliderDefault(cfg))
           }
+          syncInfluenceScaleHeader()
         })
 
         row.appendChild(left)
@@ -157,7 +165,7 @@ export function renderQuestions(questions, formContent, questionElements) {
         optionRows.push({ key: option.key, checkbox, slider, sliderWrap, cfg })
       })
       group.appendChild(wrap)
-      elements = { ...elements, optionRows }
+      elements = { ...elements, optionRows, influenceScaleHeader: scaleHeader }
     }
 
     formContent.appendChild(group)
@@ -273,6 +281,11 @@ export function setQuestionValue(key, value, questions, questionElements) {
         row.sliderWrap.classList.add('is-collapsed')
       }
     })
+    if (elements.influenceScaleHeader) {
+      const anyChecked = elements.optionRows.some((r) => r.checkbox.checked)
+      elements.influenceScaleHeader.classList.toggle('is-collapsed', !anyChecked)
+      elements.influenceScaleHeader.setAttribute('aria-hidden', anyChecked ? 'false' : 'true')
+    }
     return
   }
   if (Array.isArray(value)) {

@@ -365,10 +365,9 @@ canvas {
   margin-top: 4px;
 }
 
-/* Influence: title → grid [labels | slider column]; legend only above slider track */
+/* Influence: flex row [label grows | fixed track width] — avoids grid overlap bugs */
 .ui-form-influence {
-  /* Second column: grows on wide viewports, capped for readability */
-  --ui-influence-slider-max: clamp(220px, 38vw, 560px);
+  --ui-influence-track: clamp(200px, 38vw, 560px);
   width: 100%;
   max-width: min(960px, 100%);
   margin-top: 10px;
@@ -378,19 +377,29 @@ canvas {
 }
 
 .ui-influence-scale-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(200px, var(--ui-influence-slider-max));
-  column-gap: clamp(12px, 2.5vw, 28px);
-  align-items: end;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: clamp(12px, 2.5vw, 28px);
   padding-bottom: 6px;
 }
 
+.ui-influence-scale-header.is-collapsed {
+  display: none;
+}
+
 .ui-influence-label-col-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 1px;
 }
 
 .ui-influence-legend-col {
+  flex: 0 0 var(--ui-influence-track);
+  width: var(--ui-influence-track);
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .ui-influence-track-legend {
@@ -403,10 +412,10 @@ canvas {
 }
 
 .ui-influence-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(200px, var(--ui-influence-slider-max));
-  column-gap: clamp(12px, 2.5vw, 28px);
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  gap: clamp(12px, 2.5vw, 28px);
   min-height: 44px;
   padding: 8px 0;
   border-bottom: 1px solid #e2e8f0;
@@ -420,13 +429,20 @@ canvas {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  flex: 1 1 auto;
   min-width: 0;
   cursor: pointer;
   font-weight: 500;
 }
 
+.ui-influence-label-col input[type='checkbox'] {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .ui-influence-check {
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ui-influence-option-label {
@@ -436,8 +452,11 @@ canvas {
 }
 
 .ui-influence-slider-col {
+  flex: 0 0 var(--ui-influence-track);
+  width: var(--ui-influence-track);
+  max-width: 100%;
   min-width: 0;
-  width: 100%;
+  box-sizing: border-box;
 }
 
 .ui-influence-slider-wrap input[type='range'] {
@@ -452,11 +471,11 @@ canvas {
 
 @media (max-width: 520px) {
   .ui-form-influence {
-    --ui-influence-slider-max: 100%;
+    --ui-influence-track: 100%;
   }
 
   .ui-influence-scale-header {
-    grid-template-columns: 1fr;
+    flex-wrap: wrap;
   }
 
   .ui-influence-label-col-spacer {
@@ -464,22 +483,29 @@ canvas {
   }
 
   .ui-influence-legend-col {
+    flex: 1 1 100%;
     width: 100%;
+    max-width: 100%;
     padding-left: 28px;
     box-sizing: border-box;
   }
 
   .ui-influence-track-legend {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   .ui-influence-row {
-    grid-template-columns: 1fr;
-    row-gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-start;
     padding: 10px 0;
   }
 
-  .ui-influence-slider-wrap:not(.is-collapsed) {
+  .ui-influence-label-col {
+    flex: 1 1 100%;
+  }
+
+  .ui-influence-slider-col {
+    flex: 1 1 100%;
     width: 100%;
     max-width: 100%;
     padding-left: 28px;
