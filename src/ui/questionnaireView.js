@@ -50,6 +50,7 @@ export function createQuestionnaireView() {
             <select id="newQuestionType">
               <option value="slider">Slider</option>
               <option value="multi">Multiple choice</option>
+              <option value="influence">Influence (checkbox + slider)</option>
               <option value="text">Text</option>
             </select>
           </label>
@@ -57,11 +58,11 @@ export function createQuestionnaireView() {
         <div class="modal-checks-row">
           <label class="checkbox-inline"><input type="checkbox" id="newQuestionRequired" title="Must be answered before submitting" /> Required</label>
           <label class="checkbox-inline"><input type="checkbox" id="newQuestionActive" checked title="Visible to end users" /> Active</label>
-          <label class="checkbox-inline slider-only"><input type="checkbox" id="newQuestionUseForColor" title="Use this slider to color pins on the map" /> Pin color</label>
+          <label class="checkbox-inline slider-color-only"><input type="checkbox" id="newQuestionUseForColor" title="Use this slider to color pins on the map" /> Pin color</label>
           <label class="checkbox-inline multi-only"><input type="checkbox" id="newQuestionSingleChoice" checked title="Only one option can be selected" /> Single choice</label>
         </div>
         <div class="modal-translations" id="newQuestionTranslations"></div>
-        <div class="modal-config-grid slider-only">
+        <div class="modal-config-grid slider-range-only">
           <label class="field">
             <span>Min</span>
             <input type="number" id="newQuestionMin" value="0" />

@@ -71,6 +71,12 @@ export function createQuestionnaireRender({ state, views }) {
     if (question.type === 'text') {
       v.newQuestionRows.value = question.config?.rows ?? 3
     }
+    if (question.type === 'influence') {
+      v.newQuestionMin.value = question.config?.min ?? -1
+      v.newQuestionMax.value = question.config?.max ?? 1
+      v.newQuestionStep.value = question.config?.step ?? 0.05
+      v.newQuestionDefault.value = question.config?.default ?? 0
+    }
 
     renderCreateFormVisibility()
     renderEditTranslations(question)
@@ -135,6 +141,24 @@ export function createQuestionnaireRender({ state, views }) {
         group.appendChild(createLabeled('Legend low', legendLowInput))
         group.appendChild(createLabeled('Legend high', legendHighInput))
       }
+      if (question.type === 'influence') {
+        const legendNeg = createInput(
+          'text',
+          getTranslationFor(language.lang, `questions.${question.question_key}.legend_negative`)
+        )
+        legendNeg.dataset.lang = language.lang
+        legendNeg.dataset.field = 'legend_negative'
+        const legendPos = createInput(
+          'text',
+          getTranslationFor(language.lang, `questions.${question.question_key}.legend_positive`)
+        )
+        legendPos.dataset.lang = language.lang
+        legendPos.dataset.field = 'legend_positive'
+        legendNeg.title = 'Label for strong negative effect on wellbeing'
+        legendPos.title = 'Label for strong positive effect on wellbeing'
+        group.appendChild(createLabeled('Scale: negative', legendNeg))
+        group.appendChild(createLabeled('Scale: positive', legendPos))
+      }
       newQuestionTranslations.appendChild(group)
     })
   }
@@ -144,7 +168,7 @@ export function createQuestionnaireRender({ state, views }) {
   const renderEditOptions = (question) => {
     const container = questionnaireView.questionModalOptions
     container.innerHTML = ''
-    if (question.type !== 'multi') return
+    if (question.type !== 'multi' && question.type !== 'influence') return
 
     const options = state.options
       .filter((o) => o.question_key === question.question_key)
@@ -267,7 +291,8 @@ export function createQuestionnaireRender({ state, views }) {
         node.style.display = condition ? (isInline ? 'inline-flex' : 'grid') : 'none'
       })
     }
-    showIf('.slider-only', type === 'slider')
+    showIf('.slider-color-only', type === 'slider')
+    showIf('.slider-range-only', type === 'slider' || type === 'influence')
     showIf('.multi-only', type === 'multi')
     showIf('.text-only', type === 'text')
   }
@@ -291,6 +316,16 @@ export function createQuestionnaireRender({ state, views }) {
         legendHighInput.dataset.field = 'legend_high'
         group.appendChild(createLabeled('Legend low', legendLowInput))
         group.appendChild(createLabeled('Legend high', legendHighInput))
+      }
+      if (type === 'influence') {
+        const legendNeg = createInput('text', '')
+        legendNeg.dataset.lang = language.lang
+        legendNeg.dataset.field = 'legend_negative'
+        const legendPos = createInput('text', '')
+        legendPos.dataset.lang = language.lang
+        legendPos.dataset.field = 'legend_positive'
+        group.appendChild(createLabeled('Scale: negative', legendNeg))
+        group.appendChild(createLabeled('Scale: positive', legendPos))
       }
       newQuestionTranslations.appendChild(group)
     })

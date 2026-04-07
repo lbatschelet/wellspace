@@ -20,6 +20,12 @@ export function buildQuestionConfig({ type, values }) {
   if (type === 'multi') {
     config.allow_multiple = !values.single_choice
   }
+  if (type === 'influence') {
+    config.min = Number(values.min ?? -1)
+    config.max = Number(values.max ?? 1)
+    config.step = Number(values.step ?? 0.05)
+    config.default = Number(values.default ?? 0)
+  }
   return config
 }
 
@@ -91,6 +97,20 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
           text: translations.legend_high || '',
         })
       }
+      if (question.type === 'influence') {
+        await api.upsertTranslation({
+          token: state.token,
+          translation_key: `questions.${question.question_key}.legend_negative`,
+          lang,
+          text: translations.legend_negative || '',
+        })
+        await api.upsertTranslation({
+          token: state.token,
+          translation_key: `questions.${question.question_key}.legend_positive`,
+          lang,
+          text: translations.legend_positive || '',
+        })
+      }
     }
   }
 
@@ -132,6 +152,16 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
         const legendHigh = legendHighInput?.value.trim() || ''
         translationsByLang[language.lang].legend_low = legendLow
         translationsByLang[language.lang].legend_high = legendHigh
+      }
+      if (type === 'influence') {
+        const legendNeg = newQuestionTranslations.querySelector(
+          `input[data-lang="${language.lang}"][data-field="legend_negative"]`
+        )
+        const legendPos = newQuestionTranslations.querySelector(
+          `input[data-lang="${language.lang}"][data-field="legend_positive"]`
+        )
+        translationsByLang[language.lang].legend_negative = legendNeg?.value.trim() || ''
+        translationsByLang[language.lang].legend_positive = legendPos?.value.trim() || ''
       }
     }
     const validation = validateQuestionTranslations({

@@ -156,6 +156,12 @@ export function createQuestionnaireController({ state, views, api, shell, render
     if (question.type === 'text') {
       updated.config.rows = Number(v.newQuestionRows.value)
     }
+    if (question.type === 'influence') {
+      updated.config.min = Number(v.newQuestionMin.value)
+      updated.config.max = Number(v.newQuestionMax.value)
+      updated.config.step = Number(v.newQuestionStep.value)
+      updated.config.default = Number(v.newQuestionDefault.value)
+    }
 
     // Collect translations from the modal
     const translationsByLang = {}
@@ -276,9 +282,22 @@ export function createQuestionnaireController({ state, views, api, shell, render
 
   const bindEvents = () => {
     views.questionnaireView.newQuestionType.addEventListener('change', () => {
+      const v = views.questionnaireView
+      const type = v.newQuestionType.value
+      if (type === 'influence') {
+        v.newQuestionMin.value = '-1'
+        v.newQuestionMax.value = '1'
+        v.newQuestionStep.value = '0.05'
+        v.newQuestionDefault.value = '0'
+      } else if (type === 'slider') {
+        v.newQuestionMin.value = '0'
+        v.newQuestionMax.value = '1'
+        v.newQuestionStep.value = '0.01'
+        v.newQuestionDefault.value = '0.5'
+      }
       render.renderCreateFormVisibility()
       if (!editingQuestionKey) {
-        render.renderNewQuestionTranslations(views.questionnaireView.newQuestionType.value)
+        render.renderNewQuestionTranslations(v.newQuestionType.value)
       }
     })
     views.questionnaireView.addQuestionButton.addEventListener('click', handleModalSave)
