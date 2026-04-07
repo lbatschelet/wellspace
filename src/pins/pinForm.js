@@ -86,8 +86,10 @@ export function renderQuestions(questions, formContent, questionElements) {
 
     if (question.type === 'influence') {
       const cfg = question.config || {}
+      const scaleBlock = document.createElement('div')
+      scaleBlock.className = 'ui-influence-scale'
       const legend = document.createElement('div')
-      legend.className = 'ui-slider-legend ui-influence-global-legend'
+      legend.className = 'ui-slider-legend ui-influence-scale-legend'
       const legendNeg = document.createElement('span')
       legendNeg.className = 'ui-slider-legend-low'
       legendNeg.textContent = question.legend_negative || ''
@@ -96,25 +98,29 @@ export function renderQuestions(questions, formContent, questionElements) {
       legendPos.textContent = question.legend_positive || ''
       legend.appendChild(legendNeg)
       legend.appendChild(legendPos)
-      group.appendChild(legend)
+      scaleBlock.appendChild(legend)
+      group.appendChild(scaleBlock)
 
       const wrap = document.createElement('div')
       wrap.className = 'ui-form-influence'
+      wrap.setAttribute('role', 'group')
+      wrap.setAttribute('aria-label', question.label || question.key)
       const options = Array.isArray(question.options) ? question.options : []
       const optionRows = []
       options.forEach((option) => {
         const row = document.createElement('div')
         row.className = 'ui-influence-row'
 
-        const labelRow = document.createElement('label')
-        labelRow.className = 'ui-checkbox'
+        const left = document.createElement('label')
+        left.className = 'ui-influence-check'
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'
         checkbox.dataset.optionKey = option.key
         const text = document.createElement('span')
+        text.className = 'ui-influence-option-label'
         text.textContent = option.label || option.key
-        labelRow.appendChild(checkbox)
-        labelRow.appendChild(text)
+        left.appendChild(checkbox)
+        left.appendChild(text)
 
         const sliderWrap = document.createElement('div')
         sliderWrap.className = 'ui-influence-slider-wrap is-collapsed'
@@ -125,6 +131,7 @@ export function renderQuestions(questions, formContent, questionElements) {
         slider.step = cfg.step ?? 0.05
         slider.value = String(getSliderDefault(cfg))
         slider.disabled = true
+        slider.setAttribute('aria-label', option.label || option.key)
         sliderWrap.appendChild(slider)
 
         checkbox.addEventListener('change', () => {
@@ -136,7 +143,7 @@ export function renderQuestions(questions, formContent, questionElements) {
           }
         })
 
-        row.appendChild(labelRow)
+        row.appendChild(left)
         row.appendChild(sliderWrap)
         wrap.appendChild(row)
         optionRows.push({ key: option.key, checkbox, slider, sliderWrap, cfg })
