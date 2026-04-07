@@ -86,10 +86,20 @@ export function renderQuestions(questions, formContent, questionElements) {
 
     if (question.type === 'influence') {
       const cfg = question.config || {}
-      const scaleBlock = document.createElement('div')
-      scaleBlock.className = 'ui-influence-scale'
+      const wrap = document.createElement('div')
+      wrap.className = 'ui-form-influence'
+      wrap.setAttribute('role', 'group')
+      wrap.setAttribute('aria-label', question.label || question.key)
+
+      const scaleHeader = document.createElement('div')
+      scaleHeader.className = 'ui-influence-scale-header'
+      const labelColSpacer = document.createElement('div')
+      labelColSpacer.className = 'ui-influence-label-col-spacer'
+      labelColSpacer.setAttribute('aria-hidden', 'true')
+      const legendCol = document.createElement('div')
+      legendCol.className = 'ui-influence-legend-col'
       const legend = document.createElement('div')
-      legend.className = 'ui-slider-legend ui-influence-scale-legend'
+      legend.className = 'ui-slider-legend ui-influence-track-legend'
       const legendNeg = document.createElement('span')
       legendNeg.className = 'ui-slider-legend-low'
       legendNeg.textContent = question.legend_negative || ''
@@ -98,13 +108,11 @@ export function renderQuestions(questions, formContent, questionElements) {
       legendPos.textContent = question.legend_positive || ''
       legend.appendChild(legendNeg)
       legend.appendChild(legendPos)
-      scaleBlock.appendChild(legend)
-      group.appendChild(scaleBlock)
+      legendCol.appendChild(legend)
+      scaleHeader.appendChild(labelColSpacer)
+      scaleHeader.appendChild(legendCol)
+      wrap.appendChild(scaleHeader)
 
-      const wrap = document.createElement('div')
-      wrap.className = 'ui-form-influence'
-      wrap.setAttribute('role', 'group')
-      wrap.setAttribute('aria-label', question.label || question.key)
       const options = Array.isArray(question.options) ? question.options : []
       const optionRows = []
       options.forEach((option) => {
@@ -112,7 +120,7 @@ export function renderQuestions(questions, formContent, questionElements) {
         row.className = 'ui-influence-row'
 
         const left = document.createElement('label')
-        left.className = 'ui-influence-check'
+        left.className = 'ui-influence-label-col ui-influence-check'
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'
         checkbox.dataset.optionKey = option.key
@@ -123,7 +131,7 @@ export function renderQuestions(questions, formContent, questionElements) {
         left.appendChild(text)
 
         const sliderWrap = document.createElement('div')
-        sliderWrap.className = 'ui-influence-slider-wrap is-collapsed'
+        sliderWrap.className = 'ui-influence-slider-col ui-influence-slider-wrap is-collapsed'
         const slider = document.createElement('input')
         slider.type = 'range'
         slider.min = cfg.min ?? -1
