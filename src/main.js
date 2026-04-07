@@ -636,7 +636,10 @@ function clampPanToNavigationBounds() {
 }
 
 function animate() {
-  requestAnimationFrame(animate)
+  // Kein Dauer-Rendering im Hintergrundtab → deutlich weniger Akku/CPU (Smartphone & Laptop)
+  if (typeof document !== 'undefined' && document.hidden) {
+    return
+  }
 
   controls.update()
   clampPanToNavigationBounds()
@@ -652,4 +655,12 @@ function animate() {
 
   pinSystem.update()
   renderer.render(scene, camera)
+
+  requestAnimationFrame(animate)
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (typeof document !== 'undefined' && !document.hidden) {
+    requestAnimationFrame(animate)
+  }
+})
