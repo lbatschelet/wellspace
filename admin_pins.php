@@ -17,18 +17,19 @@ try {
         $action = isset($_GET['action']) ? trim($_GET['action']) : '';
         if ($action === 'export_csv') {
             $rows = admin_pins_export_rows($pdo);
+            $headers = admin_pins_export_header_keys();
             $timestamp = date('Y-m-d_His');
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="pins_' . $timestamp . '.csv"');
             $output = fopen('php://output', 'w');
-            if (!$rows) {
-                fputcsv($output, []);
-                fclose($output);
-                exit;
-            }
-            fputcsv($output, array_keys($rows[0]));
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, $headers);
             foreach ($rows as $row) {
-                fputcsv($output, $row);
+                $line = [];
+                foreach ($headers as $h) {
+                    $line[] = array_key_exists($h, $row) ? $row[$h] : '';
+                }
+                fputcsv($output, $line);
             }
             fclose($output);
             exit;

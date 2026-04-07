@@ -1,8 +1,61 @@
 <?php
 /**
  * Admin pins service for listing and approval updates.
- * Exports: admin_pins_list, admin_pins_export_rows, admin_pins_update_approval, admin_pins_delete.
+ * Exports: admin_pins_list, admin_pins_export_rows, admin_pins_export_header_keys,
+ *          admin_pins_update_approval, admin_pins_delete.
  */
+
+require_once __DIR__ . '/../lib/lv95_affine.php';
+
+/**
+ * CSV column order (stable header even when there are zero rows).
+ *
+ * @return array<int, string>
+ */
+function admin_pins_export_header_keys(): array
+{
+    return [
+        'id',
+        'floor_index',
+        'scene_world_x',
+        'scene_world_y',
+        'scene_world_z',
+        'lv95_e',
+        'lv95_n',
+        'lv95_calibration_id',
+        'wellbeing',
+        'note',
+        'group_key',
+        'station_key',
+        'reasons',
+        'status',
+        'approved',
+        'created_at',
+        'updated_at',
+    ];
+}
+
+/**
+ * Loads active LV95 calibration affine (if table exists and a row is active).
+ *
+ * @return array{ id: int|null, affine: array|null }
+ */
+function admin_pins_load_active_lv95_context(PDO $pdo): array
+{
+    try {
+        $stmt = $pdo->query(
+            'SELECT id, points, params FROM lv95_calibrations WHERE is_active = 1 ORDER BY id DESC LIMIT 1'
+        );
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return ['id' => null, 'affine' => null];
+        }
+        $affine = lv95_affine_from_calibration_row($row);
+        return ['id' => intval($row['id']), 'affine' => $affine];
+    } catch (Throwable $e) {
+        return ['id' => null, 'affine' => null];
+    }
+}
 
 /**
  * Returns all pins for admin view.
@@ -40,16 +93,55 @@ function admin_pins_export_rows(PDO $pdo): array
     );
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Map numeric approved value to human-readable status label
-    foreach ($rows as &$row) {
-        if (array_key_exists('approved', $row)) {
-            $val = intval($row['approved']);
-            $row['status'] = $val === 1 ? 'approved' : ($val === -1 ? 'rejected' : 'pending');
-        }
-    }
-    unset($row);
+    $lv95Ctx = admin_pins_load_active_lv95_context($pdo);
+    $lv95Id = $lv95Ctx['id'];
+    $affine = $lv95Ctx['affine'];
 
-    return $rows;
+    $out = [];
+    foreach ($rows as $row) {
+        $val = array_key_exists('approved', $row) ? intval($row['approved']) : 0;
+        $status = $val === 1 ? 'approved' : ($val === -1 ? 'rejected' : 'pending');
+
+        $sx = floatval($row['position_x']);
+        $sy = floatval($row['position_y']);
+        $sz = floatval($row['position_z']);
+
+        $lv95E = '';
+        $lv95N = '';
+        $lv95CalId = '';
+        if ($affine !== null && $lv95Id !== null) {
+            $en = lv95_apply_scene_xz_to_lv95($affine, $sx, $sz);
+            $lv95E = round($en['e'], 4);
+            $lv95N = round($en['n'], 4);
+            $lv95CalId = $lv95Id;
+        }
+
+        $reasons = isset($row['reason_keys']) && $row['reason_keys'] !== '' && $row['reason_keys'] !== null
+            ? $row['reason_keys']
+            : '';
+
+        $out[] = [
+            'id' => intval($row['id']),
+            'floor_index' => intval($row['floor_index']),
+            'scene_world_x' => $sx,
+            'scene_world_y' => $sy,
+            'scene_world_z' => $sz,
+            'lv95_e' => $lv95E,
+            'lv95_n' => $lv95N,
+            'lv95_calibration_id' => $lv95CalId,
+            'wellbeing' => floatval($row['wellbeing']),
+            'note' => $row['note'] ?? '',
+            'group_key' => $row['group_key'] ?? '',
+            'station_key' => $row['station_key'] ?? '',
+            'reasons' => $reasons,
+            'status' => $status,
+            'approved' => $val,
+            'created_at' => $row['created_at'] ?? '',
+            'updated_at' => $row['updated_at'] ?? '',
+        ];
+    }
+
+    return $out;
 }
 
 /**
