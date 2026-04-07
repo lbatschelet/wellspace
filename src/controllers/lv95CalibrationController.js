@@ -2,6 +2,8 @@
  * LV95 calibration controller.
  * Exports: createLv95CalibrationController.
  */
+import { parseSwissNumber, parseSwissLv95Pair } from '../utils/lv95Parse'
+
 export function createLv95CalibrationController({ state, views, api, shell }) {
   const view = views.lv95CalibrationView
 
@@ -15,28 +17,60 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
 
   const getWebappBase = () => import.meta.env.VITE_WEBAPP_BASE || 'https://feelvonroll.ch'
 
-  const render = () => {
-    view.pointsBody.innerHTML = ''
-    points.forEach((p, idx) => {
-      const tr = document.createElement('tr')
-      tr.innerHTML = `
-        <td><strong>${idx + 1}</strong></td>
-        <td><input type="number" step="any" data-world-x="${idx}" value="${p.world.x ?? ''}" ${unlocked ? 'readonly' : 'readonly'} /></td>
-        <td><input type="number" step="any" data-world-z="${idx}" value="${p.world.z ?? ''}" ${unlocked ? 'readonly' : 'readonly'} /></td>
-        <td><input type="number" step="any" data-lv95-e="${idx}" value="${p.lv95.e ?? ''}" ${unlocked ? '' : 'disabled'} /></td>
-        <td><input type="number" step="any" data-lv95-n="${idx}" value="${p.lv95.n ?? ''}" ${unlocked ? '' : 'disabled'} /></td>
-        <td class="actions-cell">
-          <button class="ghost" type="button" data-capture="${idx}" ${unlocked ? '' : 'disabled'}>Capture</button>
-        </td>
-      `
-      view.pointsBody.appendChild(tr)
-    })
+  function formatNum(v) {
+    if (v == null || !Number.isFinite(v)) return ''
+    return String(v)
+  }
 
+  function updatePreviewButtons() {
     const canPreview = unlocked && points.every((p) =>
       Number.isFinite(p.world.x) && Number.isFinite(p.world.z) && Number.isFinite(p.lv95.e) && Number.isFinite(p.lv95.n)
     )
     view.previewBtn.disabled = !canPreview
     view.saveBtn.disabled = !canPreview
+  }
+
+  const render = () => {
+    view.pointsBody.innerHTML = ''
+    points.forEach((p, idx) => {
+      const article = document.createElement('article')
+      article.className = 'lv95-point'
+      article.dataset.lv95Point = String(idx)
+      article.innerHTML = `
+        <h3 class="lv95-point-title">Point ${idx + 1}</h3>
+        <div class="lv95-point-grid">
+          <label class="lv95-field">
+            <span>World X</span>
+            <input type="text" inputmode="decimal" readonly data-world-x="${idx}" value="${formatNum(p.world.x)}" />
+          </label>
+          <label class="lv95-field">
+            <span>World Z</span>
+            <input type="text" inputmode="decimal" readonly data-world-z="${idx}" value="${formatNum(p.world.z)}" />
+          </label>
+          <label class="lv95-field">
+            <span>LV95 E</span>
+            <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-lv95-e="${idx}" value="${formatNum(p.lv95.e)}" placeholder="E" ${unlocked ? '' : 'disabled'} />
+          </label>
+          <label class="lv95-field">
+            <span>LV95 N</span>
+            <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" data-lv95-n="${idx}" value="${formatNum(p.lv95.n)}" placeholder="N" ${unlocked ? '' : 'disabled'} />
+          </label>
+          <label class="lv95-field lv95-field-span">
+            <span>Paste E, N (map.geo.admin.ch)</span>
+            <input type="text" class="lv95-pair-paste" spellcheck="false" autocomplete="off" data-lv95-pair="${idx}"
+              placeholder="2'598'784.10, 1'200'158.40"
+              ${unlocked ? '' : 'disabled'}
+              title="E and N in one line, comma-separated" />
+          </label>
+          <div class="lv95-capture-wrap">
+            <button class="ghost" type="button" data-capture="${idx}" ${unlocked ? '' : 'disabled'}>Capture from webapp</button>
+          </div>
+        </div>
+      `
+      view.pointsBody.appendChild(article)
+    })
+
+    updatePreviewButtons()
   }
 
   const loadActive = async () => {
@@ -63,8 +97,13 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
   }
 
   const openCaptureMode = (idx) => {
-    const captureUrl = `${getWebappBase()}?mode=capture`
+    const captureUrl = `${getWebappBase()}?mode=capture&capture=pin`
     captureWindow = window.open(captureUrl, 'feelvonroll-capture', 'width=1200,height=800')
+    if (!captureWindow) {
+      shell.setStatus('Popup blocked. Please allow popups for the admin site, then try again.', true)
+      window.open(captureUrl, '_blank', 'noopener')
+      return
+    }
 
     const handleMessage = (event) => {
       if (event.data && event.data.type === 'feelvonroll-capture') {
@@ -119,6 +158,22 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
     }
   }
 
+  function applyPairToRow(idx, pair) {
+    if (!pair) return
+    points[idx].lv95.e = pair.e
+    points[idx].lv95.n = pair.n
+    const row = view.pointsBody.querySelector(`[data-lv95-point="${idx}"]`)
+    if (row) {
+      const eIn = row.querySelector(`[data-lv95-e="${idx}"]`)
+      const nIn = row.querySelector(`[data-lv95-n="${idx}"]`)
+      const pIn = row.querySelector(`[data-lv95-pair="${idx}"]`)
+      if (eIn) eIn.value = formatNum(pair.e)
+      if (nIn) nIn.value = formatNum(pair.n)
+      if (pIn) pIn.value = ''
+    }
+    updatePreviewButtons()
+  }
+
   const bindEvents = () => {
     view.unlockBtn.addEventListener('click', unlock)
     view.previewBtn.addEventListener('click', preview)
@@ -129,14 +184,43 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
       if (!(el instanceof HTMLInputElement)) return
 
       const idxE = el.dataset.lv95E
-      const idxN = el.dataset.lv95N
       if (idxE !== undefined) {
-        points[Number(idxE)].lv95.e = el.value === '' ? null : parseFloat(el.value)
-        render()
+        const v = parseSwissNumber(el.value)
+        points[Number(idxE)].lv95.e = v
+        updatePreviewButtons()
+        return
       }
+
+      const idxN = el.dataset.lv95N
       if (idxN !== undefined) {
-        points[Number(idxN)].lv95.n = el.value === '' ? null : parseFloat(el.value)
-        render()
+        const v = parseSwissNumber(el.value)
+        points[Number(idxN)].lv95.n = v
+        updatePreviewButtons()
+        return
+      }
+
+      const idxPair = el.dataset.lv95Pair
+      if (idxPair !== undefined) {
+        const pair = parseSwissLv95Pair(el.value)
+        if (pair) applyPairToRow(Number(idxPair), pair)
+        else updatePreviewButtons()
+      }
+    })
+
+    view.pointsBody.addEventListener('paste', (e) => {
+      const el = e.target
+      if (!(el instanceof HTMLInputElement)) return
+      const idxPair = el.dataset.lv95Pair
+      if (idxPair === undefined) return
+      e.preventDefault()
+      const text = e.clipboardData?.getData('text/plain') ?? ''
+      const pair = parseSwissLv95Pair(text)
+      if (pair) {
+        applyPairToRow(Number(idxPair), pair)
+        shell.setStatus(`LV95 E/N pasted for point ${Number(idxPair) + 1}`, false)
+      } else {
+        el.value = text
+        shell.setStatus('Could not parse pasted text as E, N (use comma between values)', true)
       }
     })
 
@@ -157,4 +241,3 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
     },
   }
 }
-

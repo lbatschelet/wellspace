@@ -136,6 +136,11 @@ export function createStationsController({ state, views, api, questionnairesApi,
   const openCaptureMode = () => {
     const captureUrl = `${getWebappBase()}?mode=capture`
     captureWindow = window.open(captureUrl, 'feelvonroll-capture', 'width=1200,height=800')
+    if (!captureWindow) {
+      shell.setStatus('Popup blocked. Please allow popups for the admin site, then try again.', true)
+      window.open(captureUrl, '_blank', 'noopener')
+      return
+    }
 
     const handleMessage = (event) => {
       if (event.data && event.data.type === 'feelvonroll-capture') {

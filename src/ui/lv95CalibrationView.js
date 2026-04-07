@@ -20,8 +20,9 @@ export function createLv95CalibrationView() {
     </div>
 
     <p class="form-hint">
-      This is a one-time setup. Pick 3 points in the webapp (capture mode) and enter their LV95 coordinates (E/N).
-      Use Preview to validate RMS error before saving.
+      Pick 3 floor points in the webapp (Capture), then enter LV95 E/N per point. You can type or paste Swiss-formatted numbers
+      (e.g. <code>2'598'784.10</code>) or paste the pair from map.geo.admin.ch in one field: <code>2'598'784.10, 1'200'158.40</code>.
+      Use Preview to validate RMS before saving.
     </p>
 
     <div class="form-row" style="max-width:520px">
@@ -37,21 +38,7 @@ export function createLv95CalibrationView() {
       <p class="admin-toggle-hint">Updates stations.lv95_e/lv95_n from target_x/target_z using the saved calibration.</p>
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>World X</th>
-            <th>World Z</th>
-            <th>LV95 E</th>
-            <th>LV95 N</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="lv95PointsBody"></tbody>
-      </table>
-    </div>
+    <div id="lv95PointsBody" class="lv95-points" aria-label="Calibration points"></div>
 
     <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
       <div class="muted" id="lv95ActiveHint"></div>
