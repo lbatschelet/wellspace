@@ -1,4 +1,4 @@
--- Influence question type: checkboxes with optional per-option slider (-1..1 by default).
--- Stored in pin_answers.answer_text as JSON object: { "option_key": 0.35, ... }.
--- questions.type = 'influence'; options in question_options like multi.
--- No DDL change (questions.type is VARCHAR; "influence" fits).
+-- Influence and future custom question types: widen type column (was VARCHAR(16)).
+-- Safe to run on existing DBs; values like 'slider', 'multi', 'influence', 'text' stay valid.
+
+ALTER TABLE questions MODIFY COLUMN type VARCHAR(32) NOT NULL;
