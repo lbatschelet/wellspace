@@ -41,14 +41,15 @@ export function fetchOptions({ token, question_key }) {
   })
 }
 
-export function upsertOption({ token, option }) {
+export function upsertOption(params) {
+  const { token, ...rest } = params
   return requestJson(`${API_BASE}/admin_options.php`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ action: 'upsert', ...option }),
+    body: JSON.stringify({ action: 'upsert', ...rest }),
   })
 }
 
