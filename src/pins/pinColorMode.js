@@ -48,11 +48,8 @@ export function createPinColorMode({ state, legend, colorModeRow, form, pinGroup
     return getSliderColor(elements?.input?.value, colorQuestion.config)
   }
 
-  /** Set the --pin-accent CSS variable on the form. */
-  function updatePreviewColor() {
-    const color = getColorFromForm()
-    form.style.setProperty('--pin-accent', color.getStyle())
-  }
+  /** No-op: range inputs use neutral accent in CSS; map orbs still use getColorFromForm. */
+  function updatePreviewColor() {}
 
   /** Re-color all rendered pin orb meshes. */
   function refreshPinColors() {

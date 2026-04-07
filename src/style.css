@@ -288,7 +288,7 @@ canvas {
 .ui-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
   font-size: 0.85rem;
   padding: 28px 18px 18px;
   overflow-y: auto;
@@ -344,8 +344,9 @@ canvas {
   fill: none;
 }
 
+/* Neutral sliders — pin preview color only on map orbs, not on controls */
 .ui-form input[type='range'] {
-  accent-color: var(--pin-accent, #1f2937);
+  accent-color: #64748b;
   width: 100%;
 }
 
@@ -355,6 +356,13 @@ canvas {
 }
 
 .ui-form-group {
+  min-width: 0;
+}
+
+.ui-form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -378,10 +386,10 @@ canvas {
 .ui-form-influence {
   width: 100%;
   max-width: 100%;
-  margin-top: 10px;
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -390,8 +398,8 @@ canvas {
   flex-direction: row;
   align-items: flex-end;
   gap: 8px;
-  padding: 0 0 6px;
-  margin-top: 4px;
+  padding: 0 0 2px;
+  margin-top: 0;
 }
 
 .ui-influence-scale-header.is-collapsed {
@@ -411,39 +419,14 @@ canvas {
   box-sizing: border-box;
 }
 
-.ui-influence-track-legend {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 0.72rem;
-  color: #64748b;
-  margin: 0;
-  width: 100%;
-  min-width: 0;
-}
-
-.ui-influence-track-legend .ui-slider-legend-low,
-.ui-influence-track-legend .ui-slider-legend-high {
-  flex: 1 1 0;
-  min-width: 0;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-
 .ui-influence-row {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  padding: 8px 0;
-  min-height: 44px;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 2px 0;
+  min-height: 0;
   min-width: 0;
-}
-
-.ui-influence-row:last-child {
-  border-bottom: none;
 }
 
 .ui-influence-label-col {
@@ -454,7 +437,7 @@ canvas {
   max-width: 40%;
   min-width: 0;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .ui-influence-label-col input[type='checkbox'] {
@@ -497,29 +480,40 @@ canvas {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px 10px;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 .ui-form-reasons .ui-checkbox span {
   font-weight: 400;
 }
 
-.ui-slider-legend {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
+/* Legend above track: left label flush left, right label flush right */
+.ui-slider-legend,
+.ui-influence-track-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 10px;
+  align-items: start;
   font-size: 0.72rem;
   color: #64748b;
-  margin-top: 4px;
+  line-height: 1.25;
+  margin: 0 0 8px;
   min-width: 0;
 }
 
 .ui-slider-legend-low,
-.ui-slider-legend-high {
-  flex: 1 1 0;
+.ui-influence-track-legend .ui-slider-legend-low {
+  justify-self: start;
+  text-align: left;
   min-width: 0;
-  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.ui-slider-legend-high,
+.ui-influence-track-legend .ui-slider-legend-high {
+  justify-self: end;
+  text-align: right;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
@@ -535,7 +529,7 @@ canvas {
   border: 1px solid #e2e8f0;
   padding: 8px;
   font-family: inherit;
-  margin-top: 6px;
+  margin-top: 2px;
   width: 100%;
 }
 

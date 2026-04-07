@@ -29,15 +29,6 @@ export function renderQuestions(questions, formContent, questionElements) {
     let elements = { group, label, type: question.type, inputs: [] }
 
     if (question.type === 'slider') {
-      const input = document.createElement('input')
-      input.type = 'range'
-      input.name = question.key
-      input.min = question.config?.min ?? 0
-      input.max = question.config?.max ?? 1
-      input.step = question.config?.step ?? 0.01
-      input.value = getSliderDefault(question.config)
-      group.appendChild(input)
-
       const legend = document.createElement('div')
       legend.className = 'ui-slider-legend'
       const legendLow = document.createElement('span')
@@ -49,6 +40,15 @@ export function renderQuestions(questions, formContent, questionElements) {
       legend.appendChild(legendLow)
       legend.appendChild(legendHigh)
       group.appendChild(legend)
+
+      const input = document.createElement('input')
+      input.type = 'range'
+      input.name = question.key
+      input.min = question.config?.min ?? 0
+      input.max = question.config?.max ?? 1
+      input.step = question.config?.step ?? 0.01
+      input.value = getSliderDefault(question.config)
+      group.appendChild(input)
 
       elements = { ...elements, input, legendLow, legendHigh }
     }
