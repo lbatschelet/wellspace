@@ -48,5 +48,13 @@ echo "  OUT: $OUT_GLB"
 # Pin obj2gltf version for reproducible output.
 npx --yes obj2gltf@3.2.0 -i "$OBJ_FILE" -o "$OUT_GLB"
 
+# Post-process: prune/dedup/weld (+ optional simplify) to reduce draw/vertex load.
+# Keep it conservative by default; simplification can be enabled per run.
+TMP_GLB="${OUT_GLB%.glb}.opt.glb"
+node "$ROOT_DIR/tools/optimize_glb.mjs" "$OUT_GLB" "$TMP_GLB" --weld 0.0001
+if [[ -f "$TMP_GLB" ]]; then
+  mv -f "$TMP_GLB" "$OUT_GLB"
+fi
+
 echo "Done: $OUT_GLB"
 
