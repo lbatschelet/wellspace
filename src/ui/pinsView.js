@@ -53,8 +53,8 @@ export function createPinsView() {
         <span class="header-divider"></span>
         <button id="approveSelected" class="ghost" title="Mark selected pins as approved">Approve</button>
         <button id="pendingSelected" class="ghost" title="Mark selected pins as pending">Pending</button>
-        <button id="blockSelected" class="ghost" title="Mark selected pins as rejected">Reject</button>
-        <button id="deleteSelected" class="icon-btn danger" title="Delete selected pins">${icons.trash}</button>
+        <button id="blockSelected" class="ghost" title="Mark selected pins as rejected (irreversible in practice)">Reject</button>
+        <button id="deleteSelected" class="icon-btn danger" title="Delete selected pins (admins only, irreversible)">${icons.trash}</button>
       </div>
     </div>
     <div class="table-wrap">
@@ -63,13 +63,8 @@ export function createPinsView() {
           <tr>
             <th><input type="checkbox" id="selectAll" /></th>
             <th>ID</th>
-            <th>Floor</th>
             <th>Station</th>
             <th>Questionnaire</th>
-            <th>Wellbeing</th>
-            <th>Reasons</th>
-            <th>Group</th>
-            <th>Note</th>
             <th>Created</th>
             <th class="text-right">Status</th>
           </tr>

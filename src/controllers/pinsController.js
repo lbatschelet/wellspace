@@ -88,7 +88,11 @@ export function createPinsController({ state, views, api, shell, renderDashboard
     })
     approveSelected.addEventListener('click', () => actions.bulkUpdateApproval(1))
     pendingSelected.addEventListener('click', () => actions.bulkUpdateApproval(0))
-    blockSelected.addEventListener('click', () => actions.bulkUpdateApproval(-1))
+    blockSelected.addEventListener('click', () => {
+      const ok = window.confirm('Reject selected pins?\n\nThis is effectively irreversible. Use with care.')
+      if (!ok) return
+      actions.bulkUpdateApproval(-1)
+    })
     deleteSelected.addEventListener('click', actions.bulkDelete)
     selectAll.addEventListener('change', () => {
       const checked = selectAll.checked
@@ -96,6 +100,11 @@ export function createPinsController({ state, views, api, shell, renderDashboard
         input.checked = checked
       })
     })
+
+    // Hide delete button for non-admin users.
+    if (!state.isAdmin) {
+      deleteSelected.style.display = 'none'
+    }
   }
 
   return { bindEvents, loadPins, renderPins: renderer.renderPins }

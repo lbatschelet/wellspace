@@ -32,16 +32,22 @@ export function createPinsActions({ state, views, api, shell, render }) {
   }
 
   const bulkDelete = async () => {
+    if (!state.isAdmin) {
+      shell.setStatus('Admins only: delete is disabled', true)
+      return
+    }
     const ids = getSelectedIds()
     if (!ids.length) {
       shell.setStatus('No pins selected', true)
       return
     }
-    const confirmed = window.confirm(`Delete selected pins? (${ids.length})`)
+    const confirmed = window.confirm(
+      `Delete selected pins? (${ids.length})\n\nThis cannot be undone. Prefer “Reject” unless you really need to remove data.`
+    )
     if (!confirmed) return
     shell.setStatus('Deleting...', false)
     try {
-      await api.deletePins({ token: state.token, ids })
+      await api.deletePins({ token: state.token, ids, confirm: true })
       state.pins = state.pins.filter((pin) => !ids.includes(pin.id))
       render.renderPins()
       shell.setStatus(`Deleted (${ids.length})`, false)

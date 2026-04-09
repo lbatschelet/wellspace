@@ -1106,6 +1106,36 @@ button.error {
   overflow-x: auto;
 }
 
+.pin-details.is-hidden {
+  display: none;
+}
+
+.pin-details td {
+  background: #f8fafc;
+}
+
+.pin-details-inner {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 8px 16px;
+  padding: 8px 0;
+}
+
+.pin-details-inner .kv {
+  display: contents;
+}
+
+.pin-details-inner .k {
+  font-weight: 700;
+  color: #334155;
+}
+
+.pin-details-inner .v {
+  color: #475569;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

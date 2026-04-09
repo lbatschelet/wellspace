@@ -21,14 +21,14 @@ export function updatePinApprovalBulk({ token, ids, approved }) {
   })
 }
 
-export function deletePins({ token, ids }) {
+export function deletePins({ token, ids, confirm = false }) {
   return requestJson(`${API_BASE}/admin_pins.php`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ action: 'delete', ids }),
+    body: JSON.stringify({ action: 'delete', ids, confirm }),
   })
 }
 
