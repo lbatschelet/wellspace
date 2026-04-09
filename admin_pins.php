@@ -12,6 +12,12 @@ admin_handle_options('GET, POST, OPTIONS');
 try {
     [$config, $pdo, $payload] = admin_init($config);
     $userId = isset($payload['user_id']) ? intval($payload['user_id']) : null;
+    $isAdmin = isset($payload['is_admin']) ? intval((bool)$payload['is_admin']) : 0;
+    if (!$isAdmin && isset($payload['user_id'])) {
+        $adminCheck = $pdo->prepare('SELECT is_admin FROM admin_users WHERE id = :id');
+        $adminCheck->execute(['id' => intval($payload['user_id'])]);
+        $isAdmin = intval($adminCheck->fetchColumn()) === 1 ? 1 : 0;
+    }
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $action = isset($_GET['action']) ? trim($_GET['action']) : '';
@@ -72,8 +78,15 @@ try {
         }
 
         if ($action === 'delete') {
+            if (!$isAdmin) {
+                json_error('Forbidden', 403);
+            }
             if (!$ids) {
                 json_error('Missing ids', 400);
+            }
+            $confirm = isset($data['confirm']) ? intval((bool)$data['confirm']) : 0;
+            if (!$confirm) {
+                json_error('Missing confirm flag', 400);
             }
 
             json_response(admin_pins_delete($pdo, $userId, $ids));
