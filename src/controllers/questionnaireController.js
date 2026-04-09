@@ -119,9 +119,15 @@ export function createQuestionnaireController({ state, views, api, shell, render
     shell.setStatus('Saving...', false)
     try {
       await actions.saveSingleQuestion(question, translationsByLang)
-      closeModal()
-      shell.setStatus('Question created', false)
       await actions.reloadAndRender()
+
+      if (type === 'multi' || type === 'influence') {
+        openModalForEdit(key)
+        shell.setStatus('Question created — add options below', false)
+      } else {
+        closeModal()
+        shell.setStatus('Question created', false)
+      }
     } catch (error) {
       shell.setStatus(error.message, true)
     }
@@ -311,6 +317,7 @@ export function createQuestionnaireController({ state, views, api, shell, render
       render.renderCreateFormVisibility()
       if (!editingQuestionKey) {
         render.renderNewQuestionTranslations(v.newQuestionType.value)
+        render.renderCreateOptionsHint(type)
       }
     })
     views.questionnaireView.addQuestionButton.addEventListener('click', handleModalSave)

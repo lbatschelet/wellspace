@@ -105,6 +105,7 @@ export function createQuestionnaireRender({ state, views }) {
 
     renderCreateFormVisibility()
     renderNewQuestionTranslations(v.newQuestionType.value)
+    renderCreateOptionsHint(v.newQuestionType.value)
   }
 
   /* ── Translations in edit modal ─────────────────────────── */
@@ -331,6 +332,19 @@ export function createQuestionnaireRender({ state, views }) {
     })
   }
 
+  const renderCreateOptionsHint = (type) => {
+    const container = questionnaireView.questionModalOptions
+    container.innerHTML = ''
+    if (type !== 'multi' && type !== 'influence') return
+    const hint = document.createElement('div')
+    hint.className = 'options-section'
+    hint.innerHTML = `
+      <div class="section-title">Options (key + label per language)</div>
+      <p class="options-hint">Save the question first — you can then add options immediately.</p>
+    `
+    container.appendChild(hint)
+  }
+
   return {
     renderQuestionsList,
     renderCreateFormVisibility,
@@ -338,6 +352,7 @@ export function createQuestionnaireRender({ state, views }) {
     populateModalForEdit,
     populateModalForCreate,
     renderEditOptions,
+    renderCreateOptionsHint,
   }
 }
 

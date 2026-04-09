@@ -912,6 +912,12 @@ button.error {
   color: #334155;
 }
 
+.options-hint {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 .options-table {
   width: 100%;
   border-collapse: collapse;
