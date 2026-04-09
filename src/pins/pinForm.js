@@ -41,6 +41,15 @@ export function renderQuestions(questions, formContent, questionElements) {
       legend.appendChild(legendHigh)
       group.appendChild(legend)
 
+      const sliderWrap = document.createElement('div')
+      sliderWrap.className = 'ui-slider-wrap'
+      const midBar = document.createElement('div')
+      midBar.className = 'ui-slider-midbar'
+      midBar.innerHTML = `
+        <div class="ui-slider-midfill neg" aria-hidden="true"></div>
+        <div class="ui-slider-midfill pos" aria-hidden="true"></div>
+        <div class="ui-slider-midcenter" aria-hidden="true"></div>
+      `
       const input = document.createElement('input')
       input.type = 'range'
       input.name = question.key
@@ -48,9 +57,26 @@ export function renderQuestions(questions, formContent, questionElements) {
       input.max = question.config?.max ?? 1
       input.step = question.config?.step ?? 0.01
       input.value = getSliderDefault(question.config)
-      group.appendChild(input)
+      sliderWrap.appendChild(midBar)
+      sliderWrap.appendChild(input)
+      group.appendChild(sliderWrap)
 
-      elements = { ...elements, input, legendLow, legendHigh }
+      const syncMidFill = () => {
+        const min = Number(input.min)
+        const max = Number(input.max)
+        const v = Number(input.value)
+        const t = (max === min) ? 0.5 : (v - min) / (max - min)
+        const delta = t - 0.5
+        const pct = Math.round(Math.min(0.5, Math.abs(delta)) * 100)
+        const neg = midBar.querySelector('.ui-slider-midfill.neg')
+        const pos = midBar.querySelector('.ui-slider-midfill.pos')
+        if (neg) neg.style.width = delta < 0 ? `${pct}%` : '0%'
+        if (pos) pos.style.width = delta > 0 ? `${pct}%` : '0%'
+      }
+      input.addEventListener('input', syncMidFill)
+      syncMidFill()
+
+      elements = { ...elements, input, legendLow, legendHigh, syncMidFill }
     }
 
     if (question.type === 'multi') {
@@ -187,7 +213,7 @@ export function renderQuestions(questions, formContent, questionElements) {
         row.appendChild(left)
         row.appendChild(sliderWrap)
         wrap.appendChild(row)
-        optionRows.push({ key: option.key, checkbox, slider, sliderWrap, cfg })
+        optionRows.push({ key: option.key, checkbox, slider, sliderWrap, cfg, syncMidFill })
       })
       group.appendChild(wrap)
       elements = { ...elements, optionRows, influenceScaleHeader: scaleHeader }
@@ -285,6 +311,7 @@ export function setQuestionValue(key, value, questions, questionElements) {
     const question = questions.find((item) => item.key === key)
     if (question?.type === 'slider') {
       elements.input.value = fromPercentValue(value, question.config)
+      if (typeof elements.syncMidFill === 'function') elements.syncMidFill()
       return
     }
     elements.input.value = value ?? ''
@@ -305,6 +332,7 @@ export function setQuestionValue(key, value, questions, questionElements) {
         row.slider.disabled = true
         row.sliderWrap.classList.add('is-collapsed')
       }
+      if (typeof row.syncMidFill === 'function') row.syncMidFill()
     })
     if (elements.influenceScaleHeader) {
       const anyChecked = elements.optionRows.some((r) => r.checkbox.checked)

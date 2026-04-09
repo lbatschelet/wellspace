@@ -346,28 +346,28 @@ async function loadLanguages() {
 }
 
 async function loadQuestions(language) {
-  // Same order as Admin → „default“ questionnaire (slot order), not raw questions.sort
+  let questions = null
+
   try {
-    const questions = await fetchQuestionnaire({ key: 'default', lang: language })
-    // If the questionnaire endpoint succeeds, trust it even if empty.
-    // Falling back to /questions.php can show questions that are not in the questionnaire.
-    if (Array.isArray(questions)) {
-      pinSystem.setQuestions(questions)
-      return
-    }
-  } catch {
-    // fall through
+    questions = await fetchQuestionnaire({ key: 'default', lang: language })
+  } catch (err) {
+    console.warn('[feelvonRoll] fetchQuestionnaire failed:', err)
   }
-  try {
-    const questions = await fetchQuestions({ lang: language })
-    if (Array.isArray(questions) && questions.length) {
-      pinSystem.setQuestions(questions)
-      return
+
+  if (!Array.isArray(questions) || !questions.length) {
+    try {
+      questions = await fetchQuestions({ lang: language })
+    } catch (err) {
+      console.warn('[feelvonRoll] fetchQuestions fallback failed:', err)
     }
-  } catch {
-    // fall back to defaults
   }
-  pinSystem.setQuestions(getFallbackQuestions())
+
+  if (!Array.isArray(questions) || !questions.length) {
+    console.warn('[feelvonRoll] No questions from API, using hardcoded fallback')
+    questions = getFallbackQuestions()
+  }
+
+  pinSystem.setQuestions(questions, 'default')
 }
 
 // ── About content ────────────────────────────────────────────
@@ -555,11 +555,11 @@ async function bootStationMode(key) {
     try {
       const questions = await fetchQuestionnaire({ key: questionnaireKey, lang })
       if (Array.isArray(questions)) {
-        pinSystem.setQuestions(questions)
+        pinSystem.setQuestions(questions, questionnaireKey)
         return
       }
-    } catch {
-      // Fall through to default questionnaire
+    } catch (err) {
+      console.warn('[feelvonRoll] Station questionnaire failed:', err)
     }
   } catch (error) {
     console.warn('[feelvonRoll] Failed to load station:', error)

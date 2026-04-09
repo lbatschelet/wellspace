@@ -284,7 +284,16 @@ export function createPinSystem({
 
     try {
       const saved = await createPin(payload)
-      finalizePendingPin(saved)
+      // Some backends return the created pin without hydrated generic_answers/asked_questions.
+      // Ensure local-session pending pins render identically to list-loaded pins.
+      const hydrated = saved && typeof saved === 'object'
+        ? {
+          ...saved,
+          generic_answers: saved.generic_answers ?? payload.generic_answers ?? saved.generic_answers,
+          asked_questions: saved.asked_questions ?? (state.questions || []).map((q) => q.key).filter(Boolean),
+        }
+        : saved
+      finalizePendingPin(hydrated)
       await loadPins()
       closeForm()
       state.pinMode = false
@@ -349,7 +358,7 @@ export function createPinSystem({
   }
 
   // ── Questions ───────────────────────────────────────────────
-  function setQuestions(nextQuestions) {
+  function setQuestions(nextQuestions, questionnaireKey) {
     state.questions = Array.isArray(nextQuestions) ? [...nextQuestions].sort(bySort) : []
     state.questionElements = new Map()
     state.optionsByQuestion = new Map()
@@ -358,6 +367,9 @@ export function createPinSystem({
         state.optionsByQuestion.set(question.key, question.options)
       }
     })
+    if (questionnaireKey) {
+      activeQuestionnaireKey = questionnaireKey
+    }
     colorMode.updateColorQuestions()
     renderFormQuestions(state.questions, formContent, state.questionElements)
     applyQuestionLabels(state, uiRefs, colorMode.updateColorModeButtons)
@@ -723,11 +735,17 @@ export function createPinSystem({
       renderPinView(pin)
     } else {
       disableQuestions(false, state.questionElements)
-      // Influence questions must start collapsed/disabled unless user explicitly enables them.
-      // `form.reset()` doesn't reliably reset our dynamically wired influence rows.
-      state.questions
-        .filter((q) => q && q.type === 'influence')
-        .forEach((q) => setQuestionValue(q.key, {}, state.questions, state.questionElements))
+      // form.reset() already restores slider values to their defaults,
+      // but doesn't fire input events — sync all midfill bars manually.
+      state.questions.forEach((q) => {
+        const els = state.questionElements.get(q.key)
+        if (!els) return
+        if (q.type === 'influence') {
+          setQuestionValue(q.key, {}, state.questions, state.questionElements)
+        } else if (q.type === 'slider' && typeof els.syncMidFill === 'function') {
+          els.syncMidFill()
+        }
+      })
       submitButton.disabled = false
       submitButton.classList.remove('is-hidden')
       formContent.classList.remove('is-hidden')
