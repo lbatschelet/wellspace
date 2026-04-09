@@ -49,9 +49,15 @@ echo "  OUT: $OUT_GLB"
 npx --yes obj2gltf@3.2.0 -i "$OBJ_FILE" -o "$OUT_GLB"
 
 # Post-process: prune/dedup/weld (+ optional simplify) to reduce draw/vertex load.
-# Keep it conservative by default; simplification can be enabled per run.
+# Simplify is controlled via env var:
+#   SIMPLIFY_RATIO=0.65 ./tools/convert_floor_obj_to_glb.sh floor_0
+# Ratio: 0..1 (e.g. 0.65 keeps ~65% triangles). Lower = faster, more loss.
 TMP_GLB="${OUT_GLB%.glb}.opt.glb"
-node "$ROOT_DIR/tools/optimize_glb.mjs" "$OUT_GLB" "$TMP_GLB" --weld 0.0001
+OPT_ARGS=(--weld 0.0001)
+if [[ -n "${SIMPLIFY_RATIO:-}" ]]; then
+  OPT_ARGS+=(--simplify "$SIMPLIFY_RATIO")
+fi
+node "$ROOT_DIR/tools/optimize_glb.mjs" "$OUT_GLB" "$TMP_GLB" "${OPT_ARGS[@]}"
 if [[ -f "$TMP_GLB" ]]; then
   mv -f "$TMP_GLB" "$OUT_GLB"
 fi
