@@ -12,6 +12,8 @@ export function createTitleBar() {
   const ui = document.createElement('h1')
   ui.className = 'ui ui-title'
   ui.innerHTML = '<em>feel</em><strong>vonRoll</strong>'
+  ui.setAttribute('role', 'button')
+  ui.tabIndex = 0
 
   return { ui }
 }

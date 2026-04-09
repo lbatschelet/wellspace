@@ -319,6 +319,23 @@ export function createPinSystem({
   // ── Public API ──────────────────────────────────────────────
   return {
     ui: panel,
+    resetUi: () => {
+      // If modal is open, closeForm handles pinMode + pending cleanup.
+      if (backdrop.classList.contains('is-visible')) {
+        closeForm()
+        return
+      }
+      // Otherwise, ensure we exit pin-mode and remove any pending draft mesh.
+      removePendingPin()
+      state.viewPin = null
+      clearSelectedHighlight()
+      state.pinMode = false
+      toggleButton.classList.remove('active')
+      toggleButton.textContent = t('ui.pinToggleIdle')
+      controls.enabled = true
+      document.body.classList.remove('pin-mode')
+      needRender()
+    },
     setActiveFloor: (floorIndex) => {
       state.activeFloor = floorIndex
       renderPins()

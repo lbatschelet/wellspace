@@ -987,8 +987,9 @@ button:focus-visible {
   font-weight: 400;
   letter-spacing: -0.03em;
   color: rgba(15, 23, 42, 0.9);
-  pointer-events: none;
+  pointer-events: auto;
   user-select: none;
+  cursor: pointer;
 }
 
 .ui-title em {

@@ -179,6 +179,35 @@ app.appendChild(floorSelectorUi)
 const titleBar = createTitleBar()
 app.appendChild(titleBar.ui)
 
+// ── Home view (title click reset) ────────────────────────────
+// Default home view: whatever the app starts with.
+const homeView = {
+  floorIndex: selectedFloor,
+  camera: camera.position.clone(),
+  target: controls.target.clone(),
+}
+
+function applyHomeView() {
+  // Reset pin UI state first (close modals, exit pin mode).
+  pinSystem.resetUi?.()
+
+  setSelectedFloor(Number(homeView.floorIndex ?? 0))
+  controls.target.copy(homeView.target)
+  camera.position.copy(homeView.camera)
+  controls.update()
+  scheduleFrame()
+}
+
+titleBar.ui.addEventListener('click', (e) => {
+  e.preventDefault()
+  applyHomeView()
+})
+titleBar.ui.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return
+  e.preventDefault()
+  applyHomeView()
+})
+
 // ── Language switcher ───────────────────────────────────────
 const languageSwitcher = createLanguageSwitcher({
   languages: [],
@@ -542,6 +571,11 @@ async function bootStationMode(key) {
       camera.position.set(station.camera.x, currentTargetY + camOffsetY, station.camera.z)
       controls.update()
       scheduleFrame()
+
+      // Station mode "home": title click returns to the station view.
+      homeView.floorIndex = targetFloor
+      homeView.target.copy(controls.target)
+      homeView.camera.copy(camera.position)
     }
 
     // Store global color questions before setting station-specific ones
