@@ -4,6 +4,8 @@ import { NodeIO } from '@gltf-transform/core'
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions'
 import {
   dedup,
+  flatten,
+  join,
   prune,
   weld,
   simplify,
@@ -51,15 +53,25 @@ async function main() {
     prune(),
   )
 
+  // Big win for SweetHome exports: flatten scene graph and join primitives to reduce drawcalls.
+  // KeepNamed=false is OK for our static floors (no semantic node names needed at runtime).
+  await doc.transform(
+    flatten(),
+    join({ keepNamed: false, keepMeshes: false }),
+    prune(),
+  )
+
   // Optional: geometry simplification (can be a big win for SweetHome exports).
   // This uses meshoptimizer under the hood.
   if (simplifyRatio != null) {
-    const ratio = THREE_CLAMP(simplifyRatio, 0.05, 1)
+    const ratio = THREE_CLAMP(simplifyRatio, 0.01, 1)
     try {
       // Ensure wasm module is ready.
       if (MeshoptSimplifier?.ready) await MeshoptSimplifier.ready
       await doc.transform(
         simplify({ ratio, simplifier: MeshoptSimplifier }),
+        // Joining again after simplification can further reduce primitives.
+        join({ keepNamed: false, keepMeshes: false }),
         prune(),
       )
       console.log(`[optimize_glb] simplified ratio=${ratio}`)
