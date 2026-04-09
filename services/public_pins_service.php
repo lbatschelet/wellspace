@@ -29,7 +29,10 @@ function public_pins_list(PDO $pdo, ?int $floor): array
     );
     $stmt->execute($params);
     $rows = $stmt->fetchAll();
-    return array_map('normalize_pin_row', $rows);
+    $pins = array_map('normalize_pin_row', $rows);
+    public_pins_attach_generic_answers($pdo, $pins);
+    public_pins_attach_asked_questions($pdo, $pins);
+    return $pins;
 }
 
 /**
@@ -96,9 +99,12 @@ function public_pins_create(PDO $pdo, array $data): array
         $stationKey = null;
     }
 
+    $questionnaireKey = public_pins_resolve_questionnaire_key($pdo, $stationKey);
+    $askedSelection = public_pins_resolve_asked_selection($pdo, $questionnaireKey);
+
     $stmt = $pdo->prepare(
-        'INSERT INTO pins (floor_index, position_x, position_y, position_z, wellbeing, note, group_key, station_key)
-         VALUES (:floor_index, :position_x, :position_y, :position_z, :wellbeing, :note, :group_key, :station_key)'
+        'INSERT INTO pins (floor_index, position_x, position_y, position_z, wellbeing, note, group_key, station_key, questionnaire_key)
+         VALUES (:floor_index, :position_x, :position_y, :position_z, :wellbeing, :note, :group_key, :station_key, :questionnaire_key)'
     );
     $stmt->execute([
         'floor_index' => $floorIndex,
@@ -109,9 +115,14 @@ function public_pins_create(PDO $pdo, array $data): array
         'note' => $note,
         'group_key' => $groupKey,
         'station_key' => $stationKey,
+        'questionnaire_key' => $questionnaireKey,
     ]);
 
     $id = $pdo->lastInsertId();
+
+    // Persist asked question selection (pool resolution snapshot)
+    public_pins_store_asked_selection($pdo, intval($id), $questionnaireKey, $askedSelection);
+
     if (!empty($reasons)) {
         $insert = $pdo->prepare(
             'INSERT INTO pin_reasons (pin_id, question_key, reason_key)
@@ -142,7 +153,11 @@ function public_pins_create(PDO $pdo, array $data): array
     );
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
-    return normalize_pin_row($row);
+    $pin = normalize_pin_row($row);
+    $tmp = $pin ? [$pin] : [];
+    public_pins_attach_generic_answers($pdo, $tmp);
+    public_pins_attach_asked_questions($pdo, $tmp);
+    return $pin;
 }
 
 /**
@@ -201,6 +216,162 @@ function public_pins_store_generic_answers(PDO $pdo, int $pinId, array $genericA
             'answer_text' => $answerText,
             'answer_numeric' => $answerNumeric,
         ]);
+    }
+}
+
+/**
+ * Resolves the questionnaire key snapshot for a pin submission.
+ * - If station has questionnaire configured: use that.
+ * - Else: default.
+ */
+function public_pins_resolve_questionnaire_key(PDO $pdo, ?string $stationKey): string
+{
+    if (!$stationKey) {
+        return 'default';
+    }
+    $stmt = $pdo->prepare(
+        'SELECT q.questionnaire_key
+         FROM stations s
+         LEFT JOIN questionnaires q ON q.id = s.questionnaire_id
+         WHERE s.station_key = :k
+         LIMIT 1'
+    );
+    $stmt->execute(['k' => $stationKey]);
+    $key = $stmt->fetchColumn();
+    if (!$key || !is_string($key) || trim($key) === '') {
+        return 'default';
+    }
+    return trim($key);
+}
+
+/**
+ * Attaches generic answers from pin_answers as `generic_answers` on each pin.
+ *
+ * @param PDO   $pdo
+ * @param array $pins array of normalized pin arrays (by reference)
+ */
+function public_pins_attach_generic_answers(PDO $pdo, array &$pins): void
+{
+    if (empty($pins)) return;
+    $ids = [];
+    foreach ($pins as $p) {
+        $id = $p['id'] ?? null;
+        if (is_int($id) && $id > 0) $ids[] = $id;
+    }
+    if (empty($ids)) return;
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT pin_id, question_key, answer_text, answer_numeric
+         FROM pin_answers
+         WHERE pin_id IN ($placeholders)"
+    );
+    $stmt->execute($ids);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $byPin = [];
+    foreach ($rows as $r) {
+        $pinId = intval($r['pin_id'] ?? 0);
+        if ($pinId <= 0) continue;
+        $qKey = (string)($r['question_key'] ?? '');
+        if ($qKey === '') continue;
+        $val = null;
+        if (isset($r['answer_text']) && $r['answer_text'] !== null && $r['answer_text'] !== '') {
+            $val = $r['answer_text'];
+        } elseif (isset($r['answer_numeric']) && $r['answer_numeric'] !== null && $r['answer_numeric'] !== '') {
+            $val = floatval($r['answer_numeric']);
+        }
+        if (!isset($byPin[$pinId])) $byPin[$pinId] = [];
+        $byPin[$pinId][$qKey] = $val;
+    }
+
+    foreach ($pins as &$p) {
+        $pid = $p['id'] ?? null;
+        if (!is_int($pid)) continue;
+        $p['generic_answers'] = $byPin[$pid] ?? new stdClass();
+    }
+}
+
+/**
+ * Resolves asked question selection for questionnaire pools (server-side).
+ *
+ * @return array<int, array{ id:int, sort:int, mode:string, pool_count:int, required:int, questions:array, selected:array }>
+ */
+function public_pins_resolve_asked_selection(PDO $pdo, string $questionnaireKey): array
+{
+    require_once __DIR__ . '/questionnaire_resolver_service.php';
+    return resolve_questionnaire_selection($pdo, $questionnaireKey);
+}
+
+/**
+ * Stores asked question selection snapshot for a pin.
+ *
+ * @param array $resolvedSlots output of resolve_questionnaire_selection
+ */
+function public_pins_store_asked_selection(PDO $pdo, int $pinId, string $questionnaireKey, array $resolvedSlots): void
+{
+    if (empty($resolvedSlots)) return;
+    $stmt = $pdo->prepare(
+        'INSERT INTO pin_questionnaire_questions (pin_id, questionnaire_key, slot_id, slot_sort, slot_mode, question_key)
+         VALUES (:pin_id, :questionnaire_key, :slot_id, :slot_sort, :slot_mode, :question_key)'
+    );
+    foreach ($resolvedSlots as $slot) {
+        $slotId = isset($slot['id']) ? intval($slot['id']) : null;
+        $sort = isset($slot['sort']) ? intval($slot['sort']) : 0;
+        $mode = isset($slot['mode']) ? (string)$slot['mode'] : 'fixed';
+        $selected = isset($slot['selected']) && is_array($slot['selected']) ? $slot['selected'] : [];
+        foreach ($selected as $qKey) {
+            if (!is_string($qKey) || trim($qKey) === '') continue;
+            $stmt->execute([
+                'pin_id' => $pinId,
+                'questionnaire_key' => $questionnaireKey,
+                'slot_id' => $slotId,
+                'slot_sort' => $sort,
+                'slot_mode' => $mode,
+                'question_key' => trim($qKey),
+            ]);
+        }
+    }
+}
+
+/**
+ * Attaches asked question keys as `asked_questions` on each pin.
+ *
+ * @param PDO   $pdo
+ * @param array $pins array of normalized pin arrays (by reference)
+ */
+function public_pins_attach_asked_questions(PDO $pdo, array &$pins): void
+{
+    if (empty($pins)) return;
+    $ids = [];
+    foreach ($pins as $p) {
+        $id = $p['id'] ?? null;
+        if (is_int($id) && $id > 0) $ids[] = $id;
+    }
+    if (empty($ids)) return;
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT pin_id, question_key
+         FROM pin_questionnaire_questions
+         WHERE pin_id IN ($placeholders)
+         ORDER BY slot_sort ASC, question_key ASC"
+    );
+    $stmt->execute($ids);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $byPin = [];
+    foreach ($rows as $r) {
+        $pid = intval($r['pin_id'] ?? 0);
+        $qKey = (string)($r['question_key'] ?? '');
+        if ($pid <= 0 || $qKey === '') continue;
+        $byPin[$pid][] = $qKey;
+    }
+
+    foreach ($pins as &$p) {
+        $pid = $p['id'] ?? null;
+        if (!is_int($pid)) continue;
+        $p['asked_questions'] = $byPin[$pid] ?? [];
     }
 }
 

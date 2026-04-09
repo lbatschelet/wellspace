@@ -34,6 +34,25 @@ try {
             fclose($output);
             exit;
         }
+        if ($action === 'export_csv_long') {
+            $rows = admin_pins_export_long_rows($pdo);
+            $headers = admin_pins_export_long_header_keys();
+            $timestamp = date('Y-m-d_His');
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="pins_long_' . $timestamp . '.csv"');
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, $headers);
+            foreach ($rows as $row) {
+                $line = [];
+                foreach ($headers as $h) {
+                    $line[] = array_key_exists($h, $row) ? $row[$h] : '';
+                }
+                fputcsv($output, $line);
+            }
+            fclose($output);
+            exit;
+        }
         json_response(admin_pins_list($pdo));
     }
 

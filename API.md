@@ -25,6 +25,9 @@ Response:
     "reasons": ["licht", "ruhe"],
     "note": "string",
     "group_key": "staff",
+    "station_key": "eg-01",
+    "questionnaire_key": "default",
+    "generic_answers": { "some_question": "value" },
     "approved": 1,
     "created_at": "2026-01-01 12:00:00"
   }

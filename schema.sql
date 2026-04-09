@@ -17,9 +17,27 @@ CREATE TABLE IF NOT EXISTS pins (
   note TEXT NOT NULL,
   group_key VARCHAR(64) DEFAULT NULL,
   station_key VARCHAR(64) DEFAULT NULL,
+  questionnaire_key VARCHAR(64) NOT NULL DEFAULT 'default',
   approved TINYINT(1) NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ── Pin Questionnaire Questions (asked question snapshot) ───────────────────
+
+CREATE TABLE IF NOT EXISTS pin_questionnaire_questions (
+  pin_id INT NOT NULL,
+  questionnaire_key VARCHAR(64) NOT NULL,
+  slot_id INT DEFAULT NULL,
+  slot_sort INT NOT NULL DEFAULT 0,
+  slot_mode ENUM('fixed', 'pool') NOT NULL DEFAULT 'fixed',
+  question_key VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (pin_id, question_key),
+  INDEX idx_pqq_pin (pin_id),
+  INDEX idx_pqq_questionnaire (questionnaire_key),
+  FOREIGN KEY (pin_id) REFERENCES pins(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_key) REFERENCES questions(question_key) ON DELETE CASCADE
 );
 
 -- ── Languages ───────────────────────────────────────────────────────────────

@@ -41,6 +41,19 @@ function resolve_questionnaire(PDO $pdo, string $questionnaireKey, string $lang)
     return assemble_question_list($resolvedSlots, $questions, $optionsByQuestion, $translations);
 }
 
+/**
+ * Resolves a questionnaire into the concrete asked question selection.
+ * Used to persist pool selection per pin (scientific transparency).
+ *
+ * @return array<int, array{ id:int, sort:int, mode:string, pool_count:int, required:int, questions:array, selected:array }>
+ */
+function resolve_questionnaire_selection(PDO $pdo, string $questionnaireKey): array
+{
+    $questionnaire = load_questionnaire($pdo, $questionnaireKey);
+    $slots = load_slots($pdo, intval($questionnaire['id']));
+    return resolve_slots($slots);
+}
+
 // ── Internal: load questionnaire ────────────────────────────────
 
 /**
