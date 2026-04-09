@@ -45,6 +45,7 @@ export function initApp({ state, views }) {
     updatePinApprovalBulk: api.updatePinApprovalBulk,
     deletePins: api.deletePins,
     exportPinsCsv: api.exportPinsCsv,
+    fetchQuestions: api.fetchQuestions,
   }
   const questionnaireApi = {
     fetchLanguages: api.fetchLanguages,
@@ -52,6 +53,7 @@ export function initApp({ state, views }) {
     fetchOptions: api.fetchOptions,
     fetchTranslations: api.fetchTranslations,
     upsertQuestion: api.upsertQuestion,
+    deleteQuestion: api.deleteQuestion,
     upsertTranslation: api.upsertTranslation,
     upsertOption: api.upsertOption,
     deleteOption: api.deleteOption,

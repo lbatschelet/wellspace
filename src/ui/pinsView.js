@@ -29,8 +29,15 @@ export function createPinsView() {
         <option value="100">100 per page</option>
       </select>
       <button id="reloadPins" class="icon-btn-ghost" title="Reload pin list">${icons.reload}</button>
-      <button id="exportPinsCsv" class="ghost" title="Download pin data as CSV">Export CSV</button>
-      <button id="exportPinsCsvLong" class="ghost" title="Download detailed pin answer data as CSV (one row per question)">Export CSV (Long)</button>
+      <div class="split-btn">
+        <button id="exportPinsCsv" class="ghost" title="Download pin data as CSV">Export CSV</button>
+        <button id="exportPinsCsvMenu" class="ghost split-btn-caret" title="More export options" aria-haspopup="menu" aria-expanded="false">
+          ${icons.chevronDown}
+        </button>
+        <div id="exportPinsCsvMenuPanel" class="split-btn-menu" role="menu" aria-label="Export options">
+          <button id="exportPinsCsvLong" type="button" role="menuitem" title="Download detailed pin answer data as CSV (one row per question)">Export CSV (Long)</button>
+        </div>
+      </div>
     </div>
   `
 
@@ -65,6 +72,7 @@ export function createPinsView() {
             <th>ID</th>
             <th>Station</th>
             <th>Questionnaire</th>
+            <th>Text answers</th>
             <th>Created</th>
             <th class="text-right">Status</th>
           </tr>
@@ -80,6 +88,8 @@ export function createPinsView() {
     reloadButton: toolsCard.querySelector('#reloadPins'),
     exportCsvButton: toolsCard.querySelector('#exportPinsCsv'),
     exportCsvLongButton: toolsCard.querySelector('#exportPinsCsvLong'),
+    exportCsvMenuButton: toolsCard.querySelector('#exportPinsCsvMenu'),
+    exportCsvMenuPanel: toolsCard.querySelector('#exportPinsCsvMenuPanel'),
     pageSizeSelect: toolsCard.querySelector('#pageSizeSelect'),
     firstPageButton: tableCard.querySelector('#firstPage'),
     prevPageButton: tableCard.querySelector('#prevPage'),

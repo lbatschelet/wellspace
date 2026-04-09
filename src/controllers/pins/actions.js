@@ -41,9 +41,12 @@ export function createPinsActions({ state, views, api, shell, render }) {
       shell.setStatus('No pins selected', true)
       return
     }
-    const confirmed = window.confirm(
-      `Delete selected pins? (${ids.length})\n\nThis cannot be undone. Prefer “Reject” unless you really need to remove data.`
-    )
+    const confirmed = await views.confirmDialog.confirm({
+      title: `Delete pins? (${ids.length})`,
+      message: 'This cannot be undone. Prefer “Reject” unless you really need to remove data.',
+      okLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    })
     if (!confirmed) return
     shell.setStatus('Deleting...', false)
     try {

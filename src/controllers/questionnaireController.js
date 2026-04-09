@@ -191,7 +191,13 @@ export function createQuestionnaireController({ state, views, api, shell, render
   /* ── Delete question ────────────────────────────────────── */
 
   const handleDeleteQuestion = async (questionKey) => {
-    if (!window.confirm(`Delete question "${questionKey}"?`)) return
+    const confirmed = await views.confirmDialog?.confirm({
+      title: `Delete question "${questionKey}"?`,
+      message: 'This cannot be undone.',
+      okLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    })
+    if (!confirmed) return
     shell.setStatus('Deleting...', false)
     try {
       await actions.deleteQuestion(questionKey)
@@ -231,7 +237,13 @@ export function createQuestionnaireController({ state, views, api, shell, render
     if (!row) return
     const question_key = row.dataset.questionKey
     const option_key = row.dataset.optionKey
-    if (!window.confirm('Delete this option?')) return
+    const confirmed = await views.confirmDialog?.confirm({
+      title: 'Delete this option?',
+      message: 'This cannot be undone.',
+      okLabel: 'Delete',
+      cancelLabel: 'Cancel',
+    })
+    if (!confirmed) return
     try {
       await api.deleteOption({ token: state.token, question_key, option_key })
       await data.loadOptions()

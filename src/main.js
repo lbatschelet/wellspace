@@ -73,6 +73,7 @@ async function bootAdminApp() {
   const { createUserModal } = await import('./ui/userModal')
   const { createProfileModal } = await import('./ui/profileModal')
   const { createUnsavedDialog } = await import('./ui/unsavedDialog')
+  const { createConfirmDialog } = await import('./ui/confirmDialog')
   const { createFooter } = await import('./ui/footer')
   const { initApp } = await import('./app/app')
 
@@ -130,6 +131,9 @@ async function bootAdminApp() {
   const unsavedDialog = createUnsavedDialog()
   document.body.appendChild(unsavedDialog.element)
 
+  const confirmDialog = createConfirmDialog()
+  document.body.appendChild(confirmDialog.element)
+
   const footer = createFooter()
   layout.appendChild(footer.element)
 
@@ -151,6 +155,7 @@ async function bootAdminApp() {
     userModal,
     profileModal,
     unsavedDialog,
+    confirmDialog,
     status,
     pages,
   }
