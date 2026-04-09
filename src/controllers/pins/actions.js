@@ -72,5 +72,27 @@ export function createPinsActions({ state, views, api, shell, render }) {
     }
   }
 
-  return { bulkUpdateApproval, bulkDelete, exportCsv }
+  const exportCsvLong = async () => {
+    shell.setStatus('Exporting CSV (Long)...', false)
+    try {
+      const { blob } = await api.exportPinsCsvLong({ token: state.token })
+      const now = new Date()
+      const date = String(now.getFullYear())
+        + String(now.getMonth() + 1).padStart(2, '0')
+        + String(now.getDate()).padStart(2, '0')
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${date}_feelvonRoll_pins_long.csv`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      shell.setStatus('CSV (Long) exported', false)
+    } catch (error) {
+      shell.setStatus(error.message, true)
+    }
+  }
+
+  return { bulkUpdateApproval, bulkDelete, exportCsv, exportCsvLong }
 }

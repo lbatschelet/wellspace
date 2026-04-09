@@ -30,6 +30,7 @@ export function createPinsView() {
       </select>
       <button id="reloadPins" class="icon-btn-ghost" title="Reload pin list">${icons.reload}</button>
       <button id="exportPinsCsv" class="ghost" title="Download pin data as CSV">Export CSV</button>
+      <button id="exportPinsCsvLong" class="ghost" title="Download detailed pin answer data as CSV (one row per question)">Export CSV (Long)</button>
     </div>
   `
 
@@ -64,6 +65,7 @@ export function createPinsView() {
             <th>ID</th>
             <th>Floor</th>
             <th>Station</th>
+            <th>Questionnaire</th>
             <th>Wellbeing</th>
             <th>Reasons</th>
             <th>Group</th>
@@ -82,6 +84,7 @@ export function createPinsView() {
     tableCard,
     reloadButton: toolsCard.querySelector('#reloadPins'),
     exportCsvButton: toolsCard.querySelector('#exportPinsCsv'),
+    exportCsvLongButton: toolsCard.querySelector('#exportPinsCsvLong'),
     pageSizeSelect: toolsCard.querySelector('#pageSizeSelect'),
     firstPageButton: tableCard.querySelector('#firstPage'),
     prevPageButton: tableCard.querySelector('#prevPage'),

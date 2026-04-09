@@ -13,6 +13,7 @@ export function createPinsLoader({ state, api }) {
     wellbeing: Number(pin.wellbeing),
     approved: Number(pin.approved),
     group_key: pin.group_key || null,
+    questionnaire_key: pin.questionnaire_key || 'default',
   })
 
   const loadPins = async () => {

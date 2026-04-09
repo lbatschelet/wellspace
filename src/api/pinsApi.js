@@ -1,6 +1,6 @@
 /**
  * Pins API client for admin pin operations.
- * Exports: fetchAdminPins, updatePinApprovalBulk, deletePins, exportPinsCsv.
+ * Exports: fetchAdminPins, updatePinApprovalBulk, deletePins, exportPinsCsv, exportPinsCsvLong.
  */
 import { API_BASE, requestBlob, requestJson } from './baseClient'
 
@@ -34,6 +34,12 @@ export function deletePins({ token, ids }) {
 
 export function exportPinsCsv({ token }) {
   return requestBlob(`${API_BASE}/admin_pins.php?action=export_csv`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function exportPinsCsvLong({ token }) {
+  return requestBlob(`${API_BASE}/admin_pins.php?action=export_csv_long`, {
     headers: { Authorization: `Bearer ${token}` },
   })
 }
