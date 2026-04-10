@@ -105,7 +105,11 @@ describe('adminApi', () => {
       expect.objectContaining({
         cache: 'no-store',
         method: 'POST',
-        body: JSON.stringify({ action: 'delete', ids: [3, 4] }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer secret',
+        },
+        body: JSON.stringify({ action: 'delete', ids: [3, 4], confirm: false }),
       })
     )
     expect(result).toEqual({ deleted: 2 })

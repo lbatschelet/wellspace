@@ -30,12 +30,12 @@ export function createPinsView() {
       </select>
       <button id="reloadPins" class="icon-btn-ghost" title="Reload pin list">${icons.reload}</button>
       <div class="split-btn">
-        <button id="exportPinsCsv" class="ghost" title="Download pin data as CSV">Export CSV</button>
+        <button id="exportPinsCsv" class="ghost" title="Download pin data as CSV (timestamps are UTC)">Export CSV (UTC)</button>
         <button id="exportPinsCsvMenu" class="ghost split-btn-caret" title="More export options" aria-haspopup="menu" aria-expanded="false">
           ${icons.chevronDown}
         </button>
         <div id="exportPinsCsvMenuPanel" class="split-btn-menu" role="menu" aria-label="Export options">
-          <button id="exportPinsCsvLong" type="button" role="menuitem" title="Download detailed pin answer data as CSV (one row per question)">Export CSV (Long)</button>
+          <button id="exportPinsCsvLong" type="button" role="menuitem" title="Download detailed pin answer data as CSV (one row per question, timestamps are UTC)">Export CSV (Long, UTC)</button>
         </div>
       </div>
     </div>
