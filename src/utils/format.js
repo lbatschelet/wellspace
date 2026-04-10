@@ -4,9 +4,21 @@
  */
 import { TIME_ZONE } from '../time'
 
+function parseUtcLikeTimestamp(value) {
+  if (!value) return null
+  if (value instanceof Date) return value
+  if (typeof value !== 'string') return new Date(value)
+
+  const s = value.trim()
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+    return new Date(s.replace(' ', 'T') + 'Z')
+  }
+  return new Date(s)
+}
+
 export function formatDate(value) {
   if (!value) return '-'
-  const date = new Date(value)
+  const date = parseUtcLikeTimestamp(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString('de-CH', { timeZone: TIME_ZONE })
 }
