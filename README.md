@@ -17,6 +17,7 @@ Admin panel for the [feelvonRoll](https://github.com/lbatschelet/feelvonroll) pr
 - **User management**: create users, assign admin roles, password reset via email or link
 - **Audit log**: track admin actions with pagination
 - **Navigation guard**: warns about unsaved changes before leaving pages
+- **LV95 calibration**: optional affine transform from building capture points to Swiss LV95 coordinates for exported pin data
 
 ## Install & Run
 
