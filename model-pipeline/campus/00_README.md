@@ -1,114 +1,138 @@
-## Campus 3D Modell-Pipeline (Sweet Home 3D -> OBJ -> glTF/GLB -> Webapp)
+## Campus 3D model pipeline (Sweet Home 3D → OBJ → glTF/GLB → webapp)
 
-Ziel:
-- Reproduzierbarer Workflow mit klaren Ordnern für Eingaben/Outputs
-- Trackbarkeit pro Export-Iteration (Zeitstempel + Manifest)
-- Einfaches Einbinden in die Webapp unter `feelvonroll-webapp/public/models/`
+Goals:
 
-Aktuell:
-- Die Webapp lädt **pro Stockwerk** eine GLB-Datei unter `feelvonroll-webapp/public/models/` (z. B. `floor_-2.glb` … `floor_3.glb`); siehe `floorIndex`→URL-Mapping in `feelvonroll-webapp/src/main.js`.
-- Mindestens `floor_0.glb` sollte als Basis vorhanden sein; fehlende Stockwerke werden übersprungen bzw. es gibt einen Procedural-Fallback.
-- Quelldateien im Repo: z. B. **`floor_0.sh3d`** pro Stockwerk **oder** ein kombiniertes **`vonRoll.sh3d`** (je nach Arbeitsweise); die nummerierte Namenskonvention `floor_<index>.sh3d` bleibt die Referenz für die Skripte.
+- Reproducible workflow with clear folders for inputs and outputs
+- Traceability per export iteration (timestamps + manifest)
+- Straightforward integration into the webapp under `feelvonroll-webapp/public/models/`
 
-Wichtiger Hinweis zur Ausrichtung (Pin-Platzierung):
-- In eurem Code wird beim Raycast/Pin-Platzieren aktuell als Ebene `Y = building.getFloorSlabTopY(floorIndex)` verwendet.
-- Für den glTF-Provider ist der Slab-Top aktuell standardmäßig `0`, **wenn** im glTF kein Node/Objekt `slabTop` gefunden wird.
-- Deshalb: Export so ausrichten, dass die “Slab top”-Ebene für dein erstes Stockwerk bei **Y=0** liegt.
+Current behaviour:
 
-Ordnerstruktur (alles in diesem Repo):
-- `01_sweethome_src/`      -> Sweet Home 3D Projektdateien (pro Stockwerk)
-- `02_export_obj_zip/`     -> Export-Zips (OBJ + MTL + ggf. Texturen)
-- `03_export_obj/`         -> Unzipte OBJ-Ausgaben pro Floor
-- `04_build_glb/`          -> Generierte GLB-Dateien pro Floor
-- `tools/`                 -> kleine Hilfsskripte für Konvertierung
-- `05_notes/`             -> laufende Notizen/Checks
+- The webapp loads **one GLB per floor** from `feelvonroll-webapp/public/models/` (e.g. `floor_-2.glb` … `floor_3.glb`); see the `floorIndex` → URL map in `feelvonroll-webapp/src/main.js`.
+- At least `floor_0.glb` should exist as a baseline; missing floors are skipped and a procedural fallback may apply.
+- Source files in the repo: e.g. **`floor_0.sh3d`** per floor **or** a combined **`vonRoll.sh3d`** (depending on workflow); the numbered convention `floor_<index>.sh3d` remains the reference for the scripts.
 
-## 1) Sweet Home 3D: Stockwerk anlegen
-Lege pro Stockwerk eine eigene SH3D-Quelldatei ab:
+Alignment note (pin placement):
+
+- In the current code, raycasting / pin placement uses the plane `Y = building.getFloorSlabTopY(floorIndex)`.
+- For the glTF provider, slab top defaults to **`0`** if no node/object named `slabTop` exists in the glTF.
+- Therefore: orient the export so the “slab top” plane for your **reference floor** lies at **Y = 0**.
+
+Folder layout (all in this repository):
+
+- `01_sweethome_src/` — Sweet Home 3D project files (per floor)
+- `02_export_obj_zip/` — Export ZIPs (OBJ + MTL + textures)
+- `03_export_obj/` — Unpacked OBJ output per floor
+- `04_build_glb/` — Generated GLB files per floor
+- `tools/` — Small helper scripts for conversion
+- `05_notes/` — Running notes and checks
+
+## 1) Sweet Home 3D: create a floor
+
+Place one SH3D source file per floor, for example:
+
 - `model-pipeline/campus/01_sweethome_src/floor_0.sh3d`
 - `model-pipeline/campus/01_sweethome_src/floor_-1.sh3d`
-- usw.
+- etc.
 
-Naming-Regel:
-- Exakt `floor_<index>.sh3d` (Index = wie im Webapp `floorButtons`, also z.B. `-2`, `-1`, `0`, ...)
+Naming rule:
 
-## 2) Export aus Sweet Home 3D: OBJ (+ MTL)
-Sweet Home 3D exportiert 3D-Designs als **OBJ** (inkl. passender `.mtl`).
+- Exactly `floor_<index>.sh3d` (index = same as webapp `floorButtons`, e.g. `-2`, `-1`, `0`, …)
+
+## 2) Export from Sweet Home 3D: OBJ (+ MTL)
+
+Sweet Home 3D exports designs as **OBJ** (with matching `.mtl`).
 
 Workflow:
-1. Öffne `floor_0.sh3d`
-2. Export als OBJ (erzeugt i.d.R. `*.obj` + `*.mtl` + ggf. Texturen)
-3. Lege danach die Export-Dateien in einen Export-Ordner und zippe sie:
 
-Beispiel-Ziel:
+1. Open `floor_0.sh3d`
+2. Export as OBJ (typically `*.obj` + `*.mtl` + textures)
+3. Put the export files in a folder and zip them
+
+Example target path:
+
 - `model-pipeline/campus/02_export_obj_zip/floor_0_export_YYYYMMDD_HHMM.zip`
 
-Wichtig:
-- Zip sollte **alles zusammen** enthalten, was `floor_0.obj` braucht (inkl. `floor_0.mtl` und Texturbilder falls vorhanden).
+Important:
 
-## 3) Unzipten
-Optional automatisiert (empfohlen):
+- The ZIP must contain **everything** `floor_0.obj` needs (including `floor_0.mtl` and texture images if used).
+
+## 3) Unpack
+
+Optional automation (recommended):
 
 ```bash
 ./model-pipeline/campus/tools/unpack_floor_export_zip_to_latest.sh floor_0
 ```
 
-Das schreibt nach:
+This writes to:
+
 - `model-pipeline/campus/03_export_obj/floor_0/latest/`
 
-## 4) OBJ -> GLB Konvertierung
-Verwende das Script:
+## 4) OBJ → GLB conversion
+
+Use:
 
 ```bash
 ./model-pipeline/campus/tools/convert_floor_obj_to_glb.sh floor_0
 ```
 
-Voraussetzungen:
-- Node.js installiert
-- `npx obj2gltf` verfügbar (wird via npx nachgeladen; Version im Script gepinnt)
+Requirements:
 
-Das Script:
-1. ruft `obj2gltf` auf und schreibt nach `04_build_glb/<floor>.glb`
-2. führt optional **Mesh-Optimierung** aus (`tools/optimize_glb.mjs`: weld/dedup; optional Vereinfachung mit `SIMPLIFY_RATIO=0.65 ./tools/convert_floor_obj_to_glb.sh floor_0`)
+- Node.js installed
+- `npx obj2gltf` (via `npx`; version is pinned in the script)
+
+The script:
+
+1. Runs `obj2gltf` and writes `04_build_glb/<floor>.glb`
+2. Optionally runs **mesh optimization** (`tools/optimize_glb.mjs`: weld/dedup; optional simplification with `SIMPLIFY_RATIO=0.65 ./tools/convert_floor_obj_to_glb.sh floor_0`)
 
 Output:
+
 - `model-pipeline/campus/04_build_glb/floor_0.glb`
 
-## 5) Einbinden in die Webapp
-Optional automatisiert:
+## 5) Wire into the webapp
+
+Optional automation:
 
 ```bash
 ./model-pipeline/campus/tools/copy_glb_to_webapp.sh floor_0
 ```
 
-Manuell (entspricht exakt dem Script):
-- `model-pipeline/campus/04_build_glb/floor_0.glb`
-  nach `feelvonroll-webapp/public/models/floor_0.glb`
+Manual (same as the script):
 
-Danach:
-- Webapp neu laden
+- From `model-pipeline/campus/04_build_glb/floor_0.glb`
+  to `feelvonroll-webapp/public/models/floor_0.glb`
 
-## 6) Trackbarkeit (Manifest)
-Dieses Repo enthält ein einfaches Manifest:
+Then reload the webapp.
+
+## 6) Traceability (manifest)
+
+This repository includes a simple manifest:
+
 - `model-pipeline/campus/05_notes/manifest.md`
 
-Bitte nach jedem erfolgreichen Export einmal notieren:
-- Datum/Uhrzeit
-- Quelldatei (SHA optional, falls gewünscht)
-- Zip-Name
-- GLB-Dateiname
-- Besonderheiten (z.B. “SlabTop Y=0 bestätigt”)
+After each successful export, record:
 
-Beispiel-Eintrag:
+- Date/time
+- Source file (SHA optional)
+- ZIP name
+- GLB filename
+- Notes (e.g. “SlabTop Y=0 verified”)
+
+Example entry:
+
 ```
 2026-02-xx 14:30
 floor_0.sh3d -> floor_0_export_2026...zip -> floor_0.glb
-Check: Pins platziert auf korrekter Ebene (Y=0)
+Check: pins placed on correct plane (Y=0)
 ```
 
-## Optional: Später “full vs low walls”
-Wenn wir später den glTF Provider erweitern, brauchen wir ein Layer/Tagging im Modell.
-Vorschlag:
-- Objekt/Material-Namen enthalten `walls_full` vs `walls_low`
-- ggf. zusätzlich `floor_<index>` Gruppen
+## Optional: later “full vs low walls”
 
+If we extend the glTF provider later, we will need layering/tagging in the model.
+
+Suggestion:
+
+- Object/material names include `walls_full` vs `walls_low`
+- Optionally `floor_<index>` groups
