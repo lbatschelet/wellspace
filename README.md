@@ -12,13 +12,13 @@ PHP REST API for the [feelvonRoll](https://github.com/lbatschelet/feelvonroll) p
 
 ## Setup
 
-1. **Create the database schema** (consolidated, includes all migrations 001–008)
+1. **Create the database schema** (consolidated; includes all numbered migrations in `migrations/`)
 
    ```bash
    mysql -u root your_db_name < schema.sql
    ```
 
-   > **Upgrading an existing database?** Apply only the migrations you haven't run yet from the `migrations/` directory (001 through 008).
+   > **Upgrading an existing database?** Apply only the migrations you have not run yet from `migrations/`, in numeric order (filenames are numbered, e.g. `001_*.sql`, `011_*.sql`).
 
 2. **Configure credentials**
 
