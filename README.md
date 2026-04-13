@@ -14,6 +14,8 @@ The project consists of three components:
 | [feelvonroll-api](https://github.com/lbatschelet/feelvonroll-api)       | PHP 8.1 + MySQL   | REST API for pins, questionnaires, stations, content, and translations           |
 | [feelvonroll-admin](https://github.com/lbatschelet/feelvonroll-admin)   | Vite + vanilla JS | Admin panel for pins, questions, questionnaires, stations, users, and content    |
 
+The **main repository** also contains **`model-pipeline/`** (not a submodule): scripts and source assets to export the campus building from Sweet Home 3D to GLB files consumed by the webapp under `feelvonroll-webapp/public/models/`.
+
 ## Architecture
 
 ```mermaid
@@ -69,7 +71,7 @@ cp config.example.php config.local.php
 php -S localhost:8080
 ```
 
-> **Upgrading an existing database?** Apply only the migrations you haven't run yet from the `migrations/` directory (001 through 008).
+> **Upgrading an existing database?** Apply only the migrations you have not run yet from `migrations/`, in numeric order (filenames are numbered, e.g. `001_*.sql`, `011_*.sql`).
 
 ### 2. Start the webapp
 
@@ -124,6 +126,22 @@ Set `VITE_API_BASE` at build time if the API is not served from `/api`:
 VITE_API_BASE=https://api.example.com npm run build
 ```
 
+## Building model (3D pipeline)
+
+The interactive map uses **glTF/GLB** models per floor (stacked in the scene). Source workflow:
+
+1. Model in **Sweet Home 3D**, export as OBJ (zip with MTL/textures).
+2. Scripts under `model-pipeline/campus/tools/`: unpack zip → `obj2gltf` → optional mesh optimization (`optimize_glb.mjs`), then copy GLBs into the webapp.
+3. Detailed steps, folder layout, and slab-height notes: **`model-pipeline/campus/00_README.md`**.
+
+Typical commands (from repo root):
+
+```bash
+./model-pipeline/campus/tools/unpack_floor_export_zip_to_latest.sh floor_0
+./model-pipeline/campus/tools/convert_floor_obj_to_glb.sh floor_0
+./model-pipeline/campus/tools/copy_glb_to_webapp.sh floor_0
+```
+
 ### Email (SMTP) Setup
 
 The admin panel can send password-reset emails. This requires an SMTP server.
@@ -164,12 +182,20 @@ The admin panel can send password-reset emails. This requires an SMTP server.
 
 ```
 feelvonroll/
+  model-pipeline/           Campus 3D export (Sweet Home → OBJ → GLB); see campus/00_README.md
+    campus/
+      tools/                  unpack, convert, optimize, copy_glb_to_webapp scripts
   feelvonroll-webapp/       Public 3D webapp (Three.js)
+    public/models/          Shipped GLB files (from the pipeline)
     src/
-      main.js               Entry point, scene setup
-      floors.js             Floor geometry and management
+      main.js               Entry point, glTF building load, orbit controls, stations
+      config.js             Camera/orbit tuning for imported models
+      scene.js              Scene graph helpers
+      floors.js             Floor index helpers (visibility, raycast plane)
+      building/             glTF provider (stacked floors) and procedural fallback
       pins.js               Pin placement and visualization
-      ui/                   Questionnaire UI components
+      pins/                 Pin subsystems (form, mesh, clustering, …)
+      ui/                   Questionnaire UI, floor selector, overlays
   feelvonroll-api/          PHP REST API
     pins.php                Public pin endpoints
     questions.php           Questionnaire config endpoint

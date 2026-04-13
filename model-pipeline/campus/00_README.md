@@ -5,9 +5,10 @@ Ziel:
 - Trackbarkeit pro Export-Iteration (Zeitstempel + Manifest)
 - Einfaches Einbinden in die Webapp unter `feelvonroll-webapp/public/models/`
 
-Aktuell (Prototype):
-- Die Webapp versucht beim Start `/models/floor_0.glb` zu laden.
-- Für den Start exportieren wir also **pro Stockwerk** mindestens *ein* Asset als `floor_0.glb`.
+Aktuell:
+- Die Webapp lädt **pro Stockwerk** eine GLB-Datei unter `feelvonroll-webapp/public/models/` (z. B. `floor_-2.glb` … `floor_3.glb`); siehe `floorIndex`→URL-Mapping in `feelvonroll-webapp/src/main.js`.
+- Mindestens `floor_0.glb` sollte als Basis vorhanden sein; fehlende Stockwerke werden übersprungen bzw. es gibt einen Procedural-Fallback.
+- Quelldateien im Repo: z. B. **`floor_0.sh3d`** pro Stockwerk **oder** ein kombiniertes **`vonRoll.sh3d`** (je nach Arbeitsweise); die nummerierte Namenskonvention `floor_<index>.sh3d` bleibt die Referenz für die Skripte.
 
 Wichtiger Hinweis zur Ausrichtung (Pin-Platzierung):
 - In eurem Code wird beim Raycast/Pin-Platzieren aktuell als Ebene `Y = building.getFloorSlabTopY(floorIndex)` verwendet.
@@ -64,7 +65,11 @@ Verwende das Script:
 
 Voraussetzungen:
 - Node.js installiert
-- `npx obj2gltf` verfügbar (wird via npx nachgeladen)
+- `npx obj2gltf` verfügbar (wird via npx nachgeladen; Version im Script gepinnt)
+
+Das Script:
+1. ruft `obj2gltf` auf und schreibt nach `04_build_glb/<floor>.glb`
+2. führt optional **Mesh-Optimierung** aus (`tools/optimize_glb.mjs`: weld/dedup; optional Vereinfachung mit `SIMPLIFY_RATIO=0.65 ./tools/convert_floor_obj_to_glb.sh floor_0`)
 
 Output:
 - `model-pipeline/campus/04_build_glb/floor_0.glb`
