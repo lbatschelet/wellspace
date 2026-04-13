@@ -29,7 +29,7 @@ graph LR
 
 The **webapp** lets visitors navigate a 3D model of the vonRoll building, select a location, and fill out a dynamic questionnaire (wellbeing slider, multiple-choice reasons, free text). QR-code stations can pre-position the camera and assign a station-specific questionnaire. Submitted pins are stored via the **API** and colored by a configurable slider value.
 
-The **admin panel** authenticates via JWT and provides tools to review/approve pins, manage a question library, compose questionnaires, configure QR-code stations, edit content pages, manage users and languages, and export data as CSV.
+The **admin panel** authenticates via JWT and provides tools to review/approve pins, manage a question library, compose questionnaires, configure QR-code stations, edit content pages, manage users and languages, and export data as CSV. It can also maintain an optional **LV95 calibration** (affine mapping from 3D capture points to Swiss coordinates) for pins that store questionnaire metadata for GIS-style exports.
 
 The **API** serves public endpoints (pins, questions, questionnaires, stations, content, languages, translations) and authenticated admin endpoints (full CRUD for all resources, user management, audit logging).
 
