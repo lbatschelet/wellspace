@@ -231,7 +231,7 @@ INSERT IGNORE INTO languages (lang, label, enabled) VALUES
 -- ── Questions (slider config: 0–1 percent range) ────────────────────────────
 
 INSERT IGNORE INTO questions (question_key, type, required, sort, is_active, config) VALUES
-  ('wellbeing', 'slider', 1, 10, 1, JSON_OBJECT('min', 0, 'max', 1, 'step', 0.01, 'default', 0.5, 'use_for_color', true)),
+  ('wellbeing', 'slider', 1, 10, 1, JSON_OBJECT('min', 0, 'max', 1, 'step', 0.01, 'default', 0.5, 'use_for_color', true, 'color_palette', 'default')),
   ('reasons',   'multi',  0, 20, 1, JSON_OBJECT('allow_multiple', 1)),
   ('group',     'multi',  0, 30, 1, JSON_OBJECT('allow_multiple', 0)),
   ('note',      'text',   0, 40, 1, JSON_OBJECT('rows', 3));
