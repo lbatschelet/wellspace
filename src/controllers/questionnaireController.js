@@ -8,6 +8,7 @@ import { createQuestionnaireRender } from './questionnaireRender'
 import { createQuestionnaireActions, buildQuestionConfig, buildNewQuestion } from './questionnaireActions'
 import { createLanguagesRender } from './languagesRender'
 import { showModal, hideModal, bindModalClose } from '../utils/adminModal'
+import { getGlobalPaletteByKey } from '../constants/colorPalettes'
 
 export function createQuestionnaireController({ state, views, api, shell, renderDashboard, renderPins }) {
   const data = createQuestionnaireData({ state, api })
@@ -32,7 +33,9 @@ export function createQuestionnaireController({ state, views, api, shell, render
       await data.loadLanguages()
       languagesRender.renderLanguageSelectors()
       await Promise.all([data.loadQuestions(), data.loadOptions(), data.loadTranslations()])
+      state.globalColorPaletteKey = detectGlobalPaletteKey()
       render.renderQuestionsList()
+      render.renderGlobalPaletteOptions(state.globalColorPaletteKey)
       renderDashboard()
       shell.setStatus('')
     } catch (error) {
@@ -43,6 +46,7 @@ export function createQuestionnaireController({ state, views, api, shell, render
   const loadTranslations = async () => {
     await data.loadTranslations()
     render.renderQuestionsList()
+    render.renderGlobalPaletteOptions(state.globalColorPaletteKey || detectGlobalPaletteKey())
     renderPins()
   }
 
@@ -300,6 +304,37 @@ export function createQuestionnaireController({ state, views, api, shell, render
   /* ── Events ─────────────────────────────────────────────── */
 
   const bindEvents = () => {
+    views.questionnaireView.globalColorPaletteOptions?.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-palette-key]')
+      if (!button) return
+      state.globalColorPaletteKey = button.dataset.paletteKey
+      render.renderGlobalPaletteOptions(state.globalColorPaletteKey)
+    })
+    views.questionnaireView.saveGlobalColorPaletteButton?.addEventListener('click', async () => {
+      const nextKey = getGlobalPaletteByKey(state.globalColorPaletteKey || 'default').key
+      const sliderQuestions = state.questions.filter((question) => question.type === 'slider')
+      if (!sliderQuestions.length) {
+        shell.setStatus('No slider questions found', true)
+        return
+      }
+      shell.setStatus('Saving global color palette...', false)
+      try {
+        for (const question of sliderQuestions) {
+          const updated = {
+            ...question,
+            config: { ...(question.config || {}), color_palette: nextKey },
+          }
+          await api.upsertQuestion({ token: state.token, question: updated })
+        }
+        await data.loadQuestions()
+        state.globalColorPaletteKey = detectGlobalPaletteKey()
+        render.renderQuestionsList()
+        render.renderGlobalPaletteOptions(state.globalColorPaletteKey)
+        shell.setStatus('Global color palette saved', false)
+      } catch (error) {
+        shell.setStatus(error.message, true)
+      }
+    })
     views.questionnaireView.newQuestionType.addEventListener('change', () => {
       const v = views.questionnaireView
       const type = v.newQuestionType.value
@@ -455,6 +490,12 @@ export function createQuestionnaireController({ state, views, api, shell, render
       )
       actions.saveOptionOrder(draggingOption.questionKey, orderedKeys)
     })
+  }
+
+  const detectGlobalPaletteKey = () => {
+    const firstSlider = state.questions.find((question) => question.type === 'slider')
+    const paletteKey = firstSlider?.config?.color_palette || 'default'
+    return getGlobalPaletteByKey(paletteKey).key
   }
 
   return { bindEvents, loadQuestionnaire, loadTranslations }

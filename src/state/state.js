@@ -38,5 +38,6 @@ export function createInitialState() {
     currentUser: null,
     isAdmin: false,
     questionnaireDirty: false,
+    globalColorPaletteKey: 'default',
   }
 }

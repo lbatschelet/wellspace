@@ -32,6 +32,14 @@ export function createQuestionnaireView() {
         <tbody id="questionsBody"></tbody>
       </table>
     </div>
+    <div class="palette-global-section">
+      <div class="palette-global-title-row">
+        <h3>Global color scale</h3>
+        <button class="button" id="saveGlobalColorPalette">Save scale</button>
+      </div>
+      <p class="palette-global-hint">One diverging scale for negative → neutral → positive values.</p>
+      <div class="palette-global-options" id="globalColorPaletteOptions"></div>
+    </div>
 
     <!-- Question edit/create modal -->
     <div class="modal-backdrop" id="questionModal">
@@ -118,6 +126,8 @@ export function createQuestionnaireView() {
     newQuestionUseForColor: questionnaireCard.querySelector('#newQuestionUseForColor'),
     newQuestionSingleChoice: questionnaireCard.querySelector('#newQuestionSingleChoice'),
     newQuestionRows: questionnaireCard.querySelector('#newQuestionRows'),
+    globalColorPaletteOptions: questionnaireCard.querySelector('#globalColorPaletteOptions'),
+    saveGlobalColorPaletteButton: questionnaireCard.querySelector('#saveGlobalColorPalette'),
     addQuestionButton: questionnaireCard.querySelector('#addQuestion'),
     deleteQuestionButton: questionnaireCard.querySelector('#deleteQuestion'),
     questionModalOptions: questionnaireCard.querySelector('#questionModalOptions'),

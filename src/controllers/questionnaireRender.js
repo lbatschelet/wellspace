@@ -5,6 +5,7 @@
  */
 import { createButton, createCheckbox, createInput, createLabeled, icons } from '../utils/dom'
 import { actionCell, toggleTd } from '../utils/adminTable'
+import { GLOBAL_COLOR_PALETTES, getGlobalPaletteByKey } from '../constants/colorPalettes'
 
 export function createQuestionnaireRender({ state, views }) {
   const questionnaireView = views.questionnaireView
@@ -345,6 +346,26 @@ export function createQuestionnaireRender({ state, views }) {
     container.appendChild(hint)
   }
 
+  const renderGlobalPaletteOptions = (selectedKey) => {
+    const container = questionnaireView.globalColorPaletteOptions
+    if (!container) return
+    const active = getGlobalPaletteByKey(selectedKey).key
+    container.innerHTML = ''
+    GLOBAL_COLOR_PALETTES.forEach((palette) => {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'palette-option'
+      button.dataset.paletteKey = palette.key
+      button.classList.toggle('is-active', palette.key === active)
+      button.innerHTML = `
+        <span class="palette-option-label">${palette.label}</span>
+        <span class="palette-option-gradient" style="background: linear-gradient(90deg, ${palette.colors.join(', ')})"></span>
+        <span class="palette-option-legend"><span>Negative</span><span>Neutral</span><span>Positive</span></span>
+      `
+      container.appendChild(button)
+    })
+  }
+
   return {
     renderQuestionsList,
     renderCreateFormVisibility,
@@ -353,6 +374,7 @@ export function createQuestionnaireRender({ state, views }) {
     populateModalForCreate,
     renderEditOptions,
     renderCreateOptionsHint,
+    renderGlobalPaletteOptions,
   }
 }
 
