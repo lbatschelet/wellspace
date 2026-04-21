@@ -15,6 +15,7 @@ import { setupPinRaycaster } from './pins/pinRaycaster'
 import { setupLongPress, setupDoubleClickPlacePin } from './pins/pinLongPress'
 import { createPinState, normalizePin, isLocalPin, bySort, getOptionLabel } from './pins/pinState'
 import { createPinColorMode } from './pins/pinColorMode'
+import { getSliderColor } from './pins/pinColors'
 import { createModal } from './ui/modal'
 import { applyStaticTranslations, applyQuestionLabels, refreshViewTexts } from './pins/pinTranslations'
 import {
@@ -453,6 +454,9 @@ export function createPinSystem({
       (pin) => pin.floor_index === state.activeFloor
     )
     const clusters = buildClusters(allPins, camera, controls, domElement, getFloorSlabTopY, getPinLift)
+    const distance = camera.position.distanceTo(controls.target)
+    const distancePinScale = getDistancePinScaleMultiplier(distance)
+    const distanceClusterScale = getDistanceClusterScaleMultiplier(distance)
     clusters.forEach((cluster) => {
       if (cluster.pins.length === 1) {
         const pin = cluster.pins[0]
@@ -460,7 +464,7 @@ export function createPinSystem({
         const pinScale = typeof getPinScale === 'function' ? Number(getPinScale()) : 1
         const pinLift = typeof getPinLift === 'function' ? Number(getPinLift()) : 0.35
         if (Number.isFinite(pinScale) && pinScale > 0) {
-          mesh.scale.setScalar(pinScale)
+          mesh.scale.setScalar(pinScale * distancePinScale)
         }
         const slabTopY =
           typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(pin.floor_index) : pin.position_y
@@ -480,11 +484,13 @@ export function createPinSystem({
           state.selectedMesh = mesh
         }
       } else {
-        const mesh = createClusterMesh(cluster, clusterTextureCache)
+        const clusterColor = getClusterAverageSliderColor(cluster.pins)
+        const mesh = createClusterMesh(cluster, clusterTextureCache, clusterColor)
         const pinScale = typeof getPinScale === 'function' ? Number(getPinScale()) : 1
         const pinLift = typeof getPinLift === 'function' ? Number(getPinLift()) : 0.35
         if (Number.isFinite(pinScale) && pinScale > 0) {
-          mesh.scale.setScalar(0.7 * pinScale)
+          // Target: approx. 4x larger cluster diameter than before.
+          mesh.scale.setScalar(2.8 * pinScale * distanceClusterScale)
         }
         mesh.position.copy(cluster.worldPosition)
         mesh.position.y += (Number.isFinite(pinLift) ? pinLift : 0.35) + 0.05
@@ -500,6 +506,36 @@ export function createPinSystem({
     pinGroup.children.forEach((mesh) => {
       mesh.visible = mesh.userData.floorIndex === state.activeFloor
     })
+  }
+
+  function getDistancePinScaleMultiplier(distance) {
+    if (!Number.isFinite(distance)) return 1
+    // Subtle "looks relatively larger from far away" effect.
+    const t = THREE.MathUtils.clamp((distance - 10) / 30, 0, 1)
+    return THREE.MathUtils.lerp(1, 1.18, t)
+  }
+
+  function getDistanceClusterScaleMultiplier(distance) {
+    if (!Number.isFinite(distance)) return 1
+    const t = THREE.MathUtils.clamp((distance - 10) / 30, 0, 1)
+    return THREE.MathUtils.lerp(1, 1.1, t)
+  }
+
+  function getClusterAverageSliderColor(pins) {
+    if (!Array.isArray(pins) || !pins.length) return new THREE.Color('#1f2937')
+    const colorQuestion = colorMode.getActiveColorQuestion()
+    if (!colorQuestion) return colorMode.getPinColor(pins[0])
+    let sum = 0
+    let count = 0
+    pins.forEach((pin) => {
+      const score = Number(colorMode.getPinScore(pin, colorQuestion))
+      if (!Number.isFinite(score)) return
+      sum += score
+      count += 1
+    })
+    if (!count) return colorMode.getPinColor(pins[0])
+    const averageScore = sum / count
+    return getSliderColor(averageScore, colorQuestion.config)
   }
 
   // ── Pending pin lifecycle ───────────────────────────────────
@@ -522,8 +558,10 @@ export function createPinSystem({
     const mesh = createPinMesh(draft, colorMode.getPinColor(draft))
     const pinScale = typeof getPinScale === 'function' ? Number(getPinScale()) : 1
     const pinLift = typeof getPinLift === 'function' ? Number(getPinLift()) : 0.35
+    const distance = camera.position.distanceTo(controls.target)
+    const distancePinScale = getDistancePinScaleMultiplier(distance)
     if (Number.isFinite(pinScale) && pinScale > 0) {
-      mesh.scale.setScalar(pinScale)
+      mesh.scale.setScalar(pinScale * distancePinScale)
     }
     const baseY = slabTopY + draft.position_y + (Number.isFinite(pinLift) ? pinLift : 0.35)
     mesh.position.set(position.x, baseY, position.z)
