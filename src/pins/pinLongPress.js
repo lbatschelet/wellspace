@@ -7,6 +7,7 @@ import * as THREE from 'three'
 
 const HOLD_MS = 600
 const MOVE_THRESHOLD = 10 // px
+const TOUCH_CONTEXTMENU_BLOCK_MS = 2200
 
 /**
  * @param {object} deps
@@ -36,16 +37,25 @@ export function setupLongPress({
   let ripple = null
   let activePointerId = null
   let lastTouchPointerDownAt = 0
+  let lastTouchInteractionAt = 0
 
   // Suppress context menu during / right after long-press
   let suppressContextMenu = false
   domElement.addEventListener('contextmenu', (event) => {
     const recentTouchInteraction = Date.now() - lastTouchPointerDownAt < 1000
+    const touchTriggeredContextMenu = Date.now() - lastTouchInteractionAt < TOUCH_CONTEXTMENU_BLOCK_MS
     const inPinMode = Boolean(getState()?.pinMode)
-    if (activePointerId !== null || suppressContextMenu || recentTouchInteraction || inPinMode) {
+    if (
+      activePointerId !== null ||
+      suppressContextMenu ||
+      recentTouchInteraction ||
+      touchTriggeredContextMenu ||
+      inPinMode
+    ) {
       event.preventDefault()
+      event.stopPropagation()
     }
-  })
+  }, true)
 
   function cancel() {
     if (timer !== null) {
@@ -108,6 +118,7 @@ export function setupLongPress({
     if (document.querySelector('.ui-modal-backdrop.is-visible')) return
 
     lastTouchPointerDownAt = Date.now()
+    lastTouchInteractionAt = Date.now()
     activePointerId = event.pointerId
     startX = event.clientX
     startY = event.clientY
@@ -153,6 +164,9 @@ export function setupLongPress({
 
   domElement.addEventListener('pointermove', (event) => {
     if (event.pointerId !== activePointerId) return
+    if (event.pointerType === 'touch') {
+      lastTouchInteractionAt = Date.now()
+    }
 
     const dx = event.clientX - startX
     const dy = event.clientY - startY
@@ -163,21 +177,33 @@ export function setupLongPress({
 
   domElement.addEventListener('pointerup', (event) => {
     if (event.pointerId !== activePointerId) return
+    if (event.pointerType === 'touch') {
+      lastTouchInteractionAt = Date.now()
+    }
     cancel()
   })
 
   domElement.addEventListener('pointercancel', (event) => {
     if (event.pointerId !== activePointerId) return
+    if (event.pointerType === 'touch') {
+      lastTouchInteractionAt = Date.now()
+    }
     cancel()
   })
 
   // Cancel on second finger (pinch-to-zoom)
   domElement.addEventListener('pointerdown', (event) => {
     if (event.pointerType !== 'touch') return
+    lastTouchInteractionAt = Date.now()
     if (activePointerId !== null && event.pointerId !== activePointerId) {
       cancel()
     }
   }, true)
+
+  // Some kiosk/touch browsers dispatch contextmenu without reliable pointer metadata.
+  domElement.addEventListener('touchstart', () => {
+    lastTouchInteractionAt = Date.now()
+  }, { passive: true, capture: true })
 }
 
 /**

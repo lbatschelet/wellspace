@@ -48,8 +48,18 @@ export function createPinColorMode({ state, legend, colorModeRow, form, pinGroup
     return getSliderColor(elements?.input?.value, colorQuestion.config)
   }
 
-  /** No-op: range inputs use neutral accent in CSS; map orbs still use getColorFromForm. */
-  function updatePreviewColor() {}
+  /**
+   * Sync active slider gradient to form CSS so all slider tracks
+   * can reflect the currently selected pin color scale.
+   */
+  function updatePreviewColor() {
+    const colorQuestion = getActiveColorQuestion()
+    if (!colorQuestion) {
+      form.style.removeProperty('--active-slider-gradient')
+      return
+    }
+    form.style.setProperty('--active-slider-gradient', getSliderGradient(colorQuestion.config))
+  }
 
   /** Re-color all rendered pin orb meshes. */
   function refreshPinColors() {
@@ -78,6 +88,7 @@ export function createPinColorMode({ state, legend, colorModeRow, form, pinGroup
   function updateLegend() {
     legend.innerHTML = ''
     const colorQuestion = getActiveColorQuestion()
+    updatePreviewColor()
     if (!colorQuestion) return
     const gradient = document.createElement('div')
     gradient.className = 'ui-legend-gradient'

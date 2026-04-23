@@ -469,7 +469,7 @@ canvas {
   transform: translateY(-50%);
   height: 10px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--active-slider-gradient, #e2e8f0);
   overflow: hidden;
   pointer-events: none;
 }
@@ -481,7 +481,8 @@ canvas {
   left: 50%;
   width: 2px;
   transform: translateX(-1px);
-  background: rgba(15, 23, 42, 0.25);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
 }
 
 .ui-slider-midfill.neg,
@@ -490,7 +491,7 @@ canvas {
   top: 0;
   bottom: 0;
   width: 0%;
-  background: #64748b;
+  background: rgba(15, 23, 42, 0.24);
   border-radius: 0;
 }
 
@@ -668,7 +669,7 @@ canvas {
   transform: translateY(-50%);
   height: 10px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--active-slider-gradient, #e2e8f0);
   overflow: hidden;
   margin: 0;
   pointer-events: none;
@@ -696,7 +697,8 @@ canvas {
   left: 50%;
   width: 2px;
   transform: translateX(-1px);
-  background: rgba(15, 23, 42, 0.25);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
 }
 
 .ui-influence-midfill.neg,
@@ -705,7 +707,7 @@ canvas {
   top: 0;
   bottom: 0;
   width: 0%;
-  background: #64748b;
+  background: rgba(15, 23, 42, 0.24);
   border-radius: 0;
 }
 

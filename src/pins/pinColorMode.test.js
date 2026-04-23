@@ -112,9 +112,11 @@ describe('createPinColorMode', () => {
       const state = makeState()
       const dom = makeDom()
       dom.legend.innerHTML = '<div>old</div>'
+      dom.form.style.setProperty('--active-slider-gradient', 'linear-gradient(90deg, #000, #fff)')
       const cm = createPinColorMode({ state, ...dom })
       cm.updateLegend()
       expect(dom.legend.innerHTML).toBe('')
+      expect(dom.form.style.getPropertyValue('--active-slider-gradient')).toBe('')
     })
 
     it('builds gradient and labels for active question', () => {
@@ -130,6 +132,31 @@ describe('createPinColorMode', () => {
       expect(dom.legend.querySelector('.ui-legend-gradient')).not.toBeNull()
       expect(dom.legend.querySelector('.ui-legend-labels').textContent).toContain('Low')
       expect(dom.legend.querySelector('.ui-legend-labels').textContent).toContain('High')
+      expect(dom.form.style.getPropertyValue('--active-slider-gradient')).toContain('linear-gradient(')
+    })
+  })
+
+  describe('updatePreviewColor', () => {
+    it('sets active slider gradient css variable when color question exists', () => {
+      const question = { key: 'wellbeing', type: 'slider', config: {}, legend_low: 'Low', legend_high: 'High' }
+      const state = makeState({
+        questions: [question],
+        colorQuestions: [question],
+        colorQuestionKey: 'wellbeing',
+      })
+      const dom = makeDom()
+      const cm = createPinColorMode({ state, ...dom })
+      cm.updatePreviewColor()
+      expect(dom.form.style.getPropertyValue('--active-slider-gradient')).toContain('linear-gradient(')
+    })
+
+    it('removes gradient css variable when no active color question exists', () => {
+      const state = makeState()
+      const dom = makeDom()
+      dom.form.style.setProperty('--active-slider-gradient', 'linear-gradient(90deg, #000, #fff)')
+      const cm = createPinColorMode({ state, ...dom })
+      cm.updatePreviewColor()
+      expect(dom.form.style.getPropertyValue('--active-slider-gradient')).toBe('')
     })
   })
 
