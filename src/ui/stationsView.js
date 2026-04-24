@@ -70,10 +70,17 @@ export function createStationsView() {
 
         <div class="station-link-section" id="stationLinkSection" style="display:none">
           <label class="field">
-            <span>Station Link</span>
+            <span>Station Link (Standard)</span>
             <div class="copy-row">
-              <input type="text" id="stLinkDisplay" readonly />
-              <button type="button" class="icon-btn-ghost" id="stCopyLink" title="Copy link">${icons.copy}</button>
+              <input type="text" id="stLinkDisplayStandard" readonly />
+              <button type="button" class="icon-btn-ghost" id="stCopyLinkStandard" title="Copy standard link">${icons.copy}</button>
+            </div>
+          </label>
+          <label class="field">
+            <span>Station Link (Kiosk / iPad)</span>
+            <div class="copy-row">
+              <input type="text" id="stLinkDisplayKiosk" readonly />
+              <button type="button" class="icon-btn-ghost" id="stCopyLinkKiosk" title="Copy kiosk link">${icons.copy}</button>
             </div>
           </label>
         </div>
@@ -123,8 +130,10 @@ export function createStationsView() {
     questionnaireSelect: card.querySelector('#stQuestionnaireSelect'),
     activeCheck: card.querySelector('#stActiveCheck'),
     linkSection: card.querySelector('#stationLinkSection'),
-    linkDisplay: card.querySelector('#stLinkDisplay'),
-    copyLinkBtn: card.querySelector('#stCopyLink'),
+    linkDisplayStandard: card.querySelector('#stLinkDisplayStandard'),
+    copyLinkStandardBtn: card.querySelector('#stCopyLinkStandard'),
+    linkDisplayKiosk: card.querySelector('#stLinkDisplayKiosk'),
+    copyLinkKioskBtn: card.querySelector('#stCopyLinkKiosk'),
     camX: card.querySelector('#stCamX'),
     camY: card.querySelector('#stCamY'),
     camZ: card.querySelector('#stCamZ'),

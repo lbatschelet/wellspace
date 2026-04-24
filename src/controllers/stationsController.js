@@ -19,6 +19,7 @@ export function createStationsController({ state, views, api, questionnairesApi,
 
   const getWebappBase = () => import.meta.env.VITE_WEBAPP_BASE || 'https://feelvonroll.ch'
   const getStationLink = (key) => `${getWebappBase()}?station=${encodeURIComponent(key)}`
+  const getStationKioskLink = (key) => `${getWebappBase()}/kiosk/${encodeURIComponent(key)}`
 
   // ── Load ───────────────────────────────────────────────────────
 
@@ -87,10 +88,12 @@ export function createStationsController({ state, views, api, questionnairesApi,
     // Show station link when editing existing station
     if (station) {
       view.linkSection.style.display = ''
-      view.linkDisplay.value = getStationLink(station.station_key)
+      view.linkDisplayStandard.value = getStationLink(station.station_key)
+      view.linkDisplayKiosk.value = getStationKioskLink(station.station_key)
     } else {
       view.linkSection.style.display = 'none'
-      view.linkDisplay.value = ''
+      view.linkDisplayStandard.value = ''
+      view.linkDisplayKiosk.value = ''
     }
 
     populateQuestionnaireSelect(station ? station.questionnaire_id : null)
@@ -117,15 +120,14 @@ export function createStationsController({ state, views, api, questionnairesApi,
 
   // ── Copy link ──────────────────────────────────────────────────
 
-  const copyStationLink = async (key) => {
-    const link = getStationLink(key)
+  const copyStationLink = async (link, inputEl) => {
     try {
       await navigator.clipboard.writeText(link)
       shell.setStatus('Link copied to clipboard', false)
     } catch {
       // Fallback: select the input text
-      view.linkDisplay.value = link
-      view.linkDisplay.select()
+      inputEl.value = link
+      inputEl.select()
       document.execCommand('copy')
       shell.setStatus('Link copied', false)
     }
@@ -266,8 +268,13 @@ export function createStationsController({ state, views, api, questionnairesApi,
 
     view.saveBtn.addEventListener('click', handleSave)
     view.captureBtn.addEventListener('click', openCaptureMode)
-    view.copyLinkBtn.addEventListener('click', () => {
-      if (editingStation) copyStationLink(editingStation.station_key)
+    view.copyLinkStandardBtn.addEventListener('click', () => {
+      if (!editingStation) return
+      copyStationLink(getStationLink(editingStation.station_key), view.linkDisplayStandard)
+    })
+    view.copyLinkKioskBtn.addEventListener('click', () => {
+      if (!editingStation) return
+      copyStationLink(getStationKioskLink(editingStation.station_key), view.linkDisplayKiosk)
     })
     view.deleteBtn.addEventListener('click', () => {
       if (editingStation) handleDelete(parseInt(editingStation.id))
