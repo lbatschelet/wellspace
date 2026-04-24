@@ -130,6 +130,12 @@ export function setupLongPress({
     // Skip if form/backdrop is open
     if (document.querySelector('.ui-modal-backdrop.is-visible')) return
 
+    // Stop the browser from treating this as a native long-tap gesture
+    // (Edge may otherwise still open the context menu later).
+    if (event.cancelable) {
+      event.preventDefault()
+    }
+
     lastTouchPointerDownAt = Date.now()
     lastTouchInteractionAt = Date.now()
     activePointerId = event.pointerId
@@ -180,6 +186,9 @@ export function setupLongPress({
     if (event.pointerId !== activePointerId) return
     if (event.pointerType === 'touch') {
       lastTouchInteractionAt = Date.now()
+      if (event.cancelable) {
+        event.preventDefault()
+      }
     }
 
     const dx = event.clientX - startX
@@ -193,6 +202,9 @@ export function setupLongPress({
     if (event.pointerId !== activePointerId) return
     if (event.pointerType === 'touch') {
       lastTouchInteractionAt = Date.now()
+      if (event.cancelable) {
+        event.preventDefault()
+      }
     }
     cancel()
   })
@@ -218,6 +230,19 @@ export function setupLongPress({
   domElement.addEventListener('touchstart', () => {
     lastTouchInteractionAt = Date.now()
   }, { passive: true, capture: true })
+
+  // Edge can still produce a delayed native long-tap menu unless default touch
+  // handling is cancelled early. Use a non-passive guard in capture phase.
+  domElement.addEventListener('touchstart', (event) => {
+    if (!event.cancelable) return
+    if (event.touches.length !== 1) return
+    const target = event.target
+    if (target instanceof Element && target.closest('.ui')) return
+    const state = getState()
+    if (state.pinMode) return
+    if (ownerDocument.querySelector('.ui-modal-backdrop.is-visible')) return
+    event.preventDefault()
+  }, { passive: false, capture: true })
 
   // Keep a global touch timestamp even if pointerup lands on an overlay.
   ownerDocument.addEventListener('pointerup', (event) => {
