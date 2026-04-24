@@ -8,6 +8,7 @@ import * as THREE from 'three'
 const HOLD_MS = 600
 const MOVE_THRESHOLD = 10 // px
 const TOUCH_CONTEXTMENU_BLOCK_MS = 3200
+const LONGPRESS_CONTEXTMENU_BLOCK_MS = 6000
 
 /**
  * @param {object} deps
@@ -38,30 +39,25 @@ export function setupLongPress({
   let activePointerId = null
   let lastTouchPointerDownAt = 0
   let lastTouchInteractionAt = 0
+  let lastHandledLongPressAt = 0
 
   const ownerDocument = domElement.ownerDocument || document
-  const appRoot = domElement.closest('#app') || ownerDocument.body
-
   // Suppress context menu during / right after long-press.
   // We must listen on document (capture), because in some browsers (Edge on touch)
   // the delayed contextmenu fires on overlays above the canvas (e.g. modal backdrop),
   // so a canvas-only listener is not sufficient.
   let suppressContextMenu = false
   const handleContextMenu = (event) => {
-    const inAppRoot =
-      !appRoot ||
-      !(event.target instanceof Node) ||
-      appRoot.contains(event.target)
-    if (!inAppRoot) return
-
     const recentTouchInteraction = Date.now() - lastTouchPointerDownAt < 1000
     const touchTriggeredContextMenu = Date.now() - lastTouchInteractionAt < TOUCH_CONTEXTMENU_BLOCK_MS
+    const recentHandledLongPress = Date.now() - lastHandledLongPressAt < LONGPRESS_CONTEXTMENU_BLOCK_MS
     const inPinMode = Boolean(getState()?.pinMode)
     if (
       activePointerId !== null ||
       suppressContextMenu ||
       recentTouchInteraction ||
       touchTriggeredContextMenu ||
+      recentHandledLongPress ||
       inPinMode
     ) {
       event.preventDefault()
@@ -156,6 +152,7 @@ export function setupLongPress({
       suppressContextMenu = true
       setTimeout(() => { suppressContextMenu = false }, 200)
       lastTouchInteractionAt = Date.now()
+      lastHandledLongPressAt = Date.now()
 
       removeRipple()
 

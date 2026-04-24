@@ -38,6 +38,13 @@ const debugFloorVisibility = urlParams.get('debugFloorVisibility') === '1'
 const app = document.querySelector('#app')
 setLanguage(getLanguage())
 
+// We do not use browser context menus in the 3D app.
+// Disable them app-wide to avoid long-press/right-click conflicts on touch devices.
+app.addEventListener('contextmenu', (event) => {
+  event.preventDefault()
+  event.stopPropagation()
+}, true)
+
 const renderer = createRenderer(app)
 const scene = createScene()
 const camera = createCamera()
