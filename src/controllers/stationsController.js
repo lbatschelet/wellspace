@@ -3,6 +3,7 @@
  * Editing now uses a modal. List includes a link button per station.
  * Exports: createStationsController.
  */
+import QRCode from 'qrcode'
 import { icons } from '../utils/dom'
 import { showModal, hideModal, bindModalClose } from '../utils/adminModal'
 import { actionCell, toggleTd } from '../utils/adminTable'
@@ -17,9 +18,26 @@ export function createStationsController({ state, views, api, questionnairesApi,
   let captureWindow = null
   let editingStation = null
 
-  const getWebappBase = () => import.meta.env.VITE_WEBAPP_BASE || 'https://feelvonroll.ch'
-  const getStationLink = (key) => `${getWebappBase()}?station=${encodeURIComponent(key)}`
+  const getWebappBase = () => {
+    const raw = import.meta.env.VITE_WEBAPP_BASE || 'https://feelvonroll.ch'
+    return String(raw).replace(/\/+$/, '')
+  }
+  // Use short path route for QR codes (more compact than query params).
+  const getStationLink = (key) => `${getWebappBase()}/s/${encodeURIComponent(key)}`
   const getStationKioskLink = (key) => `${getWebappBase()}/kiosk/${encodeURIComponent(key)}`
+
+  const downloadStationQrPng = async (key) => {
+    const url = getStationLink(key)
+    const dataUrl = await QRCode.toDataURL(url, { width: 512, margin: 2, errorCorrectionLevel: 'M' })
+    const a = document.createElement('a')
+    a.href = dataUrl
+    a.download = `qr-station-${String(key).replace(/[^a-z0-9_-]+/gi, '_')}.png`
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    shell.setStatus('QR code downloaded', false)
+  }
 
   // ── Load ───────────────────────────────────────────────────────
 
@@ -54,7 +72,19 @@ export function createStationsController({ state, views, api, questionnairesApi,
         <td>${esc(s.questionnaire_name || '— Default —')}</td>
         ${toggleTd(parseInt(s.is_active), 'active', s.id)}
         ${actionCell([
-          { type: 'link', key: esc(s.station_key), title: 'Open station link' },
+          {
+            type: 'custom',
+            html: `<button class="icon-btn-ghost" type="button" data-station-qr="${s.id}" title="Download QR code (standard URL)">${icons.qr}</button>`,
+          },
+          {
+            type: 'custom',
+            html: `<button class="icon-btn-ghost" type="button" data-copy-std="${s.id}" title="Copy standard station URL">${icons.copy}</button>`,
+          },
+          {
+            type: 'custom',
+            html: `<button class="icon-btn-ghost" type="button" data-copy-kiosk="${s.id}" title="Copy kiosk URL">${icons.tablet}</button>`,
+          },
+          { type: 'link', key: esc(s.station_key), title: 'Open in new tab' },
           { type: 'edit', id: s.id, title: 'Edit station' },
           { type: 'delete', id: s.id, title: 'Delete station' },
         ])}
@@ -130,6 +160,15 @@ export function createStationsController({ state, views, api, questionnairesApi,
       inputEl.select()
       document.execCommand('copy')
       shell.setStatus('Link copied', false)
+    }
+  }
+
+  const copyPlainText = async (text, statusOk) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      shell.setStatus(statusOk, false)
+    } catch {
+      shell.setStatus('Copy failed — check browser permissions', true)
     }
   }
 
@@ -245,10 +284,39 @@ export function createStationsController({ state, views, api, questionnairesApi,
     })
 
     view.tableBody.addEventListener('click', (e) => {
+      const qrBtn = e.target.closest('[data-station-qr]')
+      if (qrBtn) {
+        const id = parseInt(qrBtn.dataset.stationQr, 10)
+        const s = stations.find((x) => parseInt(x.id) === id)
+        if (s) {
+          downloadStationQrPng(s.station_key).catch((err) => {
+            console.error(err)
+            shell.setStatus('Failed to create QR code', true)
+          })
+        }
+        return
+      }
+
+      const copyStdBtn = e.target.closest('[data-copy-std]')
+      if (copyStdBtn) {
+        const id = parseInt(copyStdBtn.dataset.copyStd, 10)
+        const s = stations.find((x) => parseInt(x.id) === id)
+        if (s) void copyPlainText(getStationLink(s.station_key), 'Standard URL copied to clipboard')
+        return
+      }
+
+      const copyKioskBtn = e.target.closest('[data-copy-kiosk]')
+      if (copyKioskBtn) {
+        const id = parseInt(copyKioskBtn.dataset.copyKiosk, 10)
+        const s = stations.find((x) => parseInt(x.id) === id)
+        if (s) void copyPlainText(getStationKioskLink(s.station_key), 'Kiosk URL copied to clipboard')
+        return
+      }
+
       const linkBtn = e.target.closest('[data-link]')
       if (linkBtn) {
         const key = linkBtn.dataset.link
-        window.open(getStationLink(key), '_blank')
+        window.open(getStationLink(key), '_blank', 'noopener')
         return
       }
 
@@ -275,6 +343,13 @@ export function createStationsController({ state, views, api, questionnairesApi,
     view.copyLinkKioskBtn.addEventListener('click', () => {
       if (!editingStation) return
       copyStationLink(getStationKioskLink(editingStation.station_key), view.linkDisplayKiosk)
+    })
+    view.downloadQrStandardBtn.addEventListener('click', () => {
+      if (!editingStation) return
+      downloadStationQrPng(editingStation.station_key).catch((err) => {
+        console.error(err)
+        shell.setStatus('Failed to create QR code', true)
+      })
     })
     view.deleteBtn.addEventListener('click', () => {
       if (editingStation) handleDelete(parseInt(editingStation.id))

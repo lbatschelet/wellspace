@@ -53,6 +53,19 @@ export function actionCell(actions) {
 }
 
 /**
+ * Per-station quick actions: download QR (standard URL), copy standard URL, copy kiosk URL.
+ * Click handlers use `data-station-qr`, `data-copy-std`, `data-copy-kiosk` with row id.
+ */
+export function quickLinksCell(id) {
+  const sid = String(id)
+  return `<td class="actions-cell quick-links-cell" role="cell">
+    <button class="icon-btn-ghost" type="button" data-station-qr="${sid}" title="Download QR code (standard URL)">${icons.qr}</button>
+    <button class="icon-btn-ghost" type="button" data-copy-std="${sid}" title="Copy standard station URL">${icons.copy}</button>
+    <button class="icon-btn-ghost" type="button" data-copy-kiosk="${sid}" title="Copy kiosk URL">${icons.tablet}</button>
+  </td>`
+}
+
+/**
  * Update pagination controls (first/prev/next/last buttons and page info text).
  * Shared between Pins and Audit tables.
  *

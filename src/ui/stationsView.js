@@ -24,7 +24,7 @@ export function createStationsView() {
             <th>Floor</th>
             <th>Questionnaire</th>
             <th>Active</th>
-            <th></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="stationsTableBody"></tbody>
@@ -69,18 +69,21 @@ export function createStationsView() {
         </div>
 
         <div class="station-link-section" id="stationLinkSection" style="display:none">
+          <p class="station-link-section-title">Public URLs</p>
+          <p class="form-hint" style="margin-top:0">The QR code encodes the standard URL only. Use the tablet button to copy the kiosk URL.</p>
           <label class="field">
-            <span>Station Link (Standard)</span>
+            <span>Standard (print &amp; normal visit)</span>
             <div class="copy-row">
               <input type="text" id="stLinkDisplayStandard" readonly />
-              <button type="button" class="icon-btn-ghost" id="stCopyLinkStandard" title="Copy standard link">${icons.copy}</button>
+              <button type="button" class="icon-btn-ghost" id="stCopyLinkStandard" title="Copy standard station URL">${icons.copy}</button>
+              <button type="button" class="icon-btn-ghost" id="stDownloadQrStandard" title="Download QR code (standard URL, PNG)">${icons.qr}</button>
             </div>
           </label>
           <label class="field">
-            <span>Station Link (Kiosk / iPad)</span>
+            <span>Kiosk (iPad)</span>
             <div class="copy-row">
               <input type="text" id="stLinkDisplayKiosk" readonly />
-              <button type="button" class="icon-btn-ghost" id="stCopyLinkKiosk" title="Copy kiosk link">${icons.copy}</button>
+              <button type="button" class="icon-btn-ghost" id="stCopyLinkKiosk" title="Copy kiosk URL">${icons.tablet}</button>
             </div>
           </label>
         </div>
@@ -132,6 +135,7 @@ export function createStationsView() {
     linkSection: card.querySelector('#stationLinkSection'),
     linkDisplayStandard: card.querySelector('#stLinkDisplayStandard'),
     copyLinkStandardBtn: card.querySelector('#stCopyLinkStandard'),
+    downloadQrStandardBtn: card.querySelector('#stDownloadQrStandard'),
     linkDisplayKiosk: card.querySelector('#stLinkDisplayKiosk'),
     copyLinkKioskBtn: card.querySelector('#stCopyLinkKiosk'),
     camX: card.querySelector('#stCamX'),

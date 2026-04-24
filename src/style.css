@@ -1096,6 +1096,11 @@ button.error {
   vertical-align: middle;
 }
 
+.icon-btn svg,
+.icon-btn-ghost svg {
+  pointer-events: none;
+}
+
 .icon-btn-ghost:hover {
   background: #cbd5e1;
   color: #0f172a;
@@ -1725,6 +1730,13 @@ th {
   border: 1px dashed #cbd5f5;
   border-radius: 10px;
   background: #f8fafc;
+}
+
+.station-link-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 6px;
 }
 
 .position-grid {
