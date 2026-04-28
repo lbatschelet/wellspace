@@ -24,11 +24,15 @@
       })()
     </script>
     <script>
-      // Load Plausible only on production hostnames to avoid polluting analytics during local dev.
+      // Load Plausible everywhere except localhost to avoid polluting analytics during local dev.
       (function loadPlausible() {
         const host = (window.location && window.location.hostname) || ''
-        const isProdHost = host === 'feelvonroll.ch' || host === 'www.feelvonroll.ch'
-        if (!isProdHost) return
+        const isLocalhost =
+          host === 'localhost' ||
+          host === '127.0.0.1' ||
+          host === '0.0.0.0' ||
+          host.endsWith('.local')
+        if (isLocalhost) return
 
         window.plausible =
           window.plausible ||
