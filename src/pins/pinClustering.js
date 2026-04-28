@@ -17,8 +17,13 @@ import * as THREE from 'three'
 export function buildClusters(pins, camera, controls, domElement, getFloorSlabTopY, getPinLift) {
   const rect = domElement.getBoundingClientRect()
   const distance = camera.position.distanceTo(controls.target)
-  // No clustering when zoomed in close (distance < 10), scales up when zoomed out
-  const t = Math.min(Math.max((distance - 10) / 30, 0), 1)
+  // No clustering when zoomed in close.
+  // IMPORTANT: the actual "closest zoom" is controlled by OrbitControls.minDistance (model-dependent),
+  // so we derive the clustering curve from that instead of a hard-coded magic number.
+  const minDist = Number.isFinite(controls?.minDistance) ? Number(controls.minDistance) : 10
+  const maxDist = Number.isFinite(controls?.maxDistance) ? Number(controls.maxDistance) : (minDist + 40)
+  const span = Math.max(20, maxDist - minDist)
+  const t = THREE.MathUtils.clamp((distance - minDist) / span, 0, 1)
   const threshold = t * 38
   const clusters = []
 

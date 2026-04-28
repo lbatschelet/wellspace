@@ -40,6 +40,8 @@ export function setupPinRaycaster({
   getSelectedFloor,
   getFloorSlabTopY,
   onPinClick,
+  onClusterClick,
+  onEmptyClick,
   onFloorClick,
 }) {
   const raycaster = new THREE.Raycaster()
@@ -60,12 +62,24 @@ export function setupPinRaycaster({
 
     if (!state.pinMode) {
       const hits = raycaster.intersectObjects(pinGroup.children, true)
-      if (hits.length) {
-        const pin = hits[0].object.userData.pinData
-        if (pin) {
-          onPinClick(pin)
-        }
+      if (!hits.length) {
+        if (typeof onEmptyClick === 'function') onEmptyClick()
+        return
       }
+
+      // Walk up the parent chain to find either a pin mesh or a cluster sprite.
+      let obj = hits[0].object
+      while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
+        obj = obj.parent
+      }
+
+      if (obj?.userData?.clusterKey && typeof onClusterClick === 'function') {
+        onClusterClick(obj.userData.clusterKey)
+        return
+      }
+
+      const pin = obj?.userData?.pinData
+      if (pin) onPinClick(pin)
       return
     }
 

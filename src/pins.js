@@ -247,6 +247,16 @@ export function createPinSystem({
     getSelectedFloor,
     getFloorSlabTopY,
     onPinClick: (pin) => openForm({ pin }),
+    onClusterClick: (clusterKey) => {
+      state.expandedClusterKey = clusterKey || null
+      renderPins()
+    },
+    onEmptyClick: () => {
+      if (state.expandedClusterKey) {
+        state.expandedClusterKey = null
+        renderPins()
+      }
+    },
     onFloorClick: ({ floorIndex, position }) => {
       placePendingPin({ floorIndex, position })
       openForm({ floorIndex, position })
@@ -434,7 +444,11 @@ export function createPinSystem({
   async function loadPins() {
     try {
       const rawPins = await fetchPins()
-      state.pins = rawPins.map(normalizePin)
+      // Public webapp must only show approved pins.
+      // Keep unapproved pins only in-session for the author (localPins).
+      state.pins = rawPins
+        .map(normalizePin)
+        .filter((pin) => Number(pin.approved) === 1)
       state.localPins = state.localPins.filter(
         (pin) => !state.pins.some((p) => p.id === pin.id)
       )
@@ -458,6 +472,42 @@ export function createPinSystem({
     const distancePinScale = getDistancePinScaleMultiplier(distance)
     const distanceClusterScale = getDistanceClusterScaleMultiplier(distance)
     clusters.forEach((cluster) => {
+      const clusterKey = cluster.pins
+        .map((p) => String(p.id))
+        .sort()
+        .join(',')
+
+      // If user clicked a cluster, "spiderfy" it (show individual pins spread in a circle).
+      if (cluster.pins.length > 1 && state.expandedClusterKey && clusterKey === state.expandedClusterKey) {
+        const pinScale = typeof getPinScale === 'function' ? Number(getPinScale()) : 1
+        const pinLift = typeof getPinLift === 'function' ? Number(getPinLift()) : 0.35
+        const baseRadius = 0.55
+        const radius =
+          baseRadius *
+          (Number.isFinite(pinScale) && pinScale > 0 ? pinScale : 1) *
+          distancePinScale
+        const count = cluster.pins.length
+        cluster.pins.forEach((pin, idx) => {
+          const angle = (idx / count) * Math.PI * 2
+          const dx = Math.cos(angle) * radius
+          const dz = Math.sin(angle) * radius
+          const mesh = createPinMesh(pin, colorMode.getPinColor(pin))
+          if (Number.isFinite(pinScale) && pinScale > 0) {
+            mesh.scale.setScalar(pinScale * distancePinScale)
+          }
+          const slabTopY =
+            typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(pin.floor_index) : pin.position_y
+          const baseY = slabTopY + pin.position_y + (Number.isFinite(pinLift) ? pinLift : 0.35)
+          mesh.position.set(pin.position_x + dx, baseY, pin.position_z + dz)
+          mesh.userData.floorIndex = pin.floor_index
+          mesh.userData.pinId = pin.id
+          mesh.userData.pinData = pin
+          mesh.userData.baseY = baseY
+          pinGroup.add(mesh)
+        })
+        return
+      }
+
       if (cluster.pins.length === 1) {
         const pin = cluster.pins[0]
         const mesh = createPinMesh(pin, colorMode.getPinColor(pin))
@@ -495,6 +545,7 @@ export function createPinSystem({
         mesh.position.copy(cluster.worldPosition)
         mesh.position.y += (Number.isFinite(pinLift) ? pinLift : 0.35) + 0.05
         mesh.userData.floorIndex = state.activeFloor
+        mesh.userData.clusterKey = clusterKey
         pinGroup.add(mesh)
       }
     })

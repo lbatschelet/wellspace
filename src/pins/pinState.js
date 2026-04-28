@@ -16,6 +16,7 @@ export function createPinState(activeFloor) {
     pinMode: false,
     activeFloor,
     pendingMesh: null,
+    expandedClusterKey: null,
     colorQuestionKey: null,
     colorQuestions: [],
     globalColorQuestions: [],
