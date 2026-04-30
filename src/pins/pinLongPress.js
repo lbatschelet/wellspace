@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three'
 
-const HOLD_MS = 600
+const HOLD_MS = 400
 const MOVE_THRESHOLD = 10 // px
 const TOUCH_CONTEXTMENU_BLOCK_MS = 3200
 const LONGPRESS_CONTEXTMENU_BLOCK_MS = 6000
