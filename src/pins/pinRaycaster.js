@@ -8,8 +8,11 @@ import * as THREE from 'three'
 // - Only a short + stationary tap triggers actions (open pin/cluster, or place pin in pin-mode).
 // - Holding longer than TAP_MAX_MS does not trigger anything (prevents accidental opens/creates).
 // - Any meaningful movement cancels the tap (treated as navigation).
-const TAP_MAX_MS = 260
-const TAP_MOVE_PX = 12
+// Real touchscreens often produce slower taps + a bit more jitter than desktop clicks.
+// Keep this strict enough to avoid accidental actions during navigation, but permissive enough
+// that a normal finger tap reliably places a pin.
+const TAP_MAX_MS = 550
+const TAP_MOVE_PX = 18
 // Floor placement uses the same movement threshold (keep name for clarity in that path).
 const PIN_FLOOR_TAP_MOVE_PX = TAP_MOVE_PX
 
@@ -236,14 +239,14 @@ export function setupPinRaycaster({
       }
     }
 
-    doc.addEventListener('pointermove', onMove)
+    doc.addEventListener('pointermove', onMove, true)
     doc.addEventListener('pointerup', onUpCapture, true)
     doc.addEventListener('pointercancel', onCancelCapture, true)
     doc.addEventListener('pointerdown', onExtraPointerDownCapture, true)
 
     detachDeferredFloorGestures = () => {
       clearTimeout(orphanTimerId)
-      doc.removeEventListener('pointermove', onMove)
+      doc.removeEventListener('pointermove', onMove, true)
       doc.removeEventListener('pointerup', onUpCapture, true)
       doc.removeEventListener('pointercancel', onCancelCapture, true)
       doc.removeEventListener('pointerdown', onExtraPointerDownCapture, true)
