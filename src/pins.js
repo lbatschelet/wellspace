@@ -12,7 +12,7 @@ import { createPinMesh, createClusterMesh } from './pins/pinMesh'
 import { buildClusters } from './pins/pinClustering'
 import { createPinUi } from './pins/pinPanel'
 import { setupPinRaycaster } from './pins/pinRaycaster'
-import { setupLongPress, setupDoubleClickPlacePin } from './pins/pinLongPress'
+import { setupDoubleClickPlacePin } from './pins/pinLongPress'
 import { createPinState, normalizePin, isLocalPin, bySort, getOptionLabel } from './pins/pinState'
 import { createPinColorMode } from './pins/pinColorMode'
 import { getSliderColor } from './pins/pinColors'
@@ -259,19 +259,6 @@ export function createPinSystem({
         renderPins()
       }
     },
-    onFloorClick: ({ floorIndex, position }) => {
-      placePendingPin({ floorIndex, position })
-      openForm({ floorIndex, position })
-    },
-  })
-
-  setupLongPress({
-    camera,
-    domElement,
-    getState: () => state,
-    getSelectedFloor,
-    getFloorSlabTopY,
-    controls,
     onFloorClick: ({ floorIndex, position }) => {
       placePendingPin({ floorIndex, position })
       openForm({ floorIndex, position })

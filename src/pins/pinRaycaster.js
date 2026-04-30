@@ -4,8 +4,12 @@
  */
 import * as THREE from 'three'
 
-/** Pin mode + touch: cancel tap if finger moved more than this (px). */
-const PIN_FLOOR_TAP_MOVE_PX = 22
+// Interaction heuristics:
+// - Only a short + stationary tap triggers actions (open pin/cluster, or place pin in pin-mode).
+// - Holding longer than TAP_MAX_MS does not trigger anything (prevents accidental opens/creates).
+// - Any meaningful movement cancels the tap (treated as navigation).
+const TAP_MAX_MS = 260
+const TAP_MOVE_PX = 12
 
 /**
  * Collect all hit-sphere meshes from a pin group (for hover raycasting).
@@ -49,6 +53,9 @@ export function setupPinRaycaster({
 }) {
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
+
+  /** @type {{ pointerId: number, startX: number, startY: number, startedAt: number, candidate: any } | null} */
+  let pendingSceneTap = null
 
   /**
    * Pin mode + touch/pen: place on pointerup, not pointerdown — opening the modal on down leaves
@@ -98,6 +105,66 @@ export function setupPinRaycaster({
     return event.pointerType === 'touch' || event.pointerType === 'pen'
   }
 
+  function cancelPendingSceneTap() {
+    pendingSceneTap = null
+  }
+
+  function attachSceneTapListeners() {
+    const doc = domElement.ownerDocument || document
+
+    const onMove = (e) => {
+      if (!pendingSceneTap || e.pointerId !== pendingSceneTap.pointerId) return
+      const dx = e.clientX - pendingSceneTap.startX
+      const dy = e.clientY - pendingSceneTap.startY
+      if (dx * dx + dy * dy > TAP_MOVE_PX * TAP_MOVE_PX) {
+        cancelPendingSceneTap()
+      }
+    }
+
+    const detach = () => {
+      doc.removeEventListener('pointermove', onMove, true)
+      doc.removeEventListener('pointerup', onUpCapture, true)
+      doc.removeEventListener('pointercancel', onCancelCapture, true)
+    }
+
+    const onUpCapture = (e) => {
+      if (!pendingSceneTap || e.pointerId !== pendingSceneTap.pointerId) return
+      const { candidate, startedAt } = pendingSceneTap
+      cancelPendingSceneTap()
+      detach()
+
+      const elapsed = performance.now() - startedAt
+      if (elapsed > TAP_MAX_MS) return
+
+      const suppressTouchSynthClick =
+        (e.pointerType === 'touch' || e.pointerType === 'pen') && e.cancelable
+      if (suppressTouchSynthClick) e.preventDefault()
+
+      if (candidate?.kind === 'cluster' && typeof onClusterClick === 'function') {
+        onClusterClick(candidate.clusterKey)
+        return
+      }
+      if (candidate?.kind === 'pin') {
+        onPinClick(candidate.pin)
+        return
+      }
+      if (candidate?.kind === 'empty' && typeof onEmptyClick === 'function') {
+        onEmptyClick()
+      }
+    }
+
+    const onCancelCapture = (e) => {
+      if (!pendingSceneTap || e.pointerId !== pendingSceneTap.pointerId) return
+      cancelPendingSceneTap()
+      detach()
+    }
+
+    // Use capture so pointerup is observed even if it lands on an overlay.
+    doc.addEventListener('pointermove', onMove, true)
+    doc.addEventListener('pointerup', onUpCapture, true)
+    doc.addEventListener('pointercancel', onCancelCapture, true)
+  }
+
   function attachDeferredFloorTapListeners(startClientX, startClientY) {
     const doc = domElement.ownerDocument || document
     const orphanTimerId = window.setTimeout(() => {
@@ -132,8 +199,12 @@ export function setupPinRaycaster({
 
       const { clientX: x, clientY: y } = e
       const fallbackHit = pendingPinFloorTouch.fallbackHit
+      const startedAt = pendingPinFloorTouch.startedAt
 
       teardownDeferredFloorTap()
+
+      const elapsed = performance.now() - startedAt
+      if (elapsed > TAP_MAX_MS) return
 
       const hitUp = intersectFloorAt(x, y)
       const hit = hitUp || fallbackHit
@@ -195,26 +266,32 @@ export function setupPinRaycaster({
 
       if (!state.pinMode) {
         const hits = raycaster.intersectObjects(pinGroup.children, true)
-        if (!hits.length) {
-          if (typeof onEmptyClick === 'function') onEmptyClick()
-          return
+        let candidate = { kind: 'empty' }
+        if (hits.length) {
+          let obj = hits[0].object
+          while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
+            obj = obj.parent
+          }
+          if (obj?.userData?.clusterKey) {
+            candidate = { kind: 'cluster', clusterKey: obj.userData.clusterKey }
+          } else if (obj?.userData?.pinData) {
+            candidate = { kind: 'pin', pin: obj.userData.pinData }
+          }
         }
 
-        let obj = hits[0].object
-        while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
-          obj = obj.parent
+        // Defer all opens to pointerup and cancel on move/hold.
+        pendingSceneTap = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          startedAt: performance.now(),
+          candidate,
         }
-
-        if (obj?.userData?.clusterKey && typeof onClusterClick === 'function') {
-          onClusterClick(obj.userData.clusterKey)
-          return
-        }
-
-        const pin = obj?.userData?.pinData
-        if (pin) {
-          if (suppressTouchSynthClick) event.preventDefault()
-          onPinClick(pin)
-        }
+        attachSceneTapListeners()
+        try {
+          domElement.setPointerCapture?.(event.pointerId)
+        } catch (_) {}
+        if (suppressTouchSynthClick) event.preventDefault()
         return
       }
 
@@ -228,6 +305,7 @@ export function setupPinRaycaster({
           pointerId: event.pointerId,
           clientX: event.clientX,
           clientY: event.clientY,
+          startedAt: performance.now(),
           fallbackHit: hitDown,
         }
         attachDeferredFloorTapListeners(
