@@ -237,7 +237,11 @@ export function setupPinRaycaster({
     const onExtraPointerDownCapture = (e) => {
       if (pendingPinFloorTouch === null || !getState()?.pinMode) return
       if (e.pointerId === pendingPinFloorTouch.pointerId) return
-      if (isDeferredPinFloorTouch(e)) {
+
+      // Only cancel on a true second-finger touch/pen interaction.
+      // Some kiosk firmwares synthesize a follow-up `mouse` pointerdown for the same tap,
+      // which must NOT cancel the pending tap.
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') {
         teardownDeferredFloorTap()
       }
     }
@@ -316,6 +320,7 @@ export function setupPinRaycaster({
           clientY: event.clientY,
           startedAt: performance.now(),
           fallbackHit: hitDown,
+          pointerType: event.pointerType,
         }
         attachDeferredFloorTapListeners(
           pendingPinFloorTouch.clientX,
