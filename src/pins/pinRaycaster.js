@@ -4,6 +4,9 @@
  */
 import * as THREE from 'three'
 
+/** Pin mode + touch: cancel tap if finger moved more than this (px). */
+const PIN_FLOOR_TAP_MOVE_PX = 14
+
 /**
  * Collect all hit-sphere meshes from a pin group (for hover raycasting).
  * @param {THREE.Group} pinGroup
@@ -47,10 +50,50 @@ export function setupPinRaycaster({
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
 
+  /**
+   * Pin mode + touch pen: defer floor placement until pointerup while holding capture on the canvas.
+   * If we opened the modal already on pointerdown, the translucent backdrop sits under the finger and
+   * pointerup/synthesized clicks would dismiss the form instantly on many browsers.
+   * @type {{ pointerId: number, clientX: number, clientY: number } | null}
+   */
+  let pendingPinFloorTouch = null
+
+  function releaseFloorTouchCapture(pointerId) {
+    try {
+      domElement.releasePointerCapture(pointerId)
+    } catch (_) {
+      /* not captured */
+    }
+  }
+
+  function clearPendingFloorTouch(pointerId) {
+    if (!pendingPinFloorTouch || pendingPinFloorTouch.pointerId !== pointerId) return
+    releaseFloorTouchCapture(pointerId)
+    pendingPinFloorTouch = null
+  }
+
+  function intersectFloorAt(clientX, clientY) {
+    const rect = domElement.getBoundingClientRect()
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
+    raycaster.setFromCamera(pointer, camera)
+    const floorIndex = getSelectedFloor()
+    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
+    const point = new THREE.Vector3()
+    if (!raycaster.ray.intersectPlane(plane, point)) return null
+    return { floorIndex, position: point }
+  }
+
+  function isDeferredPinFloorTouch(event) {
+    return (
+      event.pointerType === 'touch' ||
+      event.pointerType === 'pen'
+    )
+  }
+
   // ── Click handling ─────────────────────────────────────────────
-  // `passive: false`: in pin-placement mode touch must call preventDefault on pointerdown so
-  // the browser does not synthesize a follow-up click on the fullscreen modal backdrop → which
-  // would instantly close the form (backdrop click handler).
+  // `passive: false`: allow preventDefault while a floor-touch placement is deferred.
   domElement.addEventListener(
     'pointerdown',
     (event) => {
@@ -94,18 +137,81 @@ export function setupPinRaycaster({
         return
       }
 
-      const floorIndex = getSelectedFloor()
-      const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
+      // Pin-placement mode — floor intersection
+      const hitDown = intersectFloorAt(event.clientX, event.clientY)
+      if (!hitDown) return
 
-      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
-      const point = new THREE.Vector3()
-      if (!raycaster.ray.intersectPlane(plane, point)) return
+      const deferToPointerUp = isDeferredPinFloorTouch(event)
+      if (deferToPointerUp) {
+        if (pendingPinFloorTouch && pendingPinFloorTouch.pointerId !== event.pointerId) {
+          clearPendingFloorTouch(pendingPinFloorTouch.pointerId)
+        }
+        pendingPinFloorTouch = {
+          pointerId: event.pointerId,
+          clientX: event.clientX,
+          clientY: event.clientY,
+        }
+        try {
+          domElement.setPointerCapture(event.pointerId)
+        } catch (_) {
+          pendingPinFloorTouch = null
+          return
+        }
+        if (event.cancelable) event.preventDefault()
+        return
+      }
 
-      if (suppressTouchSynthClick) event.preventDefault()
-
-      onFloorClick({ floorIndex, position: point })
+      onFloorClick(hitDown)
     },
     { passive: false }
+  )
+
+  domElement.addEventListener('pointermove', (event) => {
+    if (!pendingPinFloorTouch || event.pointerId !== pendingPinFloorTouch.pointerId) return
+    const dx = event.clientX - pendingPinFloorTouch.clientX
+    const dy = event.clientY - pendingPinFloorTouch.clientY
+    if (dx * dx + dy * dy > PIN_FLOOR_TAP_MOVE_PX * PIN_FLOOR_TAP_MOVE_PX) {
+      clearPendingFloorTouch(event.pointerId)
+    }
+  })
+
+  domElement.addEventListener('pointerup', (event) => {
+    if (!pendingPinFloorTouch || event.pointerId !== pendingPinFloorTouch.pointerId) return
+    clearPendingFloorTouch(event.pointerId)
+
+    const hitUp = intersectFloorAt(event.clientX, event.clientY)
+    if (!hitUp) return
+    if (event.cancelable) event.preventDefault()
+    onFloorClick(hitUp)
+  })
+
+  domElement.addEventListener('pointercancel', (event) => {
+    clearPendingFloorTouch(event.pointerId)
+  })
+
+  domElement.addEventListener('lostpointercapture', (event) => {
+    if (
+      pendingPinFloorTouch !== null &&
+      event.pointerId === pendingPinFloorTouch.pointerId
+    ) {
+      pendingPinFloorTouch = null
+    }
+  })
+
+  // Second finger: abort pending floor tap (same idea as pinLongPress).
+  domElement.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (!pendingPinFloorTouch) return
+      if (
+        pendingPinFloorTouch.pointerId !== event.pointerId &&
+        getState()?.pinMode &&
+        isDeferredPinFloorTouch(event)
+      ) {
+        clearPendingFloorTouch(pendingPinFloorTouch.pointerId)
+      }
+    },
+    true
   )
 
   // ── Hover detection (desktop only, throttled via rAF) ──────────
