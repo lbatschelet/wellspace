@@ -107,7 +107,11 @@ export function setupPinRaycaster({
   }
 
   function isDeferredPinFloorTouch(event) {
-    return event.pointerType === 'touch' || event.pointerType === 'pen'
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    const type = event.pointerType
+    // Some kiosk touch firmwares report taps as `mouse` (left button). Treat those as touch-like
+    // on touch-capable devices so we still apply the short-press + no-move rules.
+    return type === 'touch' || type === 'pen' || (isTouchDevice && type === 'mouse')
   }
 
   function cancelPendingSceneTap() {
@@ -143,8 +147,7 @@ export function setupPinRaycaster({
       const elapsed = performance.now() - startedAt
       if (elapsed > TAP_MAX_MS) return
 
-      const suppressTouchSynthClick =
-        (e.pointerType === 'touch' || e.pointerType === 'pen') && e.cancelable
+      const suppressTouchSynthClick = isDeferredPinFloorTouch(e) && e.cancelable
       if (suppressTouchSynthClick) e.preventDefault()
 
       if (candidate?.kind === 'cluster' && typeof onClusterClick === 'function') {
@@ -268,8 +271,7 @@ export function setupPinRaycaster({
 
       const state = getState()
 
-      const suppressTouchSynthClick =
-        (event.pointerType === 'touch' || event.pointerType === 'pen') && event.cancelable
+      const suppressTouchSynthClick = isDeferredPinFloorTouch(event) && event.cancelable
 
       if (!state.pinMode) {
         const hits = raycaster.intersectObjects(pinGroup.children, true)
