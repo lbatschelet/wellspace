@@ -243,6 +243,12 @@ const activeTouchPointers = new Map()
 let touchTwistLastAngle = null
 let panWasEnabledBeforeTwist = true
 
+function resetTwoFingerTouchState() {
+  activeTouchPointers.clear()
+  touchTwistLastAngle = null
+  controls.enablePan = panWasEnabledBeforeTwist
+}
+
 function getTouchPairAngle() {
   if (activeTouchPointers.size < 2) return null
   const touches = Array.from(activeTouchPointers.values())
@@ -483,9 +489,14 @@ floorButtons.forEach((button) => {
 setSelectedFloor(selectedFloor)
 window.addEventListener('resize', handleResize)
 document.addEventListener('visibilitychange', () => {
-  if (typeof document !== 'undefined' && !document.hidden) {
-    scheduleFrame()
+  if (typeof document === 'undefined') return
+  if (document.hidden) {
+    // Defensive: some touch stacks drop pointerup/cancel when tab loses visibility,
+    // which can leave two-finger twist state stuck (pan disabled).
+    resetTwoFingerTouchState()
+    return
   }
+  scheduleFrame()
 })
 const canvas = renderer.domElement
 canvas.addEventListener('gesturestart', resetTouchpadNativeGesture, { passive: false })
@@ -495,6 +506,10 @@ canvas.addEventListener('pointerdown', handleTouchPointerDown, { passive: true }
 canvas.addEventListener('pointermove', handleTouchPointerMove, { passive: true })
 canvas.addEventListener('pointerup', handleTouchPointerEnd, { passive: true })
 canvas.addEventListener('pointercancel', handleTouchPointerEnd, { passive: true })
+// Defensive: if the browser drops pointerup/cancel, ensure we don't get stuck in twist mode.
+window.addEventListener('blur', resetTwoFingerTouchState, { passive: true })
+window.addEventListener('touchend', resetTwoFingerTouchState, { passive: true, capture: true })
+window.addEventListener('touchcancel', resetTwoFingerTouchState, { passive: true, capture: true })
 canvas.addEventListener('pointerdown', scheduleFrame, { passive: true })
 canvas.addEventListener('wheel', handleTouchpadRotateGesture, { passive: false })
 canvas.addEventListener('wheel', scheduleFrame, { passive: true })
