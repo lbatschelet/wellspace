@@ -58,6 +58,7 @@ export function setupPinRaycaster({
 }) {
   const raycaster = new THREE.Raycaster()
   const pointer = new THREE.Vector2()
+  let lastPointerDownAt = 0
 
   /** @type {{ pointerId: number, startX: number, startY: number, startedAt: number, candidate: any } | null} */
   let pendingSceneTap = null
@@ -291,6 +292,7 @@ export function setupPinRaycaster({
   domElement.addEventListener(
     'pointerdown',
     (event) => {
+      lastPointerDownAt = performance.now()
       const isPrimaryPointer = event.pointerType !== 'mouse' || event.button === 0
       if (!isPrimaryPointer) return
       if (event.target.closest('.ui')) return
@@ -366,6 +368,59 @@ export function setupPinRaycaster({
     },
     { passive: false }
   )
+
+  // ── Mouse-event fallback (some kiosk stacks don't emit PointerEvents reliably) ──────────
+  // Only used for pin placement (pin-mode). Keeps the same short-press + no-move rule.
+  let mouseTap = null
+  domElement.addEventListener('mousedown', (event) => {
+    // If PointerEvents fired for this interaction, ignore the mouse fallback.
+    if (performance.now() - lastPointerDownAt < 80) return
+    if (event.button !== 0) return
+    if (event.target.closest && event.target.closest('.ui')) return
+    const state = getState()
+    if (!state?.pinMode) return
+
+    const hitDown = intersectFloorAt(event.clientX, event.clientY)
+    if (!hitDown) return
+    mouseTap = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startedAt: performance.now(),
+      moved: false,
+      fallbackHit: hitDown,
+    }
+  }, true)
+
+  domElement.addEventListener('mousemove', (event) => {
+    if (!mouseTap) return
+    const dx = event.clientX - mouseTap.startX
+    const dy = event.clientY - mouseTap.startY
+    if (dx * dx + dy * dy > TAP_MOVE_PX * TAP_MOVE_PX) {
+      mouseTap.moved = true
+    }
+  }, true)
+
+  domElement.addEventListener('mouseup', (event) => {
+    if (!mouseTap) return
+    if (event.button !== 0) {
+      mouseTap = null
+      return
+    }
+    const state = getState()
+    if (!state?.pinMode) {
+      mouseTap = null
+      return
+    }
+    const elapsed = performance.now() - mouseTap.startedAt
+    const moved = mouseTap.moved
+    const fallbackHit = mouseTap.fallbackHit
+    mouseTap = null
+    if (moved) return
+    if (elapsed > TAP_MAX_MS) return
+    const hit = intersectFloorAt(event.clientX, event.clientY) || fallbackHit
+    if (!hit) return
+    onFloorClick(hit)
+  }, true)
 
   // ── Hover detection (desktop only, throttled via rAF) ──────────
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
