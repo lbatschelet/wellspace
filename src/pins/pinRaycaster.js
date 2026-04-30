@@ -180,6 +180,7 @@ export function setupPinRaycaster({
     const orphanTimerId = window.setTimeout(() => {
       teardownDeferredFloorTap()
     }, 5500)
+    let handled = false
 
     const onMove = (e) => {
       if (
@@ -206,6 +207,11 @@ export function setupPinRaycaster({
       ) {
         return
       }
+      if (handled) {
+        teardownDeferredFloorTap()
+        return
+      }
+      handled = true
 
       const { clientX: x, clientY: y } = e
       const fallbackHit = pendingPinFloorTouch.fallbackHit
@@ -224,6 +230,24 @@ export function setupPinRaycaster({
       onFloorClick(hit)
     }
 
+    // Fallback: some kiosk/touch stacks synthesize a click without delivering a matching pointerup.
+    // Use capture so we can consume it before the modal backdrop handlers.
+    const onClickCapture = (e) => {
+      if (!pendingPinFloorTouch || handled) return
+      // Only if we're still in pin-mode (otherwise ignore).
+      if (!getState()?.pinMode) return
+      if (e.target && e.target.closest && e.target.closest('.ui')) return
+      const elapsed = performance.now() - pendingPinFloorTouch.startedAt
+      if (elapsed > TAP_MAX_MS) return
+      handled = true
+      teardownDeferredFloorTap()
+      const hit = intersectFloorAt(e.clientX, e.clientY) || pendingPinFloorTouch.fallbackHit
+      if (!hit) return
+      if (e.cancelable) e.preventDefault()
+      e.stopPropagation()
+      onFloorClick(hit)
+    }
+
     const onCancelCapture = (e) => {
       if (
         pendingPinFloorTouch === null ||
@@ -231,6 +255,7 @@ export function setupPinRaycaster({
       ) {
         return
       }
+      handled = true
       teardownDeferredFloorTap()
     }
 
@@ -248,6 +273,7 @@ export function setupPinRaycaster({
 
     doc.addEventListener('pointermove', onMove, true)
     doc.addEventListener('pointerup', onUpCapture, true)
+    doc.addEventListener('click', onClickCapture, true)
     doc.addEventListener('pointercancel', onCancelCapture, true)
     doc.addEventListener('pointerdown', onExtraPointerDownCapture, true)
 
@@ -255,6 +281,7 @@ export function setupPinRaycaster({
       clearTimeout(orphanTimerId)
       doc.removeEventListener('pointermove', onMove, true)
       doc.removeEventListener('pointerup', onUpCapture, true)
+      doc.removeEventListener('click', onClickCapture, true)
       doc.removeEventListener('pointercancel', onCancelCapture, true)
       doc.removeEventListener('pointerdown', onExtraPointerDownCapture, true)
     }
