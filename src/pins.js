@@ -184,6 +184,8 @@ export function createPinSystem({
   let panTween = null
   let hasUnsavedFormChanges = false
   let discardDialogPromise = null
+  /** After placing a pin (touch creates modal), kill stray taps that would dismiss immediately. */
+  let suppressBackdropDismissUntil = 0
 
   function panToRevealPin(position3D) {
     // Cancel any running pan
@@ -293,10 +295,26 @@ export function createPinSystem({
   closeButton.addEventListener('click', () => {
     void requestCloseForm()
   })
+
+  backdrop.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.target !== backdrop) return
+      if (performance.now() < suppressBackdropDismissUntil) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    },
+    true
+  )
   backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      void requestCloseForm()
+    if (event.target !== backdrop) return
+    if (performance.now() < suppressBackdropDismissUntil) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
     }
+    void requestCloseForm()
   })
 
   submitButton.addEventListener('click', async (event) => {
@@ -882,10 +900,15 @@ export function createPinSystem({
 
     colorMode.updatePreviewColor()
     backdrop.classList.add('is-visible')
+    // Touch “ghost” dismiss on backdrop: block backdrop dismiss briefly after opening create modal.
+    if (!pin) {
+      suppressBackdropDismissUntil = performance.now() + 900
+    }
     needRender()
   }
 
   function closeForm() {
+    suppressBackdropDismissUntil = 0
     backdrop.classList.remove('is-visible')
     backdrop.classList.remove('is-longpress')
     form.dataset.floorIndex = ''
