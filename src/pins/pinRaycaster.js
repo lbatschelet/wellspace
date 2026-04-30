@@ -10,6 +10,8 @@ import * as THREE from 'three'
 // - Any meaningful movement cancels the tap (treated as navigation).
 const TAP_MAX_MS = 260
 const TAP_MOVE_PX = 12
+// Floor placement uses the same movement threshold (keep name for clarity in that path).
+const PIN_FLOOR_TAP_MOVE_PX = TAP_MOVE_PX
 
 /**
  * Collect all hit-sphere meshes from a pin group (for hover raycasting).
@@ -118,6 +120,8 @@ export function setupPinRaycaster({
       const dy = e.clientY - pendingSceneTap.startY
       if (dx * dx + dy * dy > TAP_MOVE_PX * TAP_MOVE_PX) {
         cancelPendingSceneTap()
+        // If we cancelled due to movement, detach listeners immediately to avoid leaks.
+        detach()
       }
     }
 
