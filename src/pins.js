@@ -887,8 +887,10 @@ export function createPinSystem({
 
     colorMode.updatePreviewColor()
     backdrop.classList.add('is-visible')
-    // Touch “ghost” dismiss on backdrop: block backdrop dismiss briefly after opening create modal.
-    if (!pin) {
+    // Touch “ghost” dismiss on backdrop: block backdrop dismiss briefly after opening the modal.
+    // This is important especially when switching from one pin to another on touch screens.
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    if (isTouchDevice) {
       suppressBackdropDismissUntil = performance.now() + 900
     }
     needRender()
