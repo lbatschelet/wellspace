@@ -48,50 +48,65 @@ export function setupPinRaycaster({
   const pointer = new THREE.Vector2()
 
   // ── Click handling ─────────────────────────────────────────────
-  domElement.addEventListener('pointerdown', (event) => {
-    const isPrimaryPointer = event.pointerType !== 'mouse' || event.button === 0
-    if (!isPrimaryPointer) return
-    if (event.target.closest('.ui')) return
+  // `passive: false`: in pin-placement mode touch must call preventDefault on pointerdown so
+  // the browser does not synthesize a follow-up click on the fullscreen modal backdrop → which
+  // would instantly close the form (backdrop click handler).
+  domElement.addEventListener(
+    'pointerdown',
+    (event) => {
+      const isPrimaryPointer = event.pointerType !== 'mouse' || event.button === 0
+      if (!isPrimaryPointer) return
+      if (event.target.closest('.ui')) return
 
-    const rect = domElement.getBoundingClientRect()
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-    raycaster.setFromCamera(pointer, camera)
+      const rect = domElement.getBoundingClientRect()
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+      raycaster.setFromCamera(pointer, camera)
 
-    const state = getState()
+      const state = getState()
 
-    if (!state.pinMode) {
-      const hits = raycaster.intersectObjects(pinGroup.children, true)
-      if (!hits.length) {
-        if (typeof onEmptyClick === 'function') onEmptyClick()
+      const suppressTouchSynthClick =
+        (event.pointerType === 'touch' || event.pointerType === 'pen') && event.cancelable
+
+      if (!state.pinMode) {
+        const hits = raycaster.intersectObjects(pinGroup.children, true)
+        if (!hits.length) {
+          if (typeof onEmptyClick === 'function') onEmptyClick()
+          return
+        }
+
+        // Walk up the parent chain to find either a pin mesh or a cluster sprite.
+        let obj = hits[0].object
+        while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
+          obj = obj.parent
+        }
+
+        if (obj?.userData?.clusterKey && typeof onClusterClick === 'function') {
+          onClusterClick(obj.userData.clusterKey)
+          return
+        }
+
+        const pin = obj?.userData?.pinData
+        if (pin) {
+          if (suppressTouchSynthClick) event.preventDefault()
+          onPinClick(pin)
+        }
         return
       }
 
-      // Walk up the parent chain to find either a pin mesh or a cluster sprite.
-      let obj = hits[0].object
-      while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
-        obj = obj.parent
-      }
+      const floorIndex = getSelectedFloor()
+      const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
 
-      if (obj?.userData?.clusterKey && typeof onClusterClick === 'function') {
-        onClusterClick(obj.userData.clusterKey)
-        return
-      }
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
+      const point = new THREE.Vector3()
+      if (!raycaster.ray.intersectPlane(plane, point)) return
 
-      const pin = obj?.userData?.pinData
-      if (pin) onPinClick(pin)
-      return
-    }
+      if (suppressTouchSynthClick) event.preventDefault()
 
-    const floorIndex = getSelectedFloor()
-    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
-
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
-    const point = new THREE.Vector3()
-    if (!raycaster.ray.intersectPlane(plane, point)) return
-
-    onFloorClick({ floorIndex, position: point })
-  })
+      onFloorClick({ floorIndex, position: point })
+    },
+    { passive: false }
+  )
 
   // ── Hover detection (desktop only, throttled via rAF) ──────────
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
