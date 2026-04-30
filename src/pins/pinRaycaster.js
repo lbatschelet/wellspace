@@ -235,8 +235,11 @@ export function setupPinRaycaster({
     // Use capture so we can consume it before the modal backdrop handlers.
     const onClickCapture = (e) => {
       if (!pendingPinFloorTouch || handled) return
-      // Only if we're still in pin-mode (otherwise ignore).
-      if (!getState()?.pinMode) return
+      // If a modal is already open, ignore clicks (avoid immediate close/reopen loops).
+      const modalOpen =
+        typeof document !== 'undefined' &&
+        Boolean(document.querySelector('.ui-modal-backdrop.is-visible'))
+      if (modalOpen) return
       if (e.target && e.target.closest && e.target.closest('.ui')) return
       const elapsed = performance.now() - pendingPinFloorTouch.startedAt
       if (elapsed > TAP_MAX_MS) return
@@ -261,7 +264,7 @@ export function setupPinRaycaster({
     }
 
     const onExtraPointerDownCapture = (e) => {
-      if (pendingPinFloorTouch === null || !getState()?.pinMode) return
+      if (pendingPinFloorTouch === null) return
       if (e.pointerId === pendingPinFloorTouch.pointerId) return
 
       // Only cancel on a true second-finger touch/pen interaction.
@@ -334,6 +337,32 @@ export function setupPinRaycaster({
           domElement.setPointerCapture?.(event.pointerId)
         } catch (_) {}
         if (suppressTouchSynthClick) event.preventDefault()
+
+        // Outside pin-mode: short touch on empty floor should create a pin.
+        // We only arm this on touch-like pointers to avoid mouse users creating pins while navigating.
+        if (candidate.kind === 'empty' && isDeferredPinFloorTouch(event)) {
+          const modalOpen =
+            typeof document !== 'undefined' &&
+            Boolean(document.querySelector('.ui-modal-backdrop.is-visible'))
+          if (!modalOpen) {
+            const hitDown = intersectFloorAt(event.clientX, event.clientY)
+            if (hitDown) {
+              teardownDeferredFloorTap()
+              pendingPinFloorTouch = {
+                pointerId: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                startedAt: performance.now(),
+                fallbackHit: hitDown,
+                pointerType: event.pointerType,
+              }
+              attachDeferredFloorTapListeners(
+                pendingPinFloorTouch.clientX,
+                pendingPinFloorTouch.clientY
+              )
+            }
+          }
+        }
         return
       }
 
@@ -370,7 +399,8 @@ export function setupPinRaycaster({
   )
 
   // ── Mouse-event fallback (some kiosk stacks don't emit PointerEvents reliably) ──────────
-  // Only used for pin placement (pin-mode). Keeps the same short-press + no-move rule.
+  // Used for floor taps (pin-mode or touch-style "tap to create" outside pin-mode).
+  // Keeps the same short-press + no-move rule.
   let mouseTap = null
   domElement.addEventListener('mousedown', (event) => {
     // If PointerEvents fired for this interaction, ignore the mouse fallback.
@@ -378,7 +408,8 @@ export function setupPinRaycaster({
     if (event.button !== 0) return
     if (event.target.closest && event.target.closest('.ui')) return
     const state = getState()
-    if (!state?.pinMode) return
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    if (!state?.pinMode && !isTouchDevice) return
 
     const hitDown = intersectFloorAt(event.clientX, event.clientY)
     if (!hitDown) return
@@ -407,7 +438,8 @@ export function setupPinRaycaster({
       return
     }
     const state = getState()
-    if (!state?.pinMode) {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+    if (!state?.pinMode && !isTouchDevice) {
       mouseTap = null
       return
     }
