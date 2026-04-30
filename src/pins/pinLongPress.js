@@ -1,5 +1,5 @@
 /**
- * Long-press (touch) and double-click (mouse) for placing a pin without pin mode.
+ * Legacy long-press helper (currently unused) and double-click (mouse) helper.
  *
  * Exports: setupLongPress, setupDoubleClickPlacePin.
  */
