@@ -594,6 +594,20 @@ async function loadQuestions(language) {
 let aboutUpdatedAt = null
 let aboutLoaded = false
 
+/** Im Kiosk keine Hyperlinks — <a> zu <span> (Text bleibt, kein Aufrufen von URLs). */
+function neutralizeAboutAnchorsForKiosk(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  doc.body.querySelectorAll('a').forEach((anchor) => {
+    const span = document.createElement('span')
+    if (anchor.id) span.id = anchor.id
+    if (anchor.className) span.className = anchor.className
+    if (anchor.title) span.title = anchor.title
+    while (anchor.firstChild) span.appendChild(anchor.firstChild)
+    anchor.replaceWith(span)
+  })
+  return doc.body.innerHTML
+}
+
 async function loadAboutContent(language, forceShow = false) {
   try {
     const data = await fetchContent({ key: 'about', lang: language })
@@ -605,7 +619,9 @@ async function loadAboutContent(language, forceShow = false) {
     aboutUpdatedAt = data.updated_at
     aboutLoaded = true
     const processed = data.body.replace(/\{\{year\}\}/g, String(new Date().getFullYear()))
-    const html = marked.parse(processed)
+    let html = marked.parse(processed)
+    if (typeof html !== 'string') html = String(html)
+    if (kioskMode) html = neutralizeAboutAnchorsForKiosk(html)
     aboutOverlay.setContent(html)
 
     if (forceShow) {
