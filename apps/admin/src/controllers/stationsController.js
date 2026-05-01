@@ -129,6 +129,21 @@ export function createStationsController({ state, views, api, questionnairesApi,
     populateQuestionnaireSelect(station ? station.questionnaire_id : null)
   }
 
+  const normalizeStationKey = (raw) => {
+    let s = String(raw || '').trim().toLowerCase()
+    if (!s) return ''
+    s = s
+      .replaceAll('ä', 'ae')
+      .replaceAll('ö', 'oe')
+      .replaceAll('ü', 'ue')
+      .replaceAll('ß', 'ss')
+    s = s.replace(/[\s_]+/g, '-')
+    s = s.replace(/[^a-z0-9-]+/g, '')
+    s = s.replace(/-+/g, '-')
+    s = s.replace(/^-+|-+$/g, '')
+    return s
+  }
+
   const closeModal = () => {
     hideModal(view.modal)
     editingStation = null
@@ -265,6 +280,19 @@ export function createStationsController({ state, views, api, questionnairesApi,
 
   const bindEvents = () => {
     view.addBtn.addEventListener('click', () => openModal(null))
+    // Ensure URL-safe station keys for new stations (old ones remain read-only).
+    view.keyInput.addEventListener('input', () => {
+      if (view.keyInput.readOnly) return
+      const before = view.keyInput.value
+      const after = normalizeStationKey(before)
+      if (after !== before) {
+        const start = view.keyInput.selectionStart ?? after.length
+        view.keyInput.value = after
+        try {
+          view.keyInput.setSelectionRange(start, start)
+        } catch {}
+      }
+    })
 
     view.tableBody.addEventListener('change', async (e) => {
       const toggle = e.target.closest('[data-toggle="active"]')
