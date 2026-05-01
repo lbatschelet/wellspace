@@ -116,9 +116,33 @@ cd feelvonroll-api && composer test
 
 ## Deployment
 
-1. **API**: Upload `feelvonroll-api/` to your PHP hosting (e.g. `/api`). Ensure `config.local.php` is configured and not publicly accessible.
-2. **Webapp**: Run `npm run build` in `feelvonroll-webapp/` and deploy the `dist/` folder to your web root.
-3. **Admin**: Run `npm run build` in `feelvonroll-admin/` and deploy the `dist/` folder (e.g. to `/admin`).
+### Recommended: CI build → upload `dist/` only
+
+Shared hosting environments often block native Node binaries (e.g. `esbuild`) during installs/builds. To keep deployments simple, build on GitHub Actions and upload only the generated static files.
+
+1. In GitHub, run the workflow `Build dist (artifact)` with:
+   - `brand`: `wohlopti` or `feelvonroll`
+   - `app`: `all` (single-origin `/` + `/admin/`) or `viewer` / `admin`
+2. Download the artifact `dist-<brand>-<app>` from the workflow run.
+3. Upload the extracted files:
+   - `APP=all`: upload `dist/` to the web root of the site (contains `/` and `/admin/`)
+   - `APP=viewer`: upload `apps/viewer/dist/` to the viewer host
+   - `APP=admin`: upload `apps/admin/dist/` to the admin host (or `/admin/`)
+
+### API
+
+Deploy the PHP API separately (e.g. to `/api` or `api.<domain>`). The frontends call the API via `VITE_API_BASE` (provided by the brand configuration during the build).
+
+### Hostinger Git integration (no env vars)
+
+If your Hostinger Git integration cannot set environment variables, publish a **deploy branch** that already contains production-ready files (static frontend + optional `/api`).
+
+Use the workflow `Publish to deploy branch (Hostinger Git)` to generate a branch (default: `deploy/hostinger`) that contains:
+
+- `/` and `/admin/` static files (depending on the `app` input)
+- optional `/api/` PHP API (excluding `config.local.php`; optionally including `vendor/`)
+
+Then configure Hostinger to deploy that deploy branch to `public_html` (or an empty subdirectory via the “Directory” field).
 
 Set `VITE_API_BASE` at build time if the API is not served from `/api`:
 
