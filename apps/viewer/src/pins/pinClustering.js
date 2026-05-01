@@ -1,0 +1,76 @@
+/**
+ * Pin clustering based on screen-space proximity.
+ * Groups nearby pins into clusters for the current camera view.
+ */
+import * as THREE from 'three'
+
+/**
+ * Builds screen-space clusters from a list of pins.
+ * @param {Array} pins - Array of pin data objects.
+ * @param {THREE.Camera} camera - The scene camera.
+ * @param {THREE.OrbitControls} controls - The orbit controls (used for distance calculation).
+ * @param {HTMLElement} domElement - The renderer's DOM element (used for screen projection).
+ * @param {Function} [getFloorSlabTopY] - Optional: maps floor index -> slab top Y.
+ * @param {Function} [getPinLift] - Optional: maps floor index -> pin lift above slab.
+ * @returns {Array} Array of cluster objects { pins, screen, worldSum, worldPosition }.
+ */
+export function buildClusters(pins, camera, controls, domElement, getFloorSlabTopY, getPinLift) {
+  const rect = domElement.getBoundingClientRect()
+  const distance = camera.position.distanceTo(controls.target)
+  // No clustering when zoomed in close.
+  // IMPORTANT: the actual "closest zoom" is controlled by OrbitControls.minDistance (model-dependent),
+  // so we derive the clustering curve from that instead of a hard-coded magic number.
+  const minDist = Number.isFinite(controls?.minDistance) ? Number(controls.minDistance) : 10
+  const maxDist = Number.isFinite(controls?.maxDistance) ? Number(controls.maxDistance) : (minDist + 40)
+  const span = Math.max(20, maxDist - minDist)
+  const t = THREE.MathUtils.clamp((distance - minDist) / span, 0, 1)
+  const threshold = t * 38
+  const clusters = []
+
+  pins.forEach((pin) => {
+    const slabTopY =
+      typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(pin.floor_index) : pin.position_y
+    const lift =
+      typeof getPinLift === 'function' ? Number(getPinLift(pin.floor_index)) : 0.35
+    const safeLift = Number.isFinite(lift) ? lift : 0.35
+    const world = new THREE.Vector3(pin.position_x, slabTopY + pin.position_y + safeLift, pin.position_z)
+    const projected = world.clone().project(camera)
+    const screen = {
+      x: (projected.x * 0.5 + 0.5) * rect.width,
+      y: (-projected.y * 0.5 + 0.5) * rect.height,
+    }
+
+    let targetCluster = null
+    for (const cluster of clusters) {
+      const dx = cluster.screen.x - screen.x
+      const dy = cluster.screen.y - screen.y
+      if (Math.hypot(dx, dy) < threshold) {
+        targetCluster = cluster
+        break
+      }
+    }
+
+    if (!targetCluster) {
+      clusters.push({
+        pins: [pin],
+        screen,
+        worldSum: world.clone(),
+        worldPosition: world.clone(),
+      })
+    } else {
+      targetCluster.pins.push(pin)
+      targetCluster.screen.x =
+        (targetCluster.screen.x * (targetCluster.pins.length - 1) + screen.x) /
+        targetCluster.pins.length
+      targetCluster.screen.y =
+        (targetCluster.screen.y * (targetCluster.pins.length - 1) + screen.y) /
+        targetCluster.pins.length
+      targetCluster.worldSum.add(world)
+      targetCluster.worldPosition
+        .copy(targetCluster.worldSum)
+        .multiplyScalar(1 / targetCluster.pins.length)
+    }
+  })
+
+  return clusters
+}
