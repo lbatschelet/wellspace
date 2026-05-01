@@ -3,7 +3,8 @@ name: Publish to deploy branches (auto)
 on:
   push:
     branches:
-      - chore/monorepo
+      - main
+      - chore/monorepo # optional long-lived integration branch name
 
 permissions:
   contents: write
