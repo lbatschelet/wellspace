@@ -1,0 +1,90 @@
+/**
+ * Users API client for admin user management.
+ * Exports: fetchUsers, fetchSelf, createUser, createUserAndNotify, updateUser, updateSelf,
+ *          deleteUser, resetUserPassword, resetUserPasswordAndNotify.
+ */
+import { API_BASE, requestJson } from './baseClient'
+
+export function fetchUsers({ token }) {
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function fetchSelf({ token }) {
+  return requestJson(`${API_BASE}/admin_users.php?action=self`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export function createUser({ token, first_name, last_name, email, password, is_admin, expiry_hours }) {
+  const body = { action: 'create', first_name, last_name, email, password, is_admin }
+  if (expiry_hours !== undefined) body.expiry_hours = expiry_hours
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+}
+
+export function createUserAndNotify({ token, first_name, last_name, email, password, is_admin, expiry_hours }) {
+  const body = { action: 'create_notify', first_name, last_name, email, password, is_admin }
+  if (expiry_hours !== undefined) body.expiry_hours = expiry_hours
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateUser({ token, id, first_name, last_name, email, is_admin }) {
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: 'update', id, first_name, last_name, email, is_admin }),
+  })
+}
+
+export function updateSelf({ token, first_name, last_name, email, current_password, new_password, new_password_confirm }) {
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      action: 'self_update',
+      first_name,
+      last_name,
+      email,
+      current_password,
+      new_password,
+      new_password_confirm,
+    }),
+  })
+}
+
+export function deleteUser({ token, id }) {
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action: 'delete', id }),
+  })
+}
+
+export function resetUserPassword({ token, id, expiry_hours }) {
+  const body = { action: 'reset', id }
+  if (expiry_hours !== undefined) body.expiry_hours = expiry_hours
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+}
+
+export function resetUserPasswordAndNotify({ token, id, expiry_hours }) {
+  const body = { action: 'reset_notify', id }
+  if (expiry_hours !== undefined) body.expiry_hours = expiry_hours
+  return requestJson(`${API_BASE}/admin_users.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+}

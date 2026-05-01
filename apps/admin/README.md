@@ -1,0 +1,65 @@
+# feelvonroll-admin
+
+Admin panel for the [feelvonRoll](https://github.com/lbatschelet/feelvonroll) project. Provides a web interface to manage pins, configure questions and questionnaires, manage QR-code stations, edit content pages, and administer users and languages.
+
+> [!NOTE]
+> Part of the [feelvonRoll](https://github.com/lbatschelet/feelvonroll) project, developed for [PHBern](https://www.phbern.ch) within [RealTransform](https://sustainability.uzh.ch/de/forschung-lehre/forschung/realtransform.html). See the [main repository](https://github.com/lbatschelet/feelvonroll) for full documentation and project context.
+
+## Features
+
+- **Dashboard** with pin statistics
+- **Pin management**: search, filter, sort, paginate, approve/reject, bulk actions, CSV export
+- **Question library**: configure questions (slider, multi-choice, text), multi-language translations
+- **Questionnaire builder**: compose reusable questionnaires from the question library with drag-and-drop slot ordering
+- **Station management**: manage physical QR-code stations with 3D camera positioning and questionnaire assignment
+- **Content pages**: edit markdown content pages (e.g. About) per language
+- **Language management**: add, activate/deactivate, delete languages
+- **User management**: create users, assign admin roles, password reset via email or link
+- **Audit log**: track admin actions with pagination
+- **Navigation guard**: warns about unsaved changes before leaving pages
+- **LV95 calibration**: optional affine transform from building capture points to Swiss LV95 coordinates for exported pin data
+
+## Install & Run
+
+```bash
+npm install
+npm run dev
+```
+
+The dev server starts at `http://localhost:5173`.
+
+## Configuration
+
+The admin panel connects to the [feelvonroll-api](../feelvonroll-api/). By default it expects the API at `/api`.
+
+To point to a different API during development, create a `.env.local` file:
+
+```
+VITE_API_BASE=http://localhost:8080
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+The production build is output to `dist/`. Set `VITE_API_BASE` at build time if needed:
+
+```bash
+VITE_API_BASE=https://api.example.com npm run build
+```
+
+## Tests
+
+```bash
+npm test
+```
+
+## Authentication
+
+The admin panel uses JWT-based authentication. On first setup, a bootstrap flow creates the initial admin user using the `admin_token` configured in the API.
+
+## License
+
+[AGPL-3.0](LICENSE) -- [Lukas Batschelet](https://lukasbatschelet.ch) for [PHBern](https://www.phbern.ch)

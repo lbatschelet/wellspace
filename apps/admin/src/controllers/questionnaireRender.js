@@ -1,0 +1,385 @@
+/**
+ * Questionnaire render helpers for language and question UI.
+ * Renders question tiles in a grid and populates the edit modal.
+ * Exports: createQuestionnaireRender.
+ */
+import { createButton, createCheckbox, createInput, createLabeled, icons } from '../utils/dom'
+import { actionCell, toggleTd } from '../utils/adminTable'
+import { GLOBAL_COLOR_PALETTES, getGlobalPaletteByKey } from '../constants/colorPalettes'
+
+export function createQuestionnaireRender({ state, views }) {
+  const questionnaireView = views.questionnaireView
+  const { questionsBody, newQuestionTranslations } = questionnaireView
+
+  const getTranslationFor = (lang, key) =>
+    state.translationsByLang[lang]?.[key] || state.pendingTranslationsByLang[lang]?.[key] || ''
+
+  /* ── Table list ───────────────────────────────────────────── */
+
+  const renderQuestionsList = () => {
+    questionsBody.innerHTML = ''
+    if (!state.questions.length) {
+      questionsBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;">No questions yet</td></tr>'
+      return
+    }
+
+    state.questions
+      .slice()
+      .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0))
+      .forEach((question) => {
+        const tr = document.createElement('tr')
+        if (!question.is_active) tr.style.opacity = '0.5'
+
+        const labelKey = `questions.${question.question_key}.label`
+        const label = getTranslationFor('en', labelKey) || getTranslationFor(state.selectedLanguage, labelKey) || '—'
+
+        tr.innerHTML = `
+          <td><code>${escapeHtml(question.question_key)}</code></td>
+          <td>${escapeHtml(label)}</td>
+          <td>${question.type}</td>
+          ${toggleTd(question.is_active, 'active', question.question_key)}
+          ${actionCell([
+            { type: 'edit', id: question.question_key, title: 'Edit question' },
+            { type: 'delete', id: question.question_key, title: 'Delete question' },
+          ])}
+        `
+        questionsBody.appendChild(tr)
+      })
+  }
+
+  /* ── Populate modal for editing an existing question ─────── */
+
+  const populateModalForEdit = (question) => {
+    const v = questionnaireView
+    v.questionModalTitle.textContent = 'Edit question'
+    v.addQuestionButton.innerHTML = `${icons.save} Save`
+    v.deleteQuestionButton.style.display = ''
+    v.newQuestionKey.value = question.question_key
+    v.newQuestionKey.readOnly = true
+    v.newQuestionType.value = question.type
+    v.newQuestionType.disabled = true
+    v.newQuestionRequired.checked = Boolean(question.required)
+    v.newQuestionActive.checked = Boolean(question.is_active)
+    v.newQuestionUseForColor.checked = Boolean(question.config?.use_for_color)
+    v.newQuestionSingleChoice.checked = !question.config?.allow_multiple
+
+    if (question.type === 'slider') {
+      v.newQuestionMin.value = question.config?.min ?? 0
+      v.newQuestionMax.value = question.config?.max ?? 1
+      v.newQuestionStep.value = question.config?.step ?? 0.01
+      v.newQuestionDefault.value = question.config?.default ?? 0.5
+    }
+    if (question.type === 'text') {
+      v.newQuestionRows.value = question.config?.rows ?? 3
+    }
+    if (question.type === 'influence') {
+      v.newQuestionMin.value = question.config?.min ?? -1
+      v.newQuestionMax.value = question.config?.max ?? 1
+      v.newQuestionStep.value = question.config?.step ?? 0.05
+      v.newQuestionDefault.value = question.config?.default ?? 0
+    }
+
+    renderCreateFormVisibility()
+    renderEditTranslations(question)
+    renderEditOptions(question)
+  }
+
+  const populateModalForCreate = () => {
+    const v = questionnaireView
+    v.questionModalTitle.textContent = 'New question'
+    v.addQuestionButton.innerHTML = `${icons.save} Add question`
+    v.deleteQuestionButton.style.display = 'none'
+    v.newQuestionKey.value = ''
+    v.newQuestionKey.readOnly = false
+    v.newQuestionType.value = 'slider'
+    v.newQuestionType.disabled = false
+    v.newQuestionRequired.checked = false
+    v.newQuestionActive.checked = true
+    v.newQuestionUseForColor.checked = false
+    v.newQuestionSingleChoice.checked = true
+    v.newQuestionMin.value = '0'
+    v.newQuestionMax.value = '1'
+    v.newQuestionStep.value = '0.01'
+    v.newQuestionDefault.value = '0.5'
+    v.newQuestionRows.value = '3'
+    v.questionModalOptions.innerHTML = ''
+
+    renderCreateFormVisibility()
+    renderNewQuestionTranslations(v.newQuestionType.value)
+    renderCreateOptionsHint(v.newQuestionType.value)
+  }
+
+  /* ── Translations in edit modal ─────────────────────────── */
+
+  const renderEditTranslations = (question) => {
+    newQuestionTranslations.innerHTML = ''
+    state.languages.forEach((language) => {
+      const group = document.createElement('div')
+      group.className = 'translation-group'
+      group.innerHTML = `<div class="translation-title">${language.label} (${language.lang})</div>`
+      const labelInput = createInput(
+        'text',
+        getTranslationFor(language.lang, `questions.${question.question_key}.label`)
+      )
+      labelInput.dataset.lang = language.lang
+      labelInput.dataset.field = 'label'
+      labelInput.title = 'Question label shown to users'
+      group.appendChild(createLabeled('Label', labelInput))
+      if (question.type === 'slider') {
+        const legendLowInput = createInput(
+          'text',
+          getTranslationFor(language.lang, `questions.${question.question_key}.legend_low`)
+        )
+        legendLowInput.dataset.lang = language.lang
+        legendLowInput.dataset.field = 'legend_low'
+        const legendHighInput = createInput(
+          'text',
+          getTranslationFor(language.lang, `questions.${question.question_key}.legend_high`)
+        )
+        legendHighInput.dataset.lang = language.lang
+        legendHighInput.dataset.field = 'legend_high'
+        legendLowInput.title = 'Label for the lowest value'
+        legendHighInput.title = 'Label for the highest value'
+        group.appendChild(createLabeled('Legend low', legendLowInput))
+        group.appendChild(createLabeled('Legend high', legendHighInput))
+      }
+      if (question.type === 'influence') {
+        const legendNeg = createInput(
+          'text',
+          getTranslationFor(language.lang, `questions.${question.question_key}.legend_negative`)
+        )
+        legendNeg.dataset.lang = language.lang
+        legendNeg.dataset.field = 'legend_negative'
+        const legendPos = createInput(
+          'text',
+          getTranslationFor(language.lang, `questions.${question.question_key}.legend_positive`)
+        )
+        legendPos.dataset.lang = language.lang
+        legendPos.dataset.field = 'legend_positive'
+        legendNeg.title = 'Label for strong negative effect on wellbeing'
+        legendPos.title = 'Label for strong positive effect on wellbeing'
+        group.appendChild(createLabeled('Scale: negative', legendNeg))
+        group.appendChild(createLabeled('Scale: positive', legendPos))
+      }
+      newQuestionTranslations.appendChild(group)
+    })
+  }
+
+  /* ── Options in edit modal (for multi-choice questions) ──── */
+
+  const renderEditOptions = (question) => {
+    const container = questionnaireView.questionModalOptions
+    container.innerHTML = ''
+    if (question.type !== 'multi' && question.type !== 'influence') return
+
+    const options = state.options
+      .filter((o) => o.question_key === question.question_key)
+      .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0))
+
+    const section = document.createElement('div')
+    section.className = 'options-section'
+    const title = document.createElement('div')
+    title.className = 'section-title'
+    title.textContent = 'Options (key + label per language)'
+    section.appendChild(title)
+
+    if (options.length > 0) {
+      const table = document.createElement('table')
+      table.className = 'options-table'
+      const thead = document.createElement('thead')
+      const headerRow = document.createElement('tr')
+      headerRow.innerHTML = '<th class="col-drag"></th><th>Key</th>'
+      state.languages.forEach((language) => {
+        const th = document.createElement('th')
+        th.textContent = `${language.label} (${language.lang})`
+        headerRow.appendChild(th)
+      })
+      const activeTh = document.createElement('th')
+      activeTh.className = 'col-toggle'
+      activeTh.textContent = 'Active'
+      headerRow.appendChild(activeTh)
+      const actionsTh = document.createElement('th')
+      actionsTh.className = 'col-action'
+      headerRow.appendChild(actionsTh)
+      thead.appendChild(headerRow)
+      table.appendChild(thead)
+
+      const tbody = document.createElement('tbody')
+      tbody.className = 'option-list'
+      options.forEach((option) => {
+        const tr = document.createElement('tr')
+        tr.className = 'option-row'
+        tr.dataset.questionKey = question.question_key
+        tr.dataset.optionKey = option.option_key
+
+        const dragTd = document.createElement('td')
+        dragTd.className = 'col-drag'
+        const optionDragHandle = document.createElement('span')
+        optionDragHandle.className = 'option-drag'
+        optionDragHandle.title = 'Drag to reorder'
+        optionDragHandle.textContent = '⠿'
+        optionDragHandle.addEventListener('mousedown', () => { tr.draggable = true })
+        optionDragHandle.addEventListener('mouseup', () => { tr.draggable = false })
+        dragTd.appendChild(optionDragHandle)
+        tr.appendChild(dragTd)
+
+        const keyTd = document.createElement('td')
+        keyTd.className = 'option-key-cell'
+        keyTd.textContent = option.option_key
+        keyTd.title = 'Option key (used in the API)'
+        tr.appendChild(keyTd)
+
+        const translationKey = option.translation_key || `options.${question.question_key}.${option.option_key}`
+        state.languages.forEach((language) => {
+          const td = document.createElement('td')
+          const input = createInput('text', getTranslationFor(language.lang, translationKey))
+          input.dataset.field = 'option-translation'
+          input.dataset.lang = language.lang
+          input.dataset.translationKey = translationKey
+          input.title = `Label in ${language.label}`
+          td.appendChild(input)
+          tr.appendChild(td)
+        })
+
+        const activeTd = document.createElement('td')
+        activeTd.className = 'col-toggle'
+        const activeInput = createCheckbox(Boolean(option.is_active))
+        activeInput.dataset.field = 'option-active'
+        activeInput.title = 'Show this option to users'
+        activeInput.dataset.questionKey = question.question_key
+        activeInput.dataset.optionKey = option.option_key
+        activeTd.appendChild(activeInput)
+        tr.appendChild(activeTd)
+
+        const actionTd = document.createElement('td')
+        actionTd.className = 'col-action'
+        const deleteBtn = document.createElement('button')
+        deleteBtn.type = 'button'
+        deleteBtn.className = 'icon-btn danger'
+        deleteBtn.dataset.action = 'option-delete'
+        deleteBtn.title = 'Delete this option'
+        deleteBtn.innerHTML = icons.trash
+        actionTd.appendChild(deleteBtn)
+        tr.appendChild(actionTd)
+
+        tbody.appendChild(tr)
+      })
+      table.appendChild(tbody)
+      section.appendChild(table)
+    }
+
+    const addWrapper = document.createElement('div')
+    addWrapper.className = 'option-add'
+    addWrapper.dataset.questionKey = question.question_key
+    const addKeyInput = createInput('text', '')
+    addKeyInput.dataset.field = 'option-new-key'
+    addKeyInput.placeholder = 'New option key'
+    addKeyInput.title = 'Unique key for this option'
+    const addButton = createButton('Add option')
+    addButton.dataset.action = 'option-add'
+    addWrapper.appendChild(addKeyInput)
+    addWrapper.appendChild(addButton)
+    section.appendChild(addWrapper)
+    container.appendChild(section)
+  }
+
+  /* ── Form visibility toggles ──────────────────────────────── */
+
+  const renderCreateFormVisibility = () => {
+    const type = questionnaireView.newQuestionType.value
+    const showIf = (selector, condition) => {
+      questionnaireView.questionModal.querySelectorAll(selector).forEach((node) => {
+        const isInline = node.classList.contains('checkbox-inline')
+        node.style.display = condition ? (isInline ? 'inline-flex' : 'grid') : 'none'
+      })
+    }
+    showIf('.slider-color-only', type === 'slider')
+    showIf('.slider-range-only', type === 'slider' || type === 'influence')
+    showIf('.multi-only', type === 'multi')
+    showIf('.text-only', type === 'text')
+  }
+
+  const renderNewQuestionTranslations = (type) => {
+    newQuestionTranslations.innerHTML = ''
+    state.languages.forEach((language) => {
+      const group = document.createElement('div')
+      group.className = 'translation-group'
+      group.innerHTML = `<div class="translation-title">${language.label} (${language.lang})</div>`
+      const labelInput = createInput('text', '')
+      labelInput.dataset.lang = language.lang
+      labelInput.dataset.field = 'label'
+      group.appendChild(createLabeled('Label', labelInput))
+      if (type === 'slider') {
+        const legendLowInput = createInput('text', '')
+        legendLowInput.dataset.lang = language.lang
+        legendLowInput.dataset.field = 'legend_low'
+        const legendHighInput = createInput('text', '')
+        legendHighInput.dataset.lang = language.lang
+        legendHighInput.dataset.field = 'legend_high'
+        group.appendChild(createLabeled('Legend low', legendLowInput))
+        group.appendChild(createLabeled('Legend high', legendHighInput))
+      }
+      if (type === 'influence') {
+        const legendNeg = createInput('text', '')
+        legendNeg.dataset.lang = language.lang
+        legendNeg.dataset.field = 'legend_negative'
+        const legendPos = createInput('text', '')
+        legendPos.dataset.lang = language.lang
+        legendPos.dataset.field = 'legend_positive'
+        group.appendChild(createLabeled('Scale: negative', legendNeg))
+        group.appendChild(createLabeled('Scale: positive', legendPos))
+      }
+      newQuestionTranslations.appendChild(group)
+    })
+  }
+
+  const renderCreateOptionsHint = (type) => {
+    const container = questionnaireView.questionModalOptions
+    container.innerHTML = ''
+    if (type !== 'multi' && type !== 'influence') return
+    const hint = document.createElement('div')
+    hint.className = 'options-section'
+    hint.innerHTML = `
+      <div class="section-title">Options (key + label per language)</div>
+      <p class="options-hint">Save the question first — you can then add options immediately.</p>
+    `
+    container.appendChild(hint)
+  }
+
+  const renderGlobalPaletteOptions = (selectedKey) => {
+    const container = questionnaireView.globalColorPaletteOptions
+    if (!container) return
+    const active = getGlobalPaletteByKey(selectedKey).key
+    container.innerHTML = ''
+    GLOBAL_COLOR_PALETTES.forEach((palette) => {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.className = 'palette-option'
+      button.dataset.paletteKey = palette.key
+      button.classList.toggle('is-active', palette.key === active)
+      button.innerHTML = `
+        <span class="palette-option-label">${palette.label}</span>
+        <span class="palette-option-gradient" style="background: linear-gradient(90deg, ${palette.colors.join(', ')})"></span>
+        <span class="palette-option-legend"><span>Negative</span><span>Neutral</span><span>Positive</span></span>
+      `
+      container.appendChild(button)
+    })
+  }
+
+  return {
+    renderQuestionsList,
+    renderCreateFormVisibility,
+    renderNewQuestionTranslations,
+    populateModalForEdit,
+    populateModalForCreate,
+    renderEditOptions,
+    renderCreateOptionsHint,
+    renderGlobalPaletteOptions,
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div')
+  div.textContent = str ?? ''
+  return div.innerHTML
+}

@@ -1,0 +1,21 @@
+{
+  "name": "feelvonroll-admin",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "jsdom": "^28.0.0",
+    "vite": "^7.2.4",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "marked": "^17.0.1",
+    "qrcode": "^1.5.3"
+  }
+}
