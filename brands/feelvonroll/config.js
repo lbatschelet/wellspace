@@ -9,17 +9,19 @@ export const brand = {
   displayName: 'feelvonRoll',
   wordmarkHtml: '<em>feel</em><strong>vonRoll</strong>',
 
-  routing: 'subdomains',
+  // For this monorepo deploy we serve viewer+admin+api from one origin:
+  //   /        viewer
+  //   /admin/  admin panel
+  //   /api/    php api
+  routing: 'single-origin',
 
   domains: {
-    viewer: 'app.feelvonroll.ch',
-    admin: 'admin.feelvonroll.ch',
-    api: 'api.feelvonroll.ch',
+    primary: 'test.feelvonroll.ch',
   },
-  siteUrl: 'https://feelvonroll.ch',
+  siteUrl: 'https://test.feelvonroll.ch',
 
-  apiBase: 'https://api.feelvonroll.ch',
-  adminBase: '/',
+  apiBase: '/api',
+  adminBase: '/admin/',
 
   modelDir: '/models',
 
