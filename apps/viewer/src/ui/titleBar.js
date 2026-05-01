@@ -1,6 +1,6 @@
 /**
  * Title component displayed top-left.
- * Brand wordmark heading (configured per tenant in brands/*/config.js `wordmarkHtml`).
+ * Brand wordmark heading (per tenant: brands slug folder, config field wordmarkHtml).
  * Exports: createTitleBar.
  */
 import { brand } from '@brand/config.js'
