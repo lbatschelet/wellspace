@@ -15,7 +15,10 @@ export const brand = {
   //   /api/    php api
   routing: 'single-origin',
 
-  /** Canonical public origin (viewer + links in admin for QR / open site). Baked in at build time. */
+  /**
+   * Canonical / marketing origin. Admin QR and "open site" use the **deployed host**
+   * when possible (single-origin); this is the fallback when `window` is unavailable.
+   */
   domains: {
     primary: 'feelvonroll.ch',
   },
