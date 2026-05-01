@@ -2,9 +2,11 @@
  * Footer builder with license, author credit, and bug report link.
  * Exports: createFooter.
  */
+import { brand } from '@brand/config.js'
 
 const ISSUE_URL =
-  (import.meta.env.VITE_WEBAPP_URL || 'https://feelvonroll.ch') + '/issue/?source=admin'
+  (import.meta.env.VITE_WEBAPP_URL || brand?.siteUrl || 'https://feelvonroll.ch') +
+  '/issue/?source=admin'
 
 export function createFooter() {
   const footer = document.createElement('footer')

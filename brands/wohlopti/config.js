@@ -8,12 +8,14 @@
 export const brand = {
   name: 'wohlopti',
   displayName: 'wohlOpti',
+  wordmarkHtml: '<em>wohl</em><strong>Opti</strong>',
 
   routing: 'single-origin',
 
   domains: {
     primary: 'wohlopti.ch',
   },
+  siteUrl: 'https://wohlopti.ch',
 
   apiBase: '/api',
   adminBase: '/admin/',

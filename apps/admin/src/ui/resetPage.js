@@ -3,14 +3,16 @@
  * Exports: createResetPage.
  */
 import { enablePasswordToggles } from '../utils/dom'
+import { brand } from '@brand/config.js'
 
 export function createResetPage() {
   const page = document.createElement('div')
   page.className = 'layout'
+  const wordmark = brand?.wordmarkHtml || brand?.displayName || ''
   page.innerHTML = `
     <header class="header">
       <div class="header-brand">
-        <a class="header-title" href="/" title="Back to login"><em>feel</em><strong>vonRoll</strong> Admin</a>
+        <a class="header-title" href="/" title="Back to login">${wordmark} Admin</a>
       </div>
     </header>
     <section class="card login-card">

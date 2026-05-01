@@ -3,6 +3,7 @@
  * Shows "feelvonRoll" as a standalone heading without a bubble.
  * Exports: createTitleBar.
  */
+import { brand } from '@brand/config.js'
 
 /**
  * Creates the title DOM element.
@@ -11,7 +12,7 @@
 export function createTitleBar() {
   const ui = document.createElement('h1')
   ui.className = 'ui ui-title'
-  ui.innerHTML = '<em>feel</em><strong>vonRoll</strong>'
+  ui.innerHTML = brand?.wordmarkHtml || brand?.displayName || 'App'
   ui.setAttribute('role', 'button')
   ui.tabIndex = 0
 

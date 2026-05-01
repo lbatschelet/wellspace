@@ -7,6 +7,7 @@
 export const brand = {
   name: 'feelvonroll',
   displayName: 'feelvonRoll',
+  wordmarkHtml: '<em>feel</em><strong>vonRoll</strong>',
 
   routing: 'subdomains',
 
@@ -15,6 +16,7 @@ export const brand = {
     admin: 'admin.feelvonroll.ch',
     api: 'api.feelvonroll.ch',
   },
+  siteUrl: 'https://feelvonroll.ch',
 
   apiBase: 'https://api.feelvonroll.ch',
   adminBase: '/',
