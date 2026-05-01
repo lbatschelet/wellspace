@@ -8,3 +8,5 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: true
+patchedDependencies:
+  esbuild@0.27.7: patches/esbuild@0.27.7.patch

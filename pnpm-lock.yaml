@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  esbuild@0.27.7:
+    hash: 47205394efc773bbf9f0495ecdaf5e531858c15285950b7c3dc38667cb4188b9
+    path: patches/esbuild@0.27.7.patch
+
 importers:
 
   .:
@@ -1651,7 +1656,7 @@ snapshots:
 
   es-module-lexer@1.7.0: {}
 
-  esbuild@0.27.7:
+  esbuild@0.27.7(patch_hash=47205394efc773bbf9f0495ecdaf5e531858c15285950b7c3dc38667cb4188b9):
     optionalDependencies:
       '@esbuild/aix-ppc64': 0.27.7
       '@esbuild/android-arm': 0.27.7
@@ -2033,7 +2038,7 @@ snapshots:
 
   vite@7.3.2:
     dependencies:
-      esbuild: 0.27.7
+      esbuild: 0.27.7(patch_hash=47205394efc773bbf9f0495ecdaf5e531858c15285950b7c3dc38667cb4188b9)
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
       postcss: 8.5.13
