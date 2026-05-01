@@ -1,8 +1,9 @@
 /**
  * Canonical public viewer URL origin for QR / capture links from admin.
  *
- * Prefer explicit build override (VITE_WEBAPP_BASE); else brand.siteUrl from
- * @brand/config; else current page origin when running in browser.
+ * Order: optional build override `VITE_WEBAPP_BASE`, then `brand.siteUrl`
+ * from @brand/config (frozen at build time — should match production for
+ * prod-identical artifacts); last resort `window.location.origin`.
  */
 import { brand } from '@brand/config.js'
 

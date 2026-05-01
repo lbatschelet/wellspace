@@ -15,10 +15,11 @@ export const brand = {
   //   /api/    php api
   routing: 'single-origin',
 
+  /** Canonical public origin (viewer + links in admin for QR / open site). Baked in at build time. */
   domains: {
-    primary: 'test.feelvonroll.ch',
+    primary: 'feelvonroll.ch',
   },
-  siteUrl: 'https://test.feelvonroll.ch',
+  siteUrl: 'https://feelvonroll.ch',
 
   apiBase: '/api',
   adminBase: '/admin/',
