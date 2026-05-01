@@ -2,7 +2,11 @@
 /**
  * Brand-aware monorepo build entry point.
  *
- * Hostinger (or any CI) calls `pnpm build`. The behaviour is driven by env vars:
+ * Hostinger and some CI images run `pnpm run build`, but `pnpm` is not always on `$PATH`
+ * inside child shells. This script invokes the local Vite CLI with `process.execPath` instead
+ * of `pnpm --filter`, so nested builds succeed.
+ *
+ * The behaviour is driven by env vars:
  *
  *   BRAND     required - which brand to build for (e.g. "feelvonroll", "wohlopti").
  *             Forwarded into the per-app vite build so brand assets/config resolve.
@@ -19,7 +23,7 @@
  *             "dist" at the repo root for "all".
  */
 
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,11 +51,27 @@ if (!validApps.has(APP)) {
 
 console.log(`[build] BRAND=${BRAND} APP=${APP}`)
 
+function resolveViteCli(appSlug) {
+  const appRoot = resolve(repoRoot, 'apps', appSlug)
+  const candidates = [
+    resolve(appRoot, 'node_modules/vite/bin/vite.js'),
+    resolve(repoRoot, 'node_modules/vite/bin/vite.js'),
+  ]
+  for (const p of candidates) {
+    if (existsSync(p)) return { appRoot, viteJs: p }
+  }
+  throw new Error(
+    `[build] Could not find vite/bin/vite.js for "${appSlug}". ` +
+      `Run pnpm install at the repo root. Tried:\n  ${candidates.join('\n  ')}`,
+  )
+}
+
 const buildOne = (name) => {
   console.log(`[build] building ${name}...`)
-  execSync(`pnpm --filter ${name} build`, {
+  const { appRoot, viteJs } = resolveViteCli(name)
+  execFileSync(process.execPath, [viteJs, 'build'], {
     stdio: 'inherit',
-    cwd: repoRoot,
+    cwd: appRoot,
     env: { ...process.env, BRAND },
   })
 }
