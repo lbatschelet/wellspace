@@ -59,13 +59,13 @@ jobs:
           - brand: wohlopti
             app: all
             deploy_branch: deploy/wohlopti
-            include_api: true
-            include_api_vendor: false
+            include_api: 'true'
+            include_api_vendor: 'false'
           - brand: feelvonroll
             app: all
             deploy_branch: deploy/feelvonroll
-            include_api: true
-            include_api_vendor: false
+            include_api: 'true'
+            include_api_vendor: 'false'
     name: Publish (auto: ${{ matrix.brand }} / ${{ matrix.app }}) → ${{ matrix.deploy_branch }}
 
     steps:
@@ -120,7 +120,7 @@ jobs:
           fi
 
       - name: Install API vendor (optional)
-        if: ${{ matrix.include_api && matrix.include_api_vendor }}
+        if: ${{ matrix.include_api == 'true' && matrix.include_api_vendor == 'true' }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -128,12 +128,12 @@ jobs:
           coverage: none
 
       - name: Composer install (API)
-        if: ${{ matrix.include_api && matrix.include_api_vendor }}
+        if: ${{ matrix.include_api == 'true' && matrix.include_api_vendor == 'true' }}
         working-directory: services/api
         run: composer install --no-interaction --prefer-dist --no-dev
 
       - name: Copy API vendor into deploy folder
-        if: ${{ matrix.include_api && matrix.include_api_vendor }}
+        if: ${{ matrix.include_api == 'true' && matrix.include_api_vendor == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
