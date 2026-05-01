@@ -1,0 +1,82 @@
+name: Publish to deploy branches (auto)
+
+on:
+  push:
+    branches:
+      - chore/monorepo
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-hostinger-auto-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - brand: wohlopti
+            app: all
+            deploy_branch: deploy/wohlopti
+          - brand: feelvonroll
+            app: all
+            deploy_branch: deploy/feelvonroll
+    name: Publish (${{ matrix.brand }} / ${{ matrix.app }}) → ${{ matrix.deploy_branch }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          BRAND: ${{ matrix.brand }}
+          APP: ${{ matrix.app }}
+        run: pnpm run build
+
+      - name: Prepare deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-root
+          mkdir -p deploy-root
+
+          if [[ "${{ matrix.app }}" == "all" ]]; then
+            cp -R dist/* deploy-root/
+          elif [[ "${{ matrix.app }}" == "viewer" ]]; then
+            cp -R apps/viewer/dist/* deploy-root/
+          elif [[ "${{ matrix.app }}" == "admin" ]]; then
+            mkdir -p deploy-root/admin
+            cp -R apps/admin/dist/* deploy-root/admin/
+          else
+            echo "Unknown app: ${{ matrix.app }}"
+            exit 1
+          fi
+
+          mkdir -p deploy-root/api
+          rsync -a --delete \
+            --exclude='config.local.php' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='vendor' \
+            services/api/ deploy-root/api/
+
+      - name: Publish deploy-root to branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: ${{ matrix.deploy_branch }}
+          folder: deploy-root
+          clean: true
+

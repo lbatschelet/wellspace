@@ -1,10 +1,6 @@
 name: Publish to deploy branch (Hostinger Git)
 
 on:
-  push:
-    branches:
-      # Auto-publish on monorepo branch pushes.
-      - chore/monorepo
   workflow_dispatch:
     inputs:
       brand:
@@ -49,108 +45,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  publish_auto:
-    if: ${{ github.event_name == 'push' }}
+  publish:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - brand: wohlopti
-            app: all
-            deploy_branch: deploy/wohlopti
-            include_api: 'true'
-            include_api_vendor: 'false'
-          - brand: feelvonroll
-            app: all
-            deploy_branch: deploy/feelvonroll
-            include_api: 'true'
-            include_api_vendor: 'false'
-    name: Publish (auto: ${{ matrix.brand }} / ${{ matrix.app }}) → ${{ matrix.deploy_branch }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        env:
-          BRAND: ${{ matrix.brand }}
-          APP: ${{ matrix.app }}
-        run: pnpm run build
-
-      - name: Prepare deploy folder
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf deploy-root
-          mkdir -p deploy-root
-
-          APP_INPUT="${{ matrix.app }}"
-          INCLUDE_API="${{ matrix.include_api }}"
-
-          if [[ "$APP_INPUT" == "all" ]]; then
-            cp -R dist/* deploy-root/
-          elif [[ "$APP_INPUT" == "viewer" ]]; then
-            cp -R apps/viewer/dist/* deploy-root/
-          elif [[ "$APP_INPUT" == "admin" ]]; then
-            mkdir -p deploy-root/admin
-            cp -R apps/admin/dist/* deploy-root/admin/
-          else
-            echo "Unknown app input: $APP_INPUT"
-            exit 1
-          fi
-
-          if [[ "$INCLUDE_API" == "true" ]]; then
-            mkdir -p deploy-root/api
-            rsync -a --delete \
-              --exclude='config.local.php' \
-              --exclude='.env' \
-              --exclude='.env.*' \
-              --exclude='vendor' \
-              services/api/ deploy-root/api/
-          fi
-
-      - name: Install API vendor (optional)
-        if: ${{ matrix.include_api == 'true' && matrix.include_api_vendor == 'true' }}
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-          coverage: none
-
-      - name: Composer install (API)
-        if: ${{ matrix.include_api == 'true' && matrix.include_api_vendor == 'true' }}
-        working-directory: services/api
-        run: composer install --no-interaction --prefer-dist --no-dev
-
-      - name: Copy API vendor into deploy folder
-        if: ${{ matrix.include_api == 'true' && matrix.include_api_vendor == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p deploy-root/api/vendor
-          cp -R services/api/vendor/* deploy-root/api/vendor/
-
-      - name: Publish deploy-root to branch
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: ${{ matrix.deploy_branch }}
-          folder: deploy-root
-          clean: true
-
-  publish_manual:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    name: Publish (manual: ${{ inputs.brand }} / ${{ inputs.app }}) → ${{ inputs.deploy_branch }}
+    name: Publish (${{ inputs.brand }} / ${{ inputs.app }}) → ${{ inputs.deploy_branch }}
 
     steps:
       - uses: actions/checkout@v4
