@@ -1,6 +1,10 @@
 name: Publish to deploy branch (Hostinger Git)
 
 on:
+  push:
+    branches:
+      # Auto-publish wohlOpti on monorepo branch pushes.
+      - chore/monorepo
   workflow_dispatch:
     inputs:
       brand:
@@ -42,7 +46,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    name: Publish (${{ inputs.brand }} / ${{ inputs.app }}) → ${{ inputs.deploy_branch }}
+    name: Publish (${{ github.event_name == 'workflow_dispatch' && inputs.brand || 'wohlopti' }} / ${{ github.event_name == 'workflow_dispatch' && inputs.app || 'all' }}) → ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_branch || 'deploy/wohlopti' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -61,8 +65,8 @@ jobs:
 
       - name: Build
         env:
-          BRAND: ${{ inputs.brand }}
-          APP: ${{ inputs.app }}
+          BRAND: ${{ github.event_name == 'workflow_dispatch' && inputs.brand || 'wohlopti' }}
+          APP: ${{ github.event_name == 'workflow_dispatch' && inputs.app || 'all' }}
         run: pnpm run build
 
       - name: Prepare deploy folder
@@ -72,19 +76,22 @@ jobs:
           rm -rf deploy-root
           mkdir -p deploy-root
 
-          if [[ "${{ inputs.app }}" == "all" ]]; then
+          APP_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.app || 'all' }}"
+          INCLUDE_API="${{ github.event_name == 'workflow_dispatch' && inputs.include_api || 'true' }}"
+
+          if [[ "$APP_INPUT" == "all" ]]; then
             cp -R dist/* deploy-root/
-          elif [[ "${{ inputs.app }}" == "viewer" ]]; then
+          elif [[ "$APP_INPUT" == "viewer" ]]; then
             cp -R apps/viewer/dist/* deploy-root/
-          elif [[ "${{ inputs.app }}" == "admin" ]]; then
+          elif [[ "$APP_INPUT" == "admin" ]]; then
             mkdir -p deploy-root/admin
             cp -R apps/admin/dist/* deploy-root/admin/
           else
-            echo "Unknown app input: ${{ inputs.app }}"
+            echo "Unknown app input: $APP_INPUT"
             exit 1
           fi
 
-          if [[ "${{ inputs.include_api }}" == "true" ]]; then
+          if [[ "$INCLUDE_API" == "true" ]]; then
             mkdir -p deploy-root/api
             rsync -a --delete \
               --exclude='config.local.php' \
@@ -95,7 +102,7 @@ jobs:
           fi
 
       - name: Install API vendor (optional)
-        if: ${{ inputs.include_api && inputs.include_api_vendor }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_api && inputs.include_api_vendor }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -103,12 +110,12 @@ jobs:
           coverage: none
 
       - name: Composer install (API)
-        if: ${{ inputs.include_api && inputs.include_api_vendor }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_api && inputs.include_api_vendor }}
         working-directory: services/api
         run: composer install --no-interaction --prefer-dist --no-dev
 
       - name: Copy API vendor into deploy folder
-        if: ${{ inputs.include_api && inputs.include_api_vendor }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_api && inputs.include_api_vendor }}
         shell: bash
         run: |
           set -euo pipefail
@@ -118,6 +125,6 @@ jobs:
       - name: Publish deploy-root to branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: ${{ inputs.deploy_branch }}
+          branch: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_branch || 'deploy/wohlopti' }}
           folder: deploy-root
           clean: true
