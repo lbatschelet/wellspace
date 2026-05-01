@@ -13,7 +13,7 @@ fi
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 SRC_GLB="$ROOT_DIR/04_build_glb/${FLOOR_INDEX}.glb"
-DEST_DIR="$ROOT_DIR/../../feelvonroll-webapp/public/models"
+DEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)/brands/feelvonroll/viewer/public/models"
 DEST_GLB="$DEST_DIR/${FLOOR_INDEX}.glb"
 
 if [[ ! -f "$SRC_GLB" ]]; then

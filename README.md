@@ -131,7 +131,7 @@ VITE_API_BASE=https://api.example.com npm run build
 The interactive map uses **glTF/GLB** models per floor (stacked in the scene). Source workflow:
 
 1. Model in **Sweet Home 3D**, export as OBJ (zip with MTL/textures).
-2. Scripts under `model-pipeline/campus/tools/`: unpack zip → `obj2gltf` → optional mesh optimization (`optimize_glb.mjs`), then copy GLBs into the webapp.
+2. Scripts under `model-pipeline/campus/tools/`: unpack zip → `obj2gltf` → optional mesh optimization (`optimize_glb.mjs`, requires `pnpm install` at repo root), then copy GLBs into `brands/feelvonroll/viewer/public/models/`.
 3. Detailed steps, folder layout, and slab-height notes: **`model-pipeline/campus/00_README.md`**.
 
 Typical commands (from repo root):

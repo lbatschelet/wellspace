@@ -4,11 +4,11 @@ Goals:
 
 - Reproducible workflow with clear folders for inputs and outputs
 - Traceability per export iteration (timestamps + manifest)
-- Straightforward integration into the webapp under `feelvonroll-webapp/public/models/`
+- Straightforward integration into the viewer brand assets under `brands/feelvonroll/viewer/public/models/`.
 
 Current behaviour:
 
-- The webapp loads **one GLB per floor** from `feelvonroll-webapp/public/models/` (e.g. `floor_-2.glb` … `floor_3.glb`); see the `floorIndex` → URL map in `feelvonroll-webapp/src/main.js`.
+- The viewer loads **one GLB per floor** from `/models/` in the deployed site (sources live under `brands/feelvonroll/viewer/public/models/`, e.g. `floor_-2.glb` … `floor_3.glb`); see the `floorIndex` → URL map in `apps/viewer/src/main.js`.
 - At least `floor_0.glb` should exist as a baseline; missing floors are skipped and a procedural fallback may apply.
 - Source files in the repo: e.g. **`floor_0.sh3d`** per floor **or** a combined **`vonRoll.sh3d`** (depending on workflow); the numbered convention `floor_<index>.sh3d` remains the reference for the scripts.
 
@@ -80,6 +80,7 @@ Use:
 Requirements:
 
 - Node.js installed
+- Dependencies for `optimize_glb.mjs` are installed **from the repository root**: `pnpm install` (packages: `@gltf-transform/*`, `meshoptimizer`). There is no separate `package.json` under `tools/`.
 - `npx obj2gltf` (via `npx`; version is pinned in the script)
 
 The script:
@@ -102,7 +103,7 @@ Optional automation:
 Manual (same as the script):
 
 - From `model-pipeline/campus/04_build_glb/floor_0.glb`
-  to `feelvonroll-webapp/public/models/floor_0.glb`
+  to `brands/feelvonroll/viewer/public/models/floor_0.glb`
 
 Then reload the webapp.
 

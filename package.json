@@ -2,6 +2,7 @@
   "name": "feelvonroll-platform",
   "private": true,
   "version": "0.0.0",
+  "description": "Monorepo entry for deployments: use repository root as app root (pnpm install && pnpm build). Model-pipeline helpers are scripts only; no nested package manifests.",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "engines": {
@@ -12,5 +13,11 @@
     "dev:viewer": "pnpm --filter viewer dev",
     "dev:admin": "pnpm --filter admin dev",
     "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.2.1",
+    "@gltf-transform/extensions": "^4.2.1",
+    "@gltf-transform/functions": "^4.2.1",
+    "meshoptimizer": "^0.24.0"
   }
 }
