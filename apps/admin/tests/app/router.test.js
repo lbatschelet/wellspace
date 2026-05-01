@@ -6,10 +6,20 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createRouter } from '../../src/app/router'
 
+/** Matches router withBase: full browser path for a route path like /users */
+function withBase(path) {
+  const baseUrl = String(import.meta.env.BASE_URL || '/')
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+  const p = String(path || '/')
+  if (base === '/') return p
+  const normalized = p.startsWith('/') ? p.slice(1) : p
+  return `${base}${normalized}`.replace(/\/+$/, '') || base
+}
+
 describe('router', () => {
   beforeEach(() => {
-    // Reset URL to root
-    window.history.replaceState(null, '', '/')
+    // Reset URL to app root (respects Vite base, e.g. /admin/)
+    window.history.replaceState(null, '', withBase('/'))
   })
 
   it('resolves known paths to page keys', () => {
@@ -41,11 +51,11 @@ describe('router', () => {
   it('push updates browser URL', () => {
     const router = createRouter()
     router.push('users')
-    expect(window.location.pathname).toBe('/users')
+    expect(window.location.pathname).toBe(withBase('/users'))
   })
 
   it('push does not pushState if already on that path', () => {
-    window.history.replaceState(null, '', '/users')
+    window.history.replaceState(null, '', withBase('/users'))
     const spy = vi.spyOn(window.history, 'pushState')
     const router = createRouter()
     router.push('users')
@@ -57,12 +67,12 @@ describe('router', () => {
     const spy = vi.spyOn(window.history, 'replaceState')
     const router = createRouter()
     router.replace('pins')
-    expect(spy).toHaveBeenCalledWith(null, '', '/pins')
+    expect(spy).toHaveBeenCalledWith(null, '', withBase('/pins'))
     spy.mockRestore()
   })
 
   it('currentPage returns page key for current path', () => {
-    window.history.replaceState(null, '', '/audit')
+    window.history.replaceState(null, '', withBase('/audit'))
     const router = createRouter()
     expect(router.currentPage()).toBe('audit')
   })

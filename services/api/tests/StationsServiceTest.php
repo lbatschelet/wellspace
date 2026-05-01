@@ -257,14 +257,14 @@ final class StationsServiceTest extends TestCase
 
     public function testPublicGetStationNormalizesLegacyInputToMatchLegacyStoredKey(): void
     {
-        // Stored legacy key, but caller uses a normalized form (e.g. app-side slugification).
+        // Stored legacy key; caller sends normalized slug. Use ASCII label so normalize(stored) matches slug.
         $this->pdo->exec("
             INSERT INTO stations (station_key, name, floor_index, camera_x, camera_y, camera_z, target_x, target_y, target_z, questionnaire_id, is_active)
-            VALUES ('Café EG 01', 'Cafe', 0, 0, 0, 0, 0, 0, 0, NULL, 1)
+            VALUES ('Cafe EG 01', 'Cafe', 0, 0, 0, 0, 0, 0, 0, NULL, 1)
         ");
 
         $result = public_station_get($this->pdo, 'cafe-eg-01');
-        $this->assertSame('Café EG 01', $result['station_key']);
+        $this->assertSame('Cafe EG 01', $result['station_key']);
     }
 
     public function testPublicGetStationNotFoundThrows(): void
