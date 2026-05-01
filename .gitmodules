@@ -1,9 +1,0 @@
-[submodule "feelvonroll-admin"]
-	path = feelvonroll-admin
-	url = https://github.com/lbatschelet/feelvonroll-admin.git
-[submodule "feelvonroll-api"]
-	path = feelvonroll-api
-	url = https://github.com/lbatschelet/feelvonroll-api.git
-[submodule "feelvonroll-webapp"]
-	path = feelvonroll-webapp
-	url = https://github.com/lbatschelet/feelvonroll-webapp.git
