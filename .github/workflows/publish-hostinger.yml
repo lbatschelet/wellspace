@@ -75,13 +75,14 @@ jobs:
           rm -rf deploy-root
           mkdir -p deploy-root
 
+          # Use rsync (not cp dist/*) so dotfiles like .htaccess are included (SPA /s/… routes).
           if [[ "${{ inputs.app }}" == "all" ]]; then
-            cp -R dist/* deploy-root/
+            rsync -a dist/ deploy-root/
           elif [[ "${{ inputs.app }}" == "viewer" ]]; then
-            cp -R apps/viewer/dist/* deploy-root/
+            rsync -a apps/viewer/dist/ deploy-root/
           elif [[ "${{ inputs.app }}" == "admin" ]]; then
             mkdir -p deploy-root/admin
-            cp -R apps/admin/dist/* deploy-root/admin/
+            rsync -a apps/admin/dist/ deploy-root/admin/
           else
             echo "Unknown app input: ${{ inputs.app }}"
             exit 1
