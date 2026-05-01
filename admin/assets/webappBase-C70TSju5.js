@@ -1,0 +1,1 @@
+import{b as i}from"./config-DvzYGSBB.js";function o(){const r=i?.siteUrl;return r.trim()?r.trim().replace(/\/+$/,""):typeof window<"u"&&window.location?.origin?String(window.location.origin).replace(/\/+$/,""):""}export{o as g};
