@@ -1,4 +1,4 @@
-import{b as n}from"./config-DvzYGSBB.js";import{g as o}from"./webappBase-C70TSju5.js";function s(){const t=document.createElement("header");t.className="header";const e=n?.wordmarkHtml,a=o()||"#";return t.innerHTML=`
+import{b as n}from"./config-DvzYGSBB.js";import{g as o}from"./webappBase-C-OK_qxg.js";function s(){const t=document.createElement("header");t.className="header";const e=n?.wordmarkHtml,a=o()||"#";return t.innerHTML=`
     <div class="header-brand">
       <a class="header-title" data-action="dashboard" href="#" title="Go to dashboard">${e} Admin</a>
       <a class="header-external" href="${a}" target="_blank" rel="noopener" title="Open ${a}">
