@@ -859,7 +859,7 @@ canvas {
   font-weight: 400;
   color: #4b5563;
   line-height: 1.45;
-  text-align: justify;
+  text-align: left;
   overflow-wrap: break-word;
 }
 
