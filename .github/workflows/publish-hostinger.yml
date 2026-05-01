@@ -3,7 +3,7 @@ name: Publish to deploy branch (Hostinger Git)
 on:
   push:
     branches:
-      # Auto-publish wohlOpti on monorepo branch pushes.
+      # Auto-publish on monorepo branch pushes.
       - chore/monorepo
   workflow_dispatch:
     inputs:
@@ -44,14 +44,29 @@ permissions:
   contents: write
 
 concurrency:
-  # Avoid deploying multiple commits in parallel to the same deploy branch.
+  # Avoid deploying multiple commits in parallel from the same source branch.
   group: publish-hostinger-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  publish:
+  publish_auto:
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
-    name: Publish (${{ github.event_name == 'workflow_dispatch' && inputs.brand || 'wohlopti' }} / ${{ github.event_name == 'workflow_dispatch' && inputs.app || 'all' }}) → ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_branch || 'deploy/wohlopti' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - brand: wohlopti
+            app: all
+            deploy_branch: deploy/wohlopti
+            include_api: true
+            include_api_vendor: false
+          - brand: feelvonroll
+            app: all
+            deploy_branch: deploy/feelvonroll
+            include_api: true
+            include_api_vendor: false
+    name: Publish (auto: ${{ matrix.brand }} / ${{ matrix.app }}) → ${{ matrix.deploy_branch }}
 
     steps:
       - uses: actions/checkout@v4
@@ -68,8 +83,8 @@ jobs:
 
       - name: Build
         env:
-          BRAND: ${{ github.event_name == 'workflow_dispatch' && inputs.brand || 'wohlopti' }}
-          APP: ${{ github.event_name == 'workflow_dispatch' && inputs.app || 'all' }}
+          BRAND: ${{ matrix.brand }}
+          APP: ${{ matrix.app }}
         run: pnpm run build
 
       - name: Prepare deploy folder
@@ -79,8 +94,8 @@ jobs:
           rm -rf deploy-root
           mkdir -p deploy-root
 
-          APP_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.app || 'all' }}"
-          INCLUDE_API="${{ github.event_name == 'workflow_dispatch' && inputs.include_api || 'true' }}"
+          APP_INPUT="${{ matrix.app }}"
+          INCLUDE_API="${{ matrix.include_api }}"
 
           if [[ "$APP_INPUT" == "all" ]]; then
             cp -R dist/* deploy-root/
@@ -105,7 +120,7 @@ jobs:
           fi
 
       - name: Install API vendor (optional)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_api && inputs.include_api_vendor }}
+        if: ${{ matrix.include_api && matrix.include_api_vendor }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -113,12 +128,12 @@ jobs:
           coverage: none
 
       - name: Composer install (API)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_api && inputs.include_api_vendor }}
+        if: ${{ matrix.include_api && matrix.include_api_vendor }}
         working-directory: services/api
         run: composer install --no-interaction --prefer-dist --no-dev
 
       - name: Copy API vendor into deploy folder
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_api && inputs.include_api_vendor }}
+        if: ${{ matrix.include_api && matrix.include_api_vendor }}
         shell: bash
         run: |
           set -euo pipefail
@@ -128,6 +143,87 @@ jobs:
       - name: Publish deploy-root to branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_branch || 'deploy/wohlopti' }}
+          branch: ${{ matrix.deploy_branch }}
+          folder: deploy-root
+          clean: true
+
+  publish_manual:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    name: Publish (manual: ${{ inputs.brand }} / ${{ inputs.app }}) → ${{ inputs.deploy_branch }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          BRAND: ${{ inputs.brand }}
+          APP: ${{ inputs.app }}
+        run: pnpm run build
+
+      - name: Prepare deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-root
+          mkdir -p deploy-root
+
+          if [[ "${{ inputs.app }}" == "all" ]]; then
+            cp -R dist/* deploy-root/
+          elif [[ "${{ inputs.app }}" == "viewer" ]]; then
+            cp -R apps/viewer/dist/* deploy-root/
+          elif [[ "${{ inputs.app }}" == "admin" ]]; then
+            mkdir -p deploy-root/admin
+            cp -R apps/admin/dist/* deploy-root/admin/
+          else
+            echo "Unknown app input: ${{ inputs.app }}"
+            exit 1
+          fi
+
+          if [[ "${{ inputs.include_api }}" == "true" ]]; then
+            mkdir -p deploy-root/api
+            rsync -a --delete \
+              --exclude='config.local.php' \
+              --exclude='.env' \
+              --exclude='.env.*' \
+              --exclude='vendor' \
+              services/api/ deploy-root/api/
+          fi
+
+      - name: Install API vendor (optional)
+        if: ${{ inputs.include_api && inputs.include_api_vendor }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - name: Composer install (API)
+        if: ${{ inputs.include_api && inputs.include_api_vendor }}
+        working-directory: services/api
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: Copy API vendor into deploy folder
+        if: ${{ inputs.include_api && inputs.include_api_vendor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deploy-root/api/vendor
+          cp -R services/api/vendor/* deploy-root/api/vendor/
+
+      - name: Publish deploy-root to branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: ${{ inputs.deploy_branch }}
           folder: deploy-root
           clean: true
