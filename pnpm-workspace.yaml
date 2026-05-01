@@ -1,3 +1,10 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+# pnpm v10 blocks dependency install scripts unless explicitly allowed.
+# Without this, esbuild's postinstall never runs and vite fails with EACCES
+# on the platform binary (see Hostinger shared Node builds).
+allowBuilds:
+  esbuild: true
+  sharp: true
