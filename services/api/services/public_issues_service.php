@@ -118,7 +118,7 @@ function issue_build_body(array $data): string
         $body .= "\n";
     }
 
-    $body .= "---\n*Submitted via the feelvonRoll issue form*\n";
+    $body .= "---\n*Submitted via the Wellspace issue form*\n";
 
     return $body;
 }
@@ -168,7 +168,7 @@ function issue_create_github_issue(array $data, array $config): array
             'Content-Type: application/json',
             'Accept: application/vnd.github+json',
             "Authorization: Bearer {$token}",
-            'User-Agent: feelvonRoll-API',
+            'User-Agent: Wellspace-API',
             'X-GitHub-Api-Version: 2022-11-28',
         ],
         CURLOPT_TIMEOUT        => 15,

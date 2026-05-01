@@ -54,7 +54,7 @@ function send_reset_email(array $config, string $to, string $name, string $link,
     /* Sender / recipient */
     $mail->setFrom(
         $config['smtp_from'] ?? 'noreply@example.com',
-        $config['smtp_from_name'] ?? 'feelvonRoll Admin'
+        $config['smtp_from_name'] ?? 'Wellspace Admin'
     );
     $mail->addAddress($to, $name);
 
@@ -64,21 +64,20 @@ function send_reset_email(array $config, string $to, string $name, string $link,
     $year = date('Y');
 
     $mail->isHTML(true);
-    $mail->Subject = 'Password reset – feelvonRoll Admin';
+    $mail->Subject = 'Password reset – Wellspace Admin';
     $mail->Body = <<<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #222; line-height: 1.6; max-width: 520px; margin: 0 auto; padding: 20px;">
 
-  <!-- Logo / brand -->
-  <p style="font-size: 1.4em; margin: 0 0 24px;">
-    <em style="font-style: italic; font-weight: 400;">feel</em><strong style="font-weight: 700;">vonRoll</strong>
-    <span style="color: #94a3b8; font-weight: 400;"> Admin</span>
+  <!-- Platform brand (deployed UX stays product-branded separately) -->
+  <p style="font-size: 1.35em; margin: 0 0 24px; font-weight: 650; letter-spacing: -0.02em;">
+    Wellspace <span style="color: #94a3b8; font-weight: 400;"> Admin</span>
   </p>
 
   <p>{$greeting}</p>
-  <p>Someone requested a password reset for your feelvonRoll Admin account.</p>
+  <p>Someone requested a password reset for your Wellspace admin account.</p>
   <p>This link is valid for <strong>{$validity}</strong>.</p>
 
   <p style="margin: 24px 0;">
@@ -99,13 +98,10 @@ function send_reset_email(array $config, string $to, string $name, string $link,
   <p style="font-size: 12px; color: #94a3b8; line-height: 1.6; margin: 0;">
     &copy; {$year}
     <a href="https://lukasbatschelet.ch" style="color: #64748b; text-decoration: none;">Lukas Batschelet</a>
-    for
-    <a href="https://www.phbern.ch" style="color: #64748b; text-decoration: none;"><strong>PH</strong>&thinsp;Bern</a>
-    <br>
-    <a href="https://github.com/lbatschelet/feelvonroll" style="color: #64748b; text-decoration: none;">
-      <em style="font-style: italic;">feel</em><strong style="font-weight: 700;">vonRoll</strong></a>
-    is an open-source project licensed under the
-    <a href="https://github.com/lbatschelet/feelvonroll/blob/main/LICENSE" style="color: #64748b; text-decoration: none;">AGPL-3.0</a> license.
+    &middot;
+    Wellspace codebase is open source under the
+    <a href="https://github.com/lbatschelet/feelvonroll/blob/main/LICENSE" style="color: #64748b; text-decoration: none;">AGPL-3.0</a>
+    license.
   </p>
 
 </body>
@@ -113,12 +109,12 @@ function send_reset_email(array $config, string $to, string $name, string $link,
 HTML;
 
     $mail->AltBody = <<<TEXT
-feelVONROLL Admin
+Wellspace Admin
 ─────────────────
 
 {$greeting}
 
-Someone requested a password reset for your feelvonRoll Admin account.
+Someone requested a password reset for your Wellspace admin account.
 
 This link is valid for {$validity}.
 
@@ -127,9 +123,8 @@ Reset password: {$link}
 If you didn't request this reset, you can safely ignore this email.
 
 ─────────────────
-© {$year} Lukas Batschelet for PHBern
-feelvonRoll is an open-source project licensed under the AGPL-3.0 license.
-https://github.com/lbatschelet/feelvonroll
+© {$year} Lukas Batschelet
+Wellspace (AGPL-3.0): https://github.com/lbatschelet/feelvonroll/blob/main/LICENSE
 TEXT;
 
     $mail->send();

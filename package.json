@@ -1,8 +1,8 @@
 {
-  "name": "feelvonroll-platform",
+  "name": "wellspace",
   "private": true,
   "version": "0.0.0",
-  "description": "Monorepo entry for deployments: use repository root as app root (pnpm install && pnpm build). Model-pipeline helpers are scripts only; no nested package manifests.",
+  "description": "Wellspace platform monorepo: multi-brand spatial wellbeing tooling (pnpm install && pnpm build). Product UX is branded per tenants under brands/.",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "engines": {

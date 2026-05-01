@@ -1,5 +1,5 @@
 -- =============================================================================
--- feelvonRoll API – Complete Database Schema
+-- Wellspace platform API – consolidated database schema
 -- =============================================================================
 -- Consolidated from migrations 001–008.
 -- Run this on a blank database to get the full schema + seed data.

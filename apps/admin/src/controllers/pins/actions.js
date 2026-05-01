@@ -70,7 +70,7 @@ export function createPinsActions({ state, views, api, shell, render }) {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${date}_feelvonRoll_pins.csv`
+      link.download = `${date}_wellspace_pins.csv`
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -92,7 +92,7 @@ export function createPinsActions({ state, views, api, shell, render }) {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${date}_feelvonRoll_pins_long.csv`
+      link.download = `${date}_wellspace_pins_long.csv`
       document.body.appendChild(link)
       link.click()
       link.remove()

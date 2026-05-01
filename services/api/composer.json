@@ -1,6 +1,6 @@
 {
-  "name": "feelvonroll/api",
-  "description": "PHP API for feelvonroll",
+  "name": "wellspace/api",
+  "description": "Wellspace PHP API (shared backend for branded viewer/admin deployments)",
   "require": {
     "php": ">=8.1",
     "phpmailer/phpmailer": "^6.9"

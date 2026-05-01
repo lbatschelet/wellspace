@@ -1,6 +1,6 @@
 /**
  * Title component displayed top-left.
- * Shows "feelvonRoll" as a standalone heading without a bubble.
+ * Brand wordmark heading (configured per tenant in brands/*/config.js `wordmarkHtml`).
  * Exports: createTitleBar.
  */
 import { brand } from '@brand/config.js'

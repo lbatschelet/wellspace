@@ -8,7 +8,7 @@ export function createHeader() {
   const header = document.createElement('header')
   header.className = 'header'
   const wordmark = brand?.wordmarkHtml || brand?.displayName || 'Admin'
-  const siteUrl = brand?.siteUrl || 'https://feelvonroll.ch'
+  const siteUrl = brand?.siteUrl || 'https://wellspace.ch'
   header.innerHTML = `
     <div class="header-brand">
       <a class="header-title" data-action="dashboard" href="#" title="Go to dashboard">${wordmark} Admin</a>

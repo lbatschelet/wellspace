@@ -1,4 +1,4 @@
-# Feelvonroll API
+# Wellspace API
 
 Base URL: `/api`
 

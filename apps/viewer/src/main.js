@@ -586,19 +586,19 @@ async function loadQuestions(language) {
   try {
     questions = await fetchQuestionnaire({ key: 'default', lang: language })
   } catch (err) {
-    console.warn('[feelvonRoll] fetchQuestionnaire failed:', err)
+    console.warn('[Wellspace viewer] fetchQuestionnaire failed:', err)
   }
 
   if (!Array.isArray(questions) || !questions.length) {
     try {
       questions = await fetchQuestions({ lang: language })
     } catch (err) {
-      console.warn('[feelvonRoll] fetchQuestions fallback failed:', err)
+      console.warn('[Wellspace viewer] fetchQuestions fallback failed:', err)
     }
   }
 
   if (!Array.isArray(questions) || !questions.length) {
-    console.warn('[feelvonRoll] No questions from API, using hardcoded fallback')
+    console.warn('[Wellspace viewer] No questions from API, using hardcoded fallback')
     questions = getFallbackQuestions()
   }
 
@@ -650,7 +650,7 @@ async function loadAboutContent(language, forceShow = false) {
       aboutOverlay.show()
     }
   } catch (error) {
-    console.warn('[feelvonRoll] Failed to load about content:', error)
+    console.warn('[Wellspace viewer] Failed to load about content:', error)
     if (forceShow) aboutOverlay.show()
   }
 }
@@ -709,7 +709,7 @@ function bootCaptureMode() {
       const targetPos = controls.target.clone()
 
       postCapture({
-        type: 'feelvonroll-capture',
+        type: 'wellspace-capture',
         camera: { x: cameraPos.x, y: cameraPos.y, z: cameraPos.z },
         target: { x: targetPos.x, y: targetPos.y, z: targetPos.z },
         floor_index: selectedFloor,
@@ -738,7 +738,7 @@ function bootCaptureMode() {
     capturePointBtn.addEventListener('click', () => {
       if (!selectedPoint) return
       postCapture({
-        type: 'feelvonroll-capture',
+        type: 'wellspace-capture',
         // For LV95 calibration we use "target" as the picked point.
         target: { x: selectedPoint.x, y: selectedPoint.y, z: selectedPoint.z },
         floor_index: selectedFloor,
@@ -815,10 +815,10 @@ async function bootStationMode(key) {
         return
       }
     } catch (err) {
-      console.warn('[feelvonRoll] Station questionnaire failed:', err)
+      console.warn('[Wellspace viewer] Station questionnaire failed:', err)
     }
   } catch (error) {
-    console.warn('[feelvonRoll] Failed to load station:', error)
+    console.warn('[Wellspace viewer] Failed to load station:', error)
   }
 
   // Fallback: load default questions

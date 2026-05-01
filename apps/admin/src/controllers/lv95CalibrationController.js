@@ -15,7 +15,7 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
     lv95: { e: null, n: null },
   }))
 
-  const getWebappBase = () => import.meta.env.VITE_WEBAPP_BASE || 'https://feelvonroll.ch'
+  const getWebappBase = () => import.meta.env.VITE_WEBAPP_BASE || 'https://wellspace.ch'
 
   function formatNum(v) {
     if (v == null || !Number.isFinite(v)) return ''
@@ -98,7 +98,7 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
 
   const openCaptureMode = (idx) => {
     const captureUrl = `${getWebappBase()}?mode=capture&capture=pin`
-    captureWindow = window.open(captureUrl, 'feelvonroll-capture', 'width=1200,height=800')
+      captureWindow = window.open(captureUrl, 'wellspace-capture', 'width=1200,height=800')
     if (!captureWindow) {
       shell.setStatus('Popup blocked. Please allow popups for the admin site, then try again.', true)
       window.open(captureUrl, '_blank', 'noopener')
@@ -106,7 +106,7 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
     }
 
     const handleMessage = (event) => {
-      if (event.data && event.data.type === 'feelvonroll-capture') {
+      if (event.data && event.data.type === 'wellspace-capture') {
         const { target } = event.data
         if (target) {
           points[idx].world.x = Number(target.x.toFixed(3))

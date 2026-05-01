@@ -36,6 +36,7 @@ return (function () {
         }
     }
 
+    /* github_repo defaults to the historic slug until GitHub rename; override via env GITHUB_REPO. */
     $defaults = [
         'db_host' => 'localhost',
         'db_name' => '',

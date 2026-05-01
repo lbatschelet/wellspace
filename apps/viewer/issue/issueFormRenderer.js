@@ -5,9 +5,12 @@
  * Exports: renderIssueForm.
  */
 import { escapeHtml } from './escapeHtml'
+import { brand } from '@brand/config.js'
 
-const GITHUB_ISSUES_URL = 'https://github.com/lbatschelet/feelvonroll/issues'
-const GITHUB_LICENSE_URL = 'https://github.com/lbatschelet/feelvonroll/blob/main/LICENSE'
+/** Monorepo slug on GitHub; update here when the remote is renamed. */
+const GITHUB_REPO = 'lbatschelet/feelvonroll'
+const GITHUB_ISSUES_URL = `https://github.com/${GITHUB_REPO}/issues`
+const GITHUB_LICENSE_URL = `https://github.com/${GITHUB_REPO}/blob/main/LICENSE`
 
 const LANGUAGE_LABELS = { de: 'Deutsch', en: 'English' }
 
@@ -23,10 +26,12 @@ const LANGUAGE_LABELS = { de: 'Deutsch', en: 'English' }
  */
 export function renderIssueForm(container, { debugInfo, t, languages, currentLang, onLangChange, onSubmit }) {
   const year = new Date().getFullYear()
+  const logoTitle = escapeHtml(brand.displayName || brand.viewerTitle || '')
+  const logoHtml = brand.wordmarkHtml || logoTitle
 
   container.innerHTML = `
     <nav class="issue-nav">
-      <a href="/" class="issue-logo" title="feelvonRoll"><em>feel</em><strong>vonRoll</strong></a>
+      <a href="/" class="issue-logo" title="${logoTitle}">${logoHtml}</a>
       <span class="lang-toggle" id="langToggle">${currentLang.toUpperCase()}</span>
     </nav>
 

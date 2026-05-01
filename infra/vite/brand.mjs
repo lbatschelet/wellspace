@@ -1,7 +1,7 @@
 /**
  * Shared Vite helpers for brand-aware monorepo apps.
  *
- *  - resolveBrand(env): pick the active brand (env > default 'feelvonroll').
+ *  - resolveBrand(env): pick the active tenant brand (BRAND env > default slug `feelvonroll`).
  *  - loadBrandConfig(brandName): import the brand config module.
  *  - brandPaths(brandName, app, repoRoot): resolve {brandDir, publicDir} for a given app.
  *  - brandHtmlPlugin(brandConfig): Vite plugin that substitutes %BRAND_*%

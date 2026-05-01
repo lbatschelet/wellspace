@@ -8,7 +8,7 @@
  *
  * The behaviour is driven by env vars:
  *
- *   BRAND     required - which brand to build for (e.g. "feelvonroll", "wohlopti").
+ *   BRAND     required - tenant brand slug under brands/ (e.g. feelvonroll, wohlopti).
  *             Forwarded into the per-app vite build so brand assets/config resolve.
  *
  *   APP       required - which app to build:

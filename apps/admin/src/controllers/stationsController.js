@@ -19,7 +19,7 @@ export function createStationsController({ state, views, api, questionnairesApi,
   let editingStation = null
 
   const getWebappBase = () => {
-    const raw = import.meta.env.VITE_WEBAPP_BASE || 'https://feelvonroll.ch'
+    const raw = import.meta.env.VITE_WEBAPP_BASE || 'https://wellspace.ch'
     return String(raw).replace(/\/+$/, '')
   }
   // Use short path route for QR codes (more compact than query params).
@@ -191,7 +191,7 @@ export function createStationsController({ state, views, api, questionnairesApi,
 
   const openCaptureMode = () => {
     const captureUrl = `${getWebappBase()}?mode=capture`
-    captureWindow = window.open(captureUrl, 'feelvonroll-capture', 'width=1200,height=800')
+    captureWindow = window.open(captureUrl, 'wellspace-capture', 'width=1200,height=800')
     if (!captureWindow) {
       shell.setStatus('Popup blocked. Please allow popups for the admin site, then try again.', true)
       window.open(captureUrl, '_blank', 'noopener')
@@ -199,7 +199,7 @@ export function createStationsController({ state, views, api, questionnairesApi,
     }
 
     const handleMessage = (event) => {
-      if (event.data && event.data.type === 'feelvonroll-capture') {
+      if (event.data && event.data.type === 'wellspace-capture') {
         const { camera, target, floor_index } = event.data
         if (camera) {
           view.camX.value = camera.x.toFixed(2)

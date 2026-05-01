@@ -18,7 +18,7 @@ return [
 
     /* ── GitHub (issue submission) ── */
     'github_token'     => '',   // PAT with repo scope for creating issues
-    'github_repo'      => 'lbatschelet/feelvonroll',  // owner/repo
+    'github_repo'      => 'lbatschelet/feelvonroll',  // GitHub slug (update after repository rename if needed)
     'github_assignees' => '',   // auto-assign to these users (comma-separated, e.g. 'lbatschelet')
 
     /* ── SMTP (password-reset emails) ── */
@@ -27,7 +27,7 @@ return [
     'smtp_user'      => '',
     'smtp_pass'      => '',
     'smtp_from'      => '',   // sender address, e.g. noreply@example.com
-    'smtp_from_name' => 'feelvonRoll Admin',
+    'smtp_from_name' => 'Wellspace Admin',
 
     /* ── Frontend ── */
     'app_url' => '',   // public URL of admin frontend, e.g. https://admin.example.com
