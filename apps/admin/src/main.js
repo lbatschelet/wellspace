@@ -4,9 +4,17 @@
  */
 import './style.css'
 
-const pathname = window.location.pathname
+const baseUrl = String(import.meta.env.BASE_URL || '/')
+const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+const pathname = String(window.location.pathname || '')
+const relativePath =
+  base === '/'
+    ? pathname
+    : pathname.startsWith(base)
+      ? `/${pathname.slice(base.length).replace(/^\/+/, '')}`
+      : pathname
 
-if (pathname === '/reset') {
+if (relativePath === '/reset') {
   bootResetPage()
 } else {
   bootAdminApp()

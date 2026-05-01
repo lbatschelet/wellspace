@@ -24,11 +24,28 @@ const PUBLIC_PATHS = ['/reset', '/login']
 
 export function createRouter() {
   let onChange = null
+  const baseUrl = String(import.meta.env.BASE_URL || '/')
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
 
-  const resolve = (pathname) => ROUTES[pathname] || null
-  const isPublic = (pathname) => PUBLIC_PATHS.includes(pathname)
-  const currentPath = () => window.location.pathname
-  const currentPage = () => resolve(currentPath())
+  const stripBase = (pathname) => {
+    const p = String(pathname || '')
+    if (base === '/') return p || '/'
+    if (p === base.slice(0, -1)) return '/'
+    if (p.startsWith(base)) return `/${p.slice(base.length).replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/'
+    return p || '/'
+  }
+
+  const withBase = (path) => {
+    const p = String(path || '/')
+    if (base === '/') return p
+    const normalized = p.startsWith('/') ? p.slice(1) : p
+    return `${base}${normalized}`.replace(/\/+$/, '') || base
+  }
+
+  const resolve = (pathname) => ROUTES[stripBase(pathname)] || null
+  const isPublic = (pathname) => PUBLIC_PATHS.includes(stripBase(pathname))
+  const currentPath = () => stripBase(window.location.pathname)
+  const currentPage = () => resolve(window.location.pathname)
 
   const pathForPage = (page) => {
     const entry = Object.entries(ROUTES).find(([path, value]) => value === page && path !== '/')
@@ -38,14 +55,14 @@ export function createRouter() {
   const push = (page) => {
     const path = pathForPage(page)
     if (path && path !== currentPath()) {
-      history.pushState(null, '', path)
+      history.pushState(null, '', withBase(path))
     }
   }
 
   const replace = (page) => {
     const path = pathForPage(page)
     if (path) {
-      history.replaceState(null, '', path)
+      history.replaceState(null, '', withBase(path))
     }
   }
 

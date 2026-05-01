@@ -9,10 +9,12 @@ export function createResetPage() {
   const page = document.createElement('div')
   page.className = 'layout'
   const wordmark = brand?.wordmarkHtml || brand?.displayName || ''
+  const baseUrl = String(import.meta.env.BASE_URL || '/')
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
   page.innerHTML = `
     <header class="header">
       <div class="header-brand">
-        <a class="header-title" href="/" title="Back to login">${wordmark} Admin</a>
+        <a class="header-title" href="${base}" title="Back to login">${wordmark} Admin</a>
       </div>
     </header>
     <section class="card login-card">
@@ -27,7 +29,7 @@ export function createResetPage() {
           <button id="resetRequestButton">Send reset link</button>
         </div>
         <div id="resetRequestStatus" class="status"></div>
-        <p class="form-hint" style="margin-top: 12px;"><a href="/">Back to login</a></p>
+        <p class="form-hint" style="margin-top: 12px;"><a href="${base}">Back to login</a></p>
       </div>
       <div class="reset-section" data-section="set-password" style="display:none;">
         <h2>Set new password</h2>
@@ -45,7 +47,7 @@ export function createResetPage() {
           <button id="resetSetPasswordButton">Set password</button>
         </div>
         <div id="resetSetStatus" class="status"></div>
-        <p class="form-hint" style="margin-top: 12px;"><a href="/">Back to login</a></p>
+        <p class="form-hint" style="margin-top: 12px;"><a href="${base}">Back to login</a></p>
       </div>
     </section>
   `

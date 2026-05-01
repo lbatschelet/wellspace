@@ -5,6 +5,8 @@
 import { enablePasswordToggles } from '../utils/dom'
 
 export function createLoginCard() {
+  const baseUrl = String(import.meta.env.BASE_URL || '/')
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
   const loginCard = document.createElement('section')
   loginCard.className = 'card login-card'
   loginCard.innerHTML = `
@@ -20,7 +22,7 @@ export function createLoginCard() {
       </div>
       <div class="form-actions">
         <button id="loginUserButton">Log in</button>
-        <a href="/reset" class="forgot-link">Forgot password?</a>
+        <a href="${base}reset" class="forgot-link">Forgot password?</a>
       </div>
     </div>
     <div class="auth-section" data-section="bootstrap">

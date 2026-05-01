@@ -4,7 +4,9 @@
  */
 export function buildResetLink(resetToken) {
   const url = new URL(window.location.origin)
-  url.pathname = '/reset'
+  const baseUrl = String(import.meta.env.BASE_URL || '/')
+  const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+  url.pathname = `${base}reset`
   url.searchParams.set('token', resetToken)
   return url.toString()
 }
