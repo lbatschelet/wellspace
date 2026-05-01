@@ -1,0 +1,16 @@
+{
+  "name": "feelvonroll-platform",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node infra/deploy/build.mjs",
+    "dev:viewer": "pnpm --filter viewer dev",
+    "dev:admin": "pnpm --filter admin dev",
+    "test": "pnpm -r test"
+  }
+}

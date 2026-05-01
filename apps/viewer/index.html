@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en" style="background:#f3f4f6">
+<html lang="en" style="background:%BRAND_BACKGROUND_COLOR%">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#f3f4f6" />
+    <meta name="theme-color" content="%BRAND_THEME_COLOR%" />
     <script>
       // iOS home-screen installs can ignore deep links when a manifest with
       // start_url is present. For station-specific shortcuts we keep the exact
@@ -37,13 +37,13 @@
 
         const s = document.createElement('script')
         s.defer = true
-        s.setAttribute('data-domain', 'feelvonroll.ch')
+        s.setAttribute('data-domain', '%BRAND_ANALYTICS_PLAUSIBLE_DOMAIN%')
         s.setAttribute('data-api', '/api/event')
         s.src = '/js/script.js'
         document.head.appendChild(s)
       })()
     </script>
-    <title>feelvonRoll</title>
+    <title>%BRAND_VIEWER_TITLE%</title>
   </head>
   <body>
     <div id="app"></div>

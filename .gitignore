@@ -1,6 +1,22 @@
 .DS_Store
 *.local
 
+# Node
+node_modules/
+*.log
+.pnpm-store/
+
+# Build outputs
+dist/
+apps/*/dist/
+
+# Vite cache
+**/.vite/
+
+# Editor
+.vscode/
+.idea/
+
 # Model pipeline
 model-pipeline/**/node_modules/
 model-pipeline/**/package-lock.json
