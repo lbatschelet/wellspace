@@ -3,6 +3,7 @@
  * Exports: createLv95CalibrationController.
  */
 import { parseSwissNumber, parseSwissLv95Pair } from '../utils/lv95Parse'
+import { getPublicWebappBase } from '../utils/webappBase'
 
 export function createLv95CalibrationController({ state, views, api, shell }) {
   const view = views.lv95CalibrationView
@@ -15,7 +16,7 @@ export function createLv95CalibrationController({ state, views, api, shell }) {
     lv95: { e: null, n: null },
   }))
 
-  const getWebappBase = () => import.meta.env.VITE_WEBAPP_BASE || 'https://wellspace.ch'
+  const getWebappBase = () => getPublicWebappBase()
 
   function formatNum(v) {
     if (v == null || !Number.isFinite(v)) return ''

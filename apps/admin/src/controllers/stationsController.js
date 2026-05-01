@@ -5,6 +5,7 @@
  */
 import QRCode from 'qrcode'
 import { icons } from '../utils/dom'
+import { getPublicWebappBase } from '../utils/webappBase'
 import { showModal, hideModal, bindModalClose } from '../utils/adminModal'
 import { actionCell, toggleTd } from '../utils/adminTable'
 
@@ -18,10 +19,7 @@ export function createStationsController({ state, views, api, questionnairesApi,
   let captureWindow = null
   let editingStation = null
 
-  const getWebappBase = () => {
-    const raw = import.meta.env.VITE_WEBAPP_BASE || 'https://wellspace.ch'
-    return String(raw).replace(/\/+$/, '')
-  }
+  const getWebappBase = () => getPublicWebappBase()
   // Use short path route for QR codes (more compact than query params).
   const getStationLink = (key) => `${getWebappBase()}/s/${encodeURIComponent(key)}`
   const getStationKioskLink = (key) => `${getWebappBase()}/kiosk/${encodeURIComponent(key)}`

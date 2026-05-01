@@ -2,11 +2,13 @@
  * Footer builder with license, author credit, and bug report link.
  * Exports: createFooter.
  */
-import { brand } from '@brand/config.js'
+import { getPublicWebappBase } from '../utils/webappBase'
 
-const ISSUE_URL =
-  (import.meta.env.VITE_WEBAPP_URL || brand?.siteUrl || 'https://wellspace.ch') +
-  '/issue/?source=admin'
+const issueBase =
+  (typeof import.meta.env.VITE_WEBAPP_URL === 'string' && import.meta.env.VITE_WEBAPP_URL.trim()
+    ? import.meta.env.VITE_WEBAPP_URL.trim().replace(/\/+$/, '')
+    : getPublicWebappBase()) || ''
+const ISSUE_URL = issueBase ? `${issueBase}/issue/?source=admin` : '#'
 
 export function createFooter() {
   const footer = document.createElement('footer')
