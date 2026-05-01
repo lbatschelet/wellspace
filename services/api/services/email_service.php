@@ -100,7 +100,7 @@ function send_reset_email(array $config, string $to, string $name, string $link,
     <a href="https://lukasbatschelet.ch" style="color: #64748b; text-decoration: none;">Lukas Batschelet</a>
     &middot;
     Wellspace codebase is open source under the
-    <a href="https://github.com/lbatschelet/feelvonroll/blob/main/LICENSE" style="color: #64748b; text-decoration: none;">AGPL-3.0</a>
+    <a href="https://github.com/lbatschelet/wellspace/blob/main/LICENSE" style="color: #64748b; text-decoration: none;">AGPL-3.0</a>
     license.
   </p>
 
@@ -124,7 +124,7 @@ If you didn't request this reset, you can safely ignore this email.
 
 ─────────────────
 © {$year} Lukas Batschelet
-Wellspace (AGPL-3.0): https://github.com/lbatschelet/feelvonroll/blob/main/LICENSE
+Wellspace (AGPL-3.0): https://github.com/lbatschelet/wellspace/blob/main/LICENSE
 TEXT;
 
     $mail->send();

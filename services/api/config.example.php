@@ -18,7 +18,7 @@ return [
 
     /* ── GitHub (issue submission) ── */
     'github_token'     => '',   // PAT with repo scope for creating issues
-    'github_repo'      => 'lbatschelet/feelvonroll',  // GitHub slug (update after repository rename if needed)
+    'github_repo'      => 'lbatschelet/wellspace',  // must match live repo for Issues API
     'github_assignees' => '',   // auto-assign to these users (comma-separated, e.g. 'lbatschelet')
 
     /* ── SMTP (password-reset emails) ── */

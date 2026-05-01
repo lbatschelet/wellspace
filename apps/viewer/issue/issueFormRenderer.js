@@ -7,8 +7,8 @@
 import { escapeHtml } from './escapeHtml'
 import { brand } from '@brand/config.js'
 
-/** Monorepo slug on GitHub; update here when the remote is renamed. */
-const GITHUB_REPO = 'lbatschelet/feelvonroll'
+/** Monorepo slug on GitHub (must match Issues API target). */
+const GITHUB_REPO = 'lbatschelet/wellspace'
 const GITHUB_ISSUES_URL = `https://github.com/${GITHUB_REPO}/issues`
 const GITHUB_LICENSE_URL = `https://github.com/${GITHUB_REPO}/blob/main/LICENSE`
 

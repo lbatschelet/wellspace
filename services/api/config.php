@@ -45,7 +45,7 @@ return (function () {
         'admin_token' => '',
         'jwt_secret' => '',
         'github_token' => '',
-        'github_repo' => 'lbatschelet/feelvonroll',
+        'github_repo' => 'lbatschelet/wellspace',
         'github_assignees' => '',
         'api_debug' => false,
     ];

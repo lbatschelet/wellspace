@@ -9,7 +9,7 @@ This **monorepo** hosts the shared viewer (`apps/viewer`), admin (`apps/admin`),
 
 The **feelvonRoll** strand is developed as part of [**RealTransform**](https://sustainability.uzh.ch/de/forschung-lehre/forschung/realtransform.html) at [PHBern](https://www.phbern.ch): an interactive wellbeing installation on the [vonRoll campus](https://www.phbern.ch/ueber-die-phbern/standorte/vonroll).
 
-> **GitHub:** The canonical source for this codebase is migrating to **Wellspace** wording; the Git remote may still show `feelvonroll` until the repository slug is renamed. Local clone folder names are arbitrary (`wellspace/` is recommended).
+> **GitHub:** Canonical source: **https://github.com/lbatschelet/wellspace** (this monorepo). The previous `feelvonroll` repository can be archived once deploys run from here.
 
 ## Architecture
 
@@ -32,10 +32,8 @@ The **viewer** loads a tenant-specific theme from `brands/<brand>/` and talks to
 
 ## Getting Started
 
-Clone (replace URL if GitHub slug is renamed to `wellspace`):
-
 ```bash
-git clone https://github.com/lbatschelet/feelvonroll.git wellspace
+git clone https://github.com/lbatschelet/wellspace.git wellspace
 cd wellspace
 pnpm install
 ```
