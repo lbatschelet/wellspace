@@ -58,6 +58,21 @@ export function createAboutOverlay() {
       mobileLogos.className = 'about-logos-mobile'
       footer.parentNode.insertBefore(mobileLogos, footer)
     }
+
+    // Inject build version into the about footer (if present).
+    if (footer) {
+      const existing = footer.querySelector('.about-version')
+      if (!existing) {
+        const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
+        const el = document.createElement('a')
+        el.className = 'about-version'
+        el.href = 'https://wellspace.ch'
+        el.target = '_blank'
+        el.rel = 'noopener'
+        el.textContent = `Wellspace ${version}`
+        footer.appendChild(el)
+      }
+    }
   }
 
   document.body.appendChild(backdrop)

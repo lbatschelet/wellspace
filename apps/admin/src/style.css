@@ -1403,6 +1403,17 @@ th {
   font-size: 0.75rem;
 }
 
+.footer-version {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  text-decoration: none;
+}
+
+.footer-version:hover {
+  color: #2563eb;
+  opacity: 1;
+}
+
 .footer-bug {
   display: inline-flex;
   align-items: center;

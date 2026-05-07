@@ -14,6 +14,7 @@ export function createFooter() {
   const footer = document.createElement('footer')
   footer.className = 'app-footer'
   const year = new Date().getFullYear()
+  const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
   footer.innerHTML = `
     <div class="footer-left">
       <span class="footer-credit">
@@ -25,6 +26,9 @@ export function createFooter() {
       <span class="footer-license">
         Licensed under <a href="https://github.com/lbatschelet/wellspace/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a>
       </span>
+      <a class="footer-version" href="https://wellspace.ch" target="_blank" rel="noopener">
+        Wellspace ${version}
+      </a>
     </div>
     <a class="footer-bug" href="${ISSUE_URL}" target="_blank" rel="noopener" title="Report a bug or request a feature">
       Report a bug

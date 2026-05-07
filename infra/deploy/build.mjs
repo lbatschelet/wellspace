@@ -51,6 +51,32 @@ if (!validApps.has(APP)) {
 
 console.log(`[build] BRAND=${BRAND} APP=${APP}`)
 
+function safeExec(cmd) {
+  try {
+    return String(execSync(cmd, { cwd: repoRoot, stdio: ['ignore', 'pipe', 'ignore'] })).trim()
+  } catch {
+    return ''
+  }
+}
+
+function resolveBuildVersion() {
+  // Prefer an exact tag on the current commit (release build).
+  const exactTag = safeExec('git describe --tags --exact-match')
+  if (exactTag) return exactTag
+
+  // Otherwise show a descriptive string (tag + commits + sha) if available.
+  const described = safeExec('git describe --tags --always --dirty')
+  if (described) return described
+
+  // Fallback for environments without git metadata.
+  const sha = safeExec('git rev-parse --short HEAD')
+  return sha || 'dev'
+}
+
+const BUILD_VERSION = resolveBuildVersion()
+const BUILD_SHA = safeExec('git rev-parse --short HEAD') || ''
+console.log(`[build] VERSION=${BUILD_VERSION}${BUILD_SHA ? ` SHA=${BUILD_SHA}` : ''}`)
+
 function resolveViteCli(appSlug) {
   const appRoot = resolve(repoRoot, 'apps', appSlug)
   const candidates = [
@@ -72,7 +98,13 @@ const buildOne = (name) => {
   execFileSync(process.execPath, [viteJs, 'build'], {
     stdio: 'inherit',
     cwd: appRoot,
-    env: { ...process.env, BRAND },
+    env: {
+      ...process.env,
+      BRAND,
+      // Vite exposes only VITE_* variables to import.meta.env.
+      VITE_APP_VERSION: process.env.VITE_APP_VERSION || BUILD_VERSION,
+      VITE_APP_GIT_SHA: process.env.VITE_APP_GIT_SHA || BUILD_SHA,
+    },
   })
 }
 
