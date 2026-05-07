@@ -43,6 +43,12 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(jsdom@28.1.0)
 
+  apps/issue:
+    devDependencies:
+      vite:
+        specifier: ^7.2.4
+        version: 7.3.2
+
   apps/viewer:
     dependencies:
       marked:
