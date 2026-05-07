@@ -5,11 +5,11 @@
 
 const translations = {
   de: {
-    'page.title': 'Meldung senden',
+    'page.title': 'Fehler gefunden? Feedback?',
     'page.subtitle':
-      'Melde einen Fehler oder schlage ein Feature vor. Wenn möglich, beschreibe kurz, was du erwartet hast und was passiert ist.',
+      'Melde einen Fehler oder schlage ein Feature vor.',
     'page.context':
-      '{{brand}} ist ein Projekt auf der {{platform}}-Plattform. Dein Feedback wird als Issue im {{platform}}-Repository erfasst.',
+      '{{brand}} ist ein Projekt auf der {{platform}}-Plattform. Dein Feedback wird als Issue im öffentlichen {{platform}}-Repository erfasst.',
     'category.label': 'Kategorie',
     'category.bug': 'Fehler',
     'category.feature': 'Feature',
@@ -39,11 +39,11 @@ const translations = {
     'success.again': 'Noch eine Meldung senden',
   },
   en: {
-    'page.title': 'Send report',
+    'page.title': 'Found a bug? Have some feedback?',
     'page.subtitle':
-      'Report a bug or propose a feature. If possible, briefly describe what you expected and what happened.',
+      'Report a bug or propose a feature.',
     'page.context':
-      '{{brand}} is a project built on the {{platform}} platform. Your feedback is tracked as an issue in the {{platform}} repository.',
+      '{{brand}} is a project built on the {{platform}} platform. Your feedback is tracked as an issue in the public {{platform}} repository.',
     'category.label': 'Category',
     'category.bug': 'Bug',
     'category.feature': 'Feature',

@@ -12,6 +12,7 @@ const GITHUB_REPO = 'lbatschelet/wellspace'
 const GITHUB_ISSUES_URL = `https://github.com/${GITHUB_REPO}/issues`
 const GITHUB_LICENSE_URL = `https://github.com/${GITHUB_REPO}/blob/main/LICENSE`
 const GITHUB_RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`
+const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO}`
 
 const LANGUAGE_LABELS = { de: 'Deutsch', en: 'English' }
 
@@ -30,7 +31,7 @@ export function renderIssueForm(container, { debugInfo, t, languages, currentLan
   const logoTitle = escapeHtml(brand.displayName || brand.viewerTitle || '')
   const logoHtml = brand.wordmarkHtml || logoTitle
   const brandHtml = brand.wordmarkHtml || escapeHtml(brand.displayName || brand.viewerTitle || 'This site')
-  const platformHtml = '<em>well</em><strong>Space</strong>'
+  const platformHtml = `<a href="${GITHUB_REPO_URL}" target="_blank" rel="noopener"><em>well</em><strong>Space</strong></a>`
   const contextHtml = t('page.context', { brand: brandHtml, platform: platformHtml })
   const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
   const versionHref =
