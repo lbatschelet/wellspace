@@ -19,6 +19,9 @@
   # Keep /feedback/ SPA entry stable.
   RewriteRule ^feedback$ /feedback/ [R=301,L]
 
+  # Custom 404 document (static hosts that respect it).
+  ErrorDocument 404 /404.html
+
   # Path-based station/kiosk routes (used especially for iOS home-screen mode).
   RewriteRule ^kiosk/[^/]+/?$ /index.html [L]
   RewriteRule ^station/[^/]+/?$ /index.html [L]
