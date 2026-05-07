@@ -78,7 +78,21 @@ export function createAboutOverlay() {
         el.target = '_blank'
         el.rel = 'noopener'
         el.textContent = version
-        footer.appendChild(el)
+
+        // Place the version under the "report a bug" link (if present).
+        const bugLink = footer.querySelector('.about-footer-bug')
+        if (bugLink && bugLink.parentElement === footer) {
+          let right = footer.querySelector('.about-footer-right')
+          if (!right) {
+            right = document.createElement('div')
+            right.className = 'about-footer-right'
+            footer.appendChild(right)
+          }
+          right.appendChild(bugLink)
+          right.appendChild(el)
+        } else {
+          footer.appendChild(el)
+        }
       }
     }
   }
