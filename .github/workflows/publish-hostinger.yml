@@ -39,6 +39,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   # Avoid deploying multiple commits in parallel from the same source branch.
   group: publish-hostinger-${{ github.ref }}
