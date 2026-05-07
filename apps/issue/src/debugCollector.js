@@ -38,9 +38,13 @@ export function collectDebugInfo({ source, language }) {
   const pointer = typeof window !== 'undefined' ? window.matchMedia?.('(pointer: coarse)') : null
   const hover = typeof window !== 'undefined' ? window.matchMedia?.('(hover: hover)') : null
   return {
-    app: 'feedback',
+    // Where the form runs (this page)
+    page: 'feedback',
+    // Originating app that opened the feedback form (query param "source")
+    sourceApp: source || 'unknown',
     version,
     brand: brand || '(unknown)',
+    // Backwards-compatible field name used by the API body builder
     source,
     browser: parseBrowser(ua),
     os: parseOS(ua),
