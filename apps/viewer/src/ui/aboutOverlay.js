@@ -64,12 +64,20 @@ export function createAboutOverlay() {
       const existing = footer.querySelector('.about-version')
       if (!existing) {
         const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
+        const repo = 'lbatschelet/wellspace'
+        const isLikelyExactTag =
+          /^v[0-9]/.test(version) &&
+          !/-g[0-9a-f]{7,}$/i.test(version) &&
+          !/dirty/i.test(version)
+        const href = isLikelyExactTag
+          ? `https://github.com/${repo}/releases/tag/${encodeURIComponent(version)}`
+          : `https://github.com/${repo}/releases`
         const el = document.createElement('a')
         el.className = 'about-version'
-        el.href = 'https://wellspace.ch'
+        el.href = href
         el.target = '_blank'
         el.rel = 'noopener'
-        el.textContent = `Wellspace ${version}`
+        el.textContent = version
         footer.appendChild(el)
       }
     }
