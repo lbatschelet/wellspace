@@ -255,65 +255,34 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
   }
 
   const loader = new GLTFLoader()
-  const loaded = (
-    await Promise.all(
-      entries.map(async (entry) => {
-        try {
-          const gltf = await loader.loadAsync(entry.modelUrl)
-          return { floorIndex: entry.floorIndex, gltf }
-        } catch {
-          return null
-        }
-      })
-    )
-  ).filter(Boolean)
-
-  if (!loaded.length) {
-    throw new Error('No glTF floors could be loaded')
-  }
+  // Load the reference floor first so the initial view appears quickly.
+  // Other floors are loaded in the background and attached as they arrive.
+  const floorIndices = entries.map((e) => e.floorIndex)
+  const refIndex = floorIndices.includes(0) ? 0 : Math.min(...floorIndices)
+  const refEntry = entries.find((e) => e.floorIndex === refIndex) || entries[0]
 
   const floorGroups = []
   const slabTopByFloorIndex = new Map()
+  const loadPromisesByFloorIndex = new Map()
 
-  // Stack floors robustly even if the GLBs are exact copies:
-  // - normalize each loaded root so its `minY` is at Y=0
-  // - then shift by a model-space floor step (unit-aware)
   const proceduralFloorStepY = FLOOR.height + FLOOR.slabThickness
+  let unitScale = 1
+  let floorStepY = proceduralFloorStepY
+  let refCenter = new THREE.Vector3()
 
-  const itemsMeta = []
-  for (const item of loaded) {
-    const root = item.gltf.scene || item.gltf.scenes?.[0]
-    if (!root) continue
+  // Create placeholder groups immediately so UI (floor selector) can render.
+  const groupByFloorIndex = new Map()
+  entries.forEach(({ floorIndex }) => {
+    const g = new THREE.Group()
+    g.userData.floorIndex = floorIndex
+    groupByFloorIndex.set(floorIndex, g)
+    floorGroups.push(g)
+    scene.add(g)
+  })
+  floorGroups.sort((a, b) => Number(a.userData.floorIndex) - Number(b.userData.floorIndex))
 
-    const box = new THREE.Box3().setFromObject(root)
-    const center = box.getCenter(new THREE.Vector3())
-    const minY = box.min.y
-    const size = box.getSize(new THREE.Vector3())
-    itemsMeta.push({ floorIndex: item.floorIndex, root, center, minY, size })
-  }
-
-  const floorIndices = itemsMeta.map((m) => m.floorIndex)
-  const refIndex = itemsMeta.find((m) => m.floorIndex === 0)?.floorIndex ?? Math.min(...floorIndices)
-  // Unit-aware step without being affected by tall objects (e.g. trees).
-  // Sweet Home exports are often in meters, but can also end up in centimeters.
-  // We infer the scale from the overall footprint size.
-  const sampleSize = itemsMeta.find((m) => m.floorIndex === refIndex)?.size
-    || itemsMeta[0]?.size
-    || new THREE.Vector3(1, 1, 1)
-  const footprint = Math.max(sampleSize.x, sampleSize.z)
-  const unitScale = footprint > 2000 ? 100 : 1
-  const floorStepY = proceduralFloorStepY * unitScale
-
-  // Use a shared X/Z centering based on the reference floor so mixed
-  // versions (e.g. trees added) don't shift relative to each other.
-  const refMeta = itemsMeta.find((m) => m.floorIndex === refIndex) || itemsMeta[0]
-  const refCenter = refMeta?.center || new THREE.Vector3()
-
-  // Normalize + add each floor root.
-  for (const meta of itemsMeta) {
-    const { floorIndex, root, center, minY, size } = meta
-
-    // Shared center in X/Z.
+  const attachFloorRoot = ({ floorIndex, root, minY }) => {
+    // Shared center in X/Z so mixed versions don't shift relative to each other.
     root.position.x -= refCenter.x
     root.position.z -= refCenter.z
 
@@ -325,38 +294,19 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
 
     disableFrustumCullForDebug(root)
 
-    // Create a per-floor group marker.
-    root.userData.floorIndex = floorIndex
-    floorGroups.push(root)
+    const group = groupByFloorIndex.get(floorIndex)
+    if (!group) return
+    group.clear()
+    group.add(root)
 
     slabTopByFloorIndex.set(floorIndex, findSlabTopWorldY(root, { unitScale }))
-    scene.add(root)
-
-    if (debugStack) {
-      // Shows whether stacking actually moved floors.
-      const slabTopY = slabTopByFloorIndex.get(floorIndex)
-      const afterBox = new THREE.Box3().setFromObject(root)
-      const afterSize = afterBox.getSize(new THREE.Vector3())
-      console.debug('[gltfStack]', {
-        floorIndex,
-        floorStepY,
-        sizeY: size.y,
-        rootY: root.position.y,
-        slabTopY,
-        afterMinY: afterBox.min.y,
-        afterMaxY: afterBox.max.y,
-        afterSizeY: afterSize.y,
-      })
-    }
 
     if (debugFloorMarkers) {
-      // Always-visible marker to confirm floor stacking in screen space.
       const markerColor =
         floorIndex === 0 ? 0x2b6cff
         : floorIndex === 1 ? 0x22c55e
         : floorIndex === -1 ? 0xef4444
         : 0xf59e0b
-
       const marker = new THREE.Mesh(
         new THREE.SphereGeometry(0.35, 12, 12),
         new THREE.MeshBasicMaterial({ color: markerColor })
@@ -368,6 +318,66 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
     }
   }
 
+  async function ensureFloorLoaded(floorIndex) {
+    const idx = Number(floorIndex)
+    if (slabTopByFloorIndex.has(idx)) return
+    if (loadPromisesByFloorIndex.has(idx)) return loadPromisesByFloorIndex.get(idx)
+    const entry = entries.find((e) => e.floorIndex === idx)
+    if (!entry) return
+    const p = loader.loadAsync(entry.modelUrl)
+      .then((gltf) => {
+        const root = gltf.scene || gltf.scenes?.[0]
+        if (!root) return
+        const box = new THREE.Box3().setFromObject(root)
+        const minY = box.min.y
+        attachFloorRoot({ floorIndex: idx, root, minY })
+        if (debugStack) {
+          const slabTopY = slabTopByFloorIndex.get(idx)
+          const afterBox = new THREE.Box3().setFromObject(root)
+          const afterSize = afterBox.getSize(new THREE.Vector3())
+          console.debug('[gltfStack]', {
+            floorIndex: idx,
+            floorStepY,
+            rootY: root.position.y,
+            slabTopY,
+            afterMinY: afterBox.min.y,
+            afterMaxY: afterBox.max.y,
+            afterSizeY: afterSize.y,
+          })
+        }
+      })
+      .catch(() => {})
+    loadPromisesByFloorIndex.set(idx, p)
+    return p
+  }
+
+  // Load reference floor first (blocking).
+  {
+    const gltf = await loader.loadAsync(refEntry.modelUrl)
+    const root = gltf.scene || gltf.scenes?.[0]
+    if (!root) throw new Error('No glTF floors could be loaded')
+
+    const box = new THREE.Box3().setFromObject(root)
+    refCenter = box.getCenter(new THREE.Vector3())
+    const minY = box.min.y
+    const size = box.getSize(new THREE.Vector3())
+
+    const footprint = Math.max(size.x, size.z)
+    unitScale = footprint > 2000 ? 100 : 1
+    floorStepY = proceduralFloorStepY * unitScale
+
+    attachFloorRoot({ floorIndex: refIndex, root, minY })
+  }
+
+  // Background-load remaining floors (non-blocking).
+  const preloadOrder = entries
+    .map((e) => e.floorIndex)
+    .filter((i) => i !== refIndex)
+    .sort((a, b) => Math.abs(a - refIndex) - Math.abs(b - refIndex))
+  preloadOrder.forEach((i) => {
+    void ensureFloorLoaded(i)
+  })
+
   // Baseplane removal is handled in the model pipeline (offline).
 
   const minFloor = Math.min(...floorIndices)
@@ -377,6 +387,7 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
 
   // Suggested camera bounds based on combined model size.
   const globalBox = new THREE.Box3()
+  // Only guaranteed to include the reference floor at init; expands as floors load.
   floorGroups.forEach((g) => globalBox.union(new THREE.Box3().setFromObject(g)))
   const size = globalBox.getSize(new THREE.Vector3())
   const radius = size.length() / 2
@@ -391,7 +402,12 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
     maxBasements,
     maxAboveGroundFloors,
     setFloorWallMode: () => {},
-    getFloorSlabTopY: (floorIndex) => slabTopByFloorIndex.get(Number(floorIndex)) ?? 0,
+    getFloorSlabTopY: (floorIndex) => {
+      const idx = Number(floorIndex)
+      if (slabTopByFloorIndex.has(idx)) return slabTopByFloorIndex.get(idx)
+      // Fallback estimate until the floor is loaded.
+      return (idx - refIndex) * floorStepY
+    },
     getTargetYForFloor: (floorIndex) => {
       const slabTopY = slabTopByFloorIndex.get(Number(floorIndex)) ?? 0
       return slabTopY + FLOOR.wallHeight * 0.55
@@ -400,6 +416,7 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
     suggestedCameraFar,
     suggestedGroundSize,
     navigationBounds: globalBox.clone(),
+    ensureFloorLoaded,
   }
 }
 

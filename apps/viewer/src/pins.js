@@ -43,6 +43,8 @@ export function createPinSystem({
   requestFrame,
 }) {
   const state = createPinState(getSelectedFloor())
+  const pinsByFloor = new Map()
+  const pinsLoadingByFloor = new Map()
 
   function needRender() {
     if (typeof requestFrame === 'function') requestFrame()
@@ -342,7 +344,7 @@ export function createPinSystem({
   })
 
   // ── Init ────────────────────────────────────────────────────
-  loadPins()
+  loadPinsForFloor(state.activeFloor)
   colorMode.updateLegend()
   colorMode.updatePreviewColor()
 
@@ -368,7 +370,15 @@ export function createPinSystem({
     },
     setActiveFloor: (floorIndex) => {
       state.activeFloor = floorIndex
-      renderPins()
+      const cached = pinsByFloor.get(Number(floorIndex))
+      if (Array.isArray(cached)) {
+        state.pins = cached
+        renderPins()
+      } else {
+        state.pins = []
+        renderPins()
+        loadPinsForFloor(state.activeFloor)
+      }
     },
     update: () => {
       let needFrame = false
@@ -446,21 +456,34 @@ export function createPinSystem({
   }
 
   // ── Pins loading / rendering ────────────────────────────────
-  async function loadPins() {
-    try {
-      const rawPins = await fetchPins()
+  async function loadPinsForFloor(floorIndex) {
+    const idx = Number(floorIndex)
+    if (pinsByFloor.has(idx)) return
+    if (pinsLoadingByFloor.has(idx)) return pinsLoadingByFloor.get(idx)
+    const p = (async () => {
+      try {
+        const rawPins = await fetchPins(idx)
       // Public webapp must only show approved pins.
       // Keep unapproved pins only in-session for the author (localPins).
-      state.pins = rawPins
-        .map(normalizePin)
-        .filter((pin) => pin?.status === 'approved' || Number(pin.approved) === 1)
-      state.localPins = state.localPins.filter(
-        (pin) => !state.pins.some((p) => p.id === pin.id)
-      )
-      renderPins()
-    } catch {
-      // keep existing pins
-    }
+        const pins = rawPins
+          .map(normalizePin)
+          .filter((pin) => pin?.status === 'approved' || Number(pin.approved) === 1)
+        pinsByFloor.set(idx, pins)
+        if (state.activeFloor === idx) {
+          state.pins = pins
+          state.localPins = state.localPins.filter(
+            (pin) => !state.pins.some((p) => p.id === pin.id)
+          )
+          renderPins()
+        }
+      } catch {
+        // keep existing pins
+      } finally {
+        pinsLoadingByFloor.delete(idx)
+      }
+    })()
+    pinsLoadingByFloor.set(idx, p)
+    return p
   }
 
   function renderPins() {

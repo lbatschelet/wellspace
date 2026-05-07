@@ -937,6 +937,14 @@ function setSelectedFloor(nextIndex) {
   if (building?.source !== 'gltf') {
     currentTargetY = building.getTargetYForFloor(selectedFloor)
   }
+  // Lazy-load glTF floor exports on demand (reference floor loads at boot).
+  if (building?.source === 'gltf' && typeof building.ensureFloorLoaded === 'function') {
+    void building.ensureFloorLoaded(selectedFloor).then(() => {
+      // After the model is attached, recompute visibility and schedule a frame.
+      updateFloorVisibility()
+      scheduleFrame()
+    })
+  }
   updateFloorVisibility()
 }
 
