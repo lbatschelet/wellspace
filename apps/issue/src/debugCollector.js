@@ -31,13 +31,24 @@ export function collectDebugInfo({ source, language }) {
   const ua = navigator.userAgent
   const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
   const brand = typeof __BRAND__ === 'string' ? __BRAND__ : ''
+  const maxTouchPoints = Number(navigator.maxTouchPoints || 0)
+  const hasTouch =
+    maxTouchPoints > 0 ||
+    (typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)')?.matches === true)
+  const pointer = typeof window !== 'undefined' ? window.matchMedia?.('(pointer: coarse)') : null
+  const hover = typeof window !== 'undefined' ? window.matchMedia?.('(hover: hover)') : null
   return {
-    app: 'issue',
+    app: 'feedback',
     version,
     brand: brand || '(unknown)',
     source,
     browser: parseBrowser(ua),
     os: parseOS(ua),
+    touch: hasTouch ? 'yes' : 'no',
+    maxTouchPoints: String(maxTouchPoints),
+    pointerCoarse: pointer?.matches === true ? 'yes' : 'no',
+    hover: hover?.matches === true ? 'yes' : 'no',
+    devicePixelRatio: String(window.devicePixelRatio || 1),
     screen: `${screen.width}\u00d7${screen.height}`,
     viewport: `${window.innerWidth}\u00d7${window.innerHeight}`,
     language,
