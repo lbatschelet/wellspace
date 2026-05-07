@@ -629,6 +629,15 @@ button.error {
   padding: 6px;
 }
 
+.split-btn-menu.is-floating {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  margin-top: 0;
+  z-index: 220;
+}
+
 .split-btn-menu.is-open {
   display: flex;
   flex-direction: column;

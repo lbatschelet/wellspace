@@ -38,6 +38,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
@@ -83,6 +89,17 @@ jobs:
             --exclude='.env.*' \
             --exclude='vendor' \
             services/api/ deploy-root/api/
+
+      - name: Composer install (API vendor)
+        working-directory: services/api
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: Copy API vendor into deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deploy-root/api/vendor
+          cp -R services/api/vendor/* deploy-root/api/vendor/
 
       - name: Publish deploy-root to branch
         uses: JamesIves/github-pages-deploy-action@v4

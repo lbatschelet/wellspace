@@ -39,6 +39,7 @@ export function createUserModalController({ state, views }) {
 
   let selectedExpiryHours = 24
   let onResultDismiss = null
+  let expiryMenuAnchor = null
 
   const getExpiryLabel = (hours) => {
     const opt = EXPIRY_OPTIONS.find((o) => o.hours === hours)
@@ -50,7 +51,7 @@ export function createUserModalController({ state, views }) {
     return opt ? opt.short : `${hours}h`
   }
 
-  /* ── Button state: toggles between "Create user" and "Create password link" ── */
+  /* ── Button state: toggles between "Create user" and "Send password link" ── */
 
   const updateButtonState = () => {
     if (state.editingUserId) return
@@ -59,7 +60,7 @@ export function createUserModalController({ state, views }) {
       modalCreateUserButton.textContent = 'Create user'
       modalExpiryToggle.style.display = 'none'
     } else {
-      modalCreateUserButton.textContent = 'Create password link'
+      modalCreateUserButton.textContent = 'Send password link'
       modalExpiryToggle.style.display = ''
     }
   }
@@ -98,12 +99,42 @@ export function createUserModalController({ state, views }) {
 
   /* ── Expiry dropdown ── */
 
+  const ensureFloatingExpiryMenu = () => {
+    if (!modalExpiryMenu.classList.contains('is-floating')) {
+      modalExpiryMenu.classList.add('is-floating')
+      document.body.appendChild(modalExpiryMenu)
+    }
+  }
+
+  const positionExpiryMenu = () => {
+    if (!expiryMenuAnchor) return
+    const rect = expiryMenuAnchor.getBoundingClientRect()
+    modalExpiryMenu.style.top = `${rect.bottom + 6}px`
+    modalExpiryMenu.style.left = ''
+    modalExpiryMenu.style.right = ''
+    const rightSpace = window.innerWidth - rect.right
+    if (rightSpace < 220) {
+      modalExpiryMenu.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`
+    } else {
+      modalExpiryMenu.style.left = `${Math.max(8, rect.left)}px`
+    }
+  }
+
   const closeExpiryMenu = () => {
     modalExpiryMenu.classList.remove('is-open')
+    expiryMenuAnchor = null
   }
 
   const toggleExpiryMenu = () => {
-    modalExpiryMenu.classList.toggle('is-open')
+    const willOpen = !modalExpiryMenu.classList.contains('is-open')
+    if (willOpen) {
+      expiryMenuAnchor = modalExpiryToggle
+      ensureFloatingExpiryMenu()
+      positionExpiryMenu()
+      modalExpiryMenu.classList.add('is-open')
+      return
+    }
+    closeExpiryMenu()
   }
 
   const selectExpiry = (hours) => {
@@ -151,6 +182,9 @@ export function createUserModalController({ state, views }) {
     })
 
     document.addEventListener('click', () => closeExpiryMenu())
+    window.addEventListener('resize', () => {
+      if (modalExpiryMenu.classList.contains('is-open')) positionExpiryMenu()
+    })
     modalSplitBtn.addEventListener('click', (e) => e.stopPropagation())
 
     modalCopyLink.addEventListener('click', async () => {
@@ -181,7 +215,7 @@ export function createUserModalController({ state, views }) {
     state.editingUserId = null
     resetModalState()
     modalTitle.textContent = 'Create user'
-    modalCreateUserButton.textContent = 'Create password link'
+    modalCreateUserButton.textContent = 'Send password link'
     modalExpiryToggle.style.display = ''
     modalExpiryToggle.textContent = `${getExpiryShort(selectedExpiryHours)} \u25BE`
     modalAdvanced.open = false

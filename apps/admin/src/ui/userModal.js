@@ -82,7 +82,7 @@ export function createUserModal() {
       <div class="modal-actions">
         <button type="button" class="ghost" id="modalCancel">Cancel</button>
         <div class="split-btn" id="modalSplitBtn">
-          <button type="button" id="modalCreateUser">Create password link</button>
+          <button type="button" id="modalCreateUser">Send password link</button>
           <button type="button" class="split-btn-caret" id="modalExpiryToggle" title="Token validity period">24h ▾</button>
           <div class="split-btn-menu" id="modalExpiryMenu">
             <button type="button" data-hours="1">1 hour</button>
