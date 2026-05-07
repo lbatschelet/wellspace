@@ -30,12 +30,13 @@ const t = copy[lang]
 
 const feedbackUrl = `/feedback/?source=viewer&path=${encodeURIComponent(window.location.pathname)}`
 
-const titleText = brand?.displayName || brand?.viewerTitle || 'Wellspace'
+const titleHtml = brand?.wordmarkHtml || (brand?.displayName || brand?.viewerTitle || 'Wellspace')
 
 app.innerHTML = `
   <div class="ws-404">
     <div class="ws-404-card">
-      <div class="ws-404-brand">${titleText}</div>
+      <div class="ws-404-code">HTTP 404</div>
+      <div class="ws-404-brand">${titleHtml}</div>
       <h1 class="ws-404-title">${t.title}</h1>
       <p class="ws-404-body">${t.body}</p>
       <div class="ws-404-actions">
