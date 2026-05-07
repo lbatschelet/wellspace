@@ -29,7 +29,9 @@ export function renderIssueForm(container, { debugInfo, t, languages, currentLan
   const year = new Date().getFullYear()
   const logoTitle = escapeHtml(brand.displayName || brand.viewerTitle || '')
   const logoHtml = brand.wordmarkHtml || logoTitle
-  const contextLine = t('page.context', { brand: brand.displayName || brand.viewerTitle || 'This site' })
+  const brandHtml = brand.wordmarkHtml || escapeHtml(brand.displayName || brand.viewerTitle || 'This site')
+  const platformHtml = '<em>well</em><strong>Space</strong>'
+  const contextHtml = t('page.context', { brand: brandHtml, platform: platformHtml })
   const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
   const versionHref =
     /^v[0-9]/.test(version) && !/-g[0-9a-f]{7,}$/i.test(version) && !/dirty/i.test(version)
@@ -45,7 +47,7 @@ export function renderIssueForm(container, { debugInfo, t, languages, currentLan
     <header class="issue-header">
       <h1>${t('page.title')}</h1>
       <p>${t('page.subtitle')}</p>
-      <p class="issue-context">${escapeHtml(contextLine)}</p>
+      <p class="issue-context">${contextHtml}</p>
     </header>
 
     <div class="issue-card">

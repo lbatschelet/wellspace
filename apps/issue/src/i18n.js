@@ -9,7 +9,7 @@ const translations = {
     'page.subtitle':
       'Melde einen Fehler oder schlage ein Feature vor. Wenn möglich, beschreibe kurz, was du erwartet hast und was passiert ist.',
     'page.context':
-      '{{brand}} ist ein Projekt auf der Wellspace-Plattform. Dein Feedback wird als Issue im Wellspace-Repository erfasst.',
+      '{{brand}} ist ein Projekt auf der {{platform}}-Plattform. Dein Feedback wird als Issue im {{platform}}-Repository erfasst.',
     'category.label': 'Kategorie',
     'category.bug': 'Fehler',
     'category.feature': 'Feature',
@@ -43,7 +43,7 @@ const translations = {
     'page.subtitle':
       'Report a bug or propose a feature. If possible, briefly describe what you expected and what happened.',
     'page.context':
-      '{{brand}} is a project built on the Wellspace platform. Your feedback is tracked as an issue in the Wellspace repository.',
+      '{{brand}} is a project built on the {{platform}} platform. Your feedback is tracked as an issue in the {{platform}} repository.',
     'category.label': 'Category',
     'category.bug': 'Bug',
     'category.feature': 'Feature',
