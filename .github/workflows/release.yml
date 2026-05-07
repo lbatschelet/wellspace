@@ -19,7 +19,7 @@ jobs:
   build_deploy:
     concurrency:
       group: deploy-${{ matrix.deploy_branch }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     name: Build + Deploy (${{ matrix.brand }} / ${{ matrix.app }}) → ${{ matrix.deploy_branch }}
     runs-on: ubuntu-latest
     strategy:

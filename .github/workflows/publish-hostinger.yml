@@ -47,7 +47,7 @@ jobs:
   publish:
     concurrency:
       group: deploy-${{ inputs.deploy_branch }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     name: Publish (${{ inputs.brand }} / ${{ inputs.app }}) → ${{ inputs.deploy_branch }}
 

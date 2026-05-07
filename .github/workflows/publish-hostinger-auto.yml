@@ -12,11 +12,15 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+concurrency:
+  group: publish-hostinger-auto-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     concurrency:
       group: deploy-${{ matrix.deploy_branch }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
