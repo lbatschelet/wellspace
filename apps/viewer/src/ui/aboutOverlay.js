@@ -64,14 +64,14 @@ export function createAboutOverlay() {
       const existing = footer.querySelector('.about-version')
       if (!existing) {
         const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
-        const repo = 'lbatschelet/wellspace'
+        const releasesUrl = 'https://github.com/lbatschelet/wellspace/releases'
         const isLikelyExactTag =
           /^v[0-9]/.test(version) &&
           !/-g[0-9a-f]{7,}$/i.test(version) &&
           !/dirty/i.test(version)
         const href = isLikelyExactTag
-          ? `https://github.com/${repo}/releases/tag/${encodeURIComponent(version)}`
-          : `https://github.com/${repo}/releases`
+          ? `${releasesUrl}#${encodeURIComponent(version)}`
+          : releasesUrl
         const el = document.createElement('a')
         el.className = 'about-version'
         el.href = href
