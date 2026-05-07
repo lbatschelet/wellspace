@@ -24,7 +24,7 @@ export function getFilteredPins(pins, { filter, query, sort }) {
 
   return filtered.sort((a, b) => {
     if (sort === 'oldest') {
-      return new Date(a.created_at) - new Date(b.created_at)
+      return (a._created_ts || 0) - (b._created_ts || 0)
     }
     if (sort === 'floor') {
       return a.floor_index - b.floor_index
@@ -32,7 +32,7 @@ export function getFilteredPins(pins, { filter, query, sort }) {
     if (sort === 'wellbeing') {
       return b.wellbeing - a.wellbeing
     }
-    return new Date(b.created_at) - new Date(a.created_at)
+    return (b._created_ts || 0) - (a._created_ts || 0)
   })
 }
 

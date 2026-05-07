@@ -29,10 +29,22 @@ export function createPinsRenderer({ state, views, api, shell }) {
     return state.translations[key] || questionKey
   }
 
-  const isTextQuestion = (questionKey) => {
-    const q = (state.questions || []).find((item) => item.question_key === questionKey || item.key === questionKey)
-    const type = q?.type || q?.question_type
-    return type === 'text'
+  let cachedTextKeys = null
+  let cachedQuestionsRef = null
+
+  const getTextQuestionKeys = () => {
+    if (cachedQuestionsRef === state.questions && Array.isArray(cachedTextKeys)) return cachedTextKeys
+    cachedQuestionsRef = state.questions
+    cachedTextKeys = (state.questions || [])
+      .map((q) => q?.question_key || q?.key)
+      .filter(Boolean)
+      .filter((qKey, idx, arr) => arr.indexOf(qKey) === idx)
+      .filter((qKey) => {
+        const q = (state.questions || []).find((item) => (item.question_key || item.key) === qKey)
+        const type = q?.question_type || q?.type
+        return type === 'text'
+      })
+    return cachedTextKeys
   }
 
   const formatAnswerForKey = (pin, key) => {
@@ -66,10 +78,7 @@ export function createPinsRenderer({ state, views, api, shell }) {
       note: (pin?.note || '').trim(),
     }
     const parts = []
-    ;(state.questions || []).forEach((q) => {
-      const qKey = q?.question_key || q?.key
-      const type = q?.question_type || q?.type
-      if (!qKey || type !== 'text') return
+    getTextQuestionKeys().forEach((qKey) => {
       const raw = textAnswerSource[qKey]
       if (raw == null) return
       const val = String(raw).trim()
@@ -116,6 +125,7 @@ export function createPinsRenderer({ state, views, api, shell }) {
     pagePins.forEach((pin) => {
       const row = document.createElement('tr')
       row.className = 'pin-row'
+      row.dataset.id = String(pin.id)
       const statusLabel = getStatusLabel(pin.approved)
       const stationLabel = pin.station_key ? escapeHtml(pin.station_key) : ''
       const questionnaireLabel = pin.questionnaire_key ? escapeHtml(pin.questionnaire_key) : ''
@@ -142,11 +152,12 @@ export function createPinsRenderer({ state, views, api, shell }) {
       // Expandable details row (answers + asked/unasked).
       const detailsRow = document.createElement('tr')
       detailsRow.className = 'pin-details is-hidden'
+      detailsRow.dataset.id = String(pin.id)
       detailsRow.innerHTML = `<td colspan="7"><div class="pin-details-inner"></div></td>`
       const detailsInner = detailsRow.querySelector('.pin-details-inner')
       pinsBody.appendChild(detailsRow)
 
-      const renderDetails = async () => {
+      const renderDetails = () => {
         const list = []
         const push = (label, value) => {
           list.push(`<div class="kv"><span class="k">${escapeHtml(label)}</span><span class="v">${escapeHtml(value || '—')}</span></div>`)
@@ -162,13 +173,60 @@ export function createPinsRenderer({ state, views, api, shell }) {
         detailsInner.innerHTML = list.join('')
       }
 
-      // Toggle details on row click (except checkbox/toggle button).
-      row.addEventListener('click', async (e) => {
+      // Store a cheap marker so delegated handler knows details are rendered.
+      detailsRow.dataset.rendered = '0'
+      detailsRow._renderDetails = renderDetails
+    })
+
+    // Delegated events (avoid per-row listeners).
+    if (!pinsBody.dataset.bound) {
+      pinsBody.dataset.bound = '1'
+      pinsBody.addEventListener('click', async (e) => {
+        const toggleBtn = e.target.closest('button.toggle')
+        if (toggleBtn) {
+          const id = Number(toggleBtn.dataset.id)
+          const pin = state.pins.find((item) => item.id === id)
+          if (!pin) return
+          const nextApproved = getNextStatus(pin.approved)
+          toggleBtn.disabled = true
+          try {
+            await api.updatePinApprovalBulk({
+              token: state.token,
+              ids: [id],
+              approved: nextApproved,
+            })
+            pin.approved = nextApproved
+            // Update UI in-place (avoid full rerender).
+            toggleBtn.className = `toggle icon-only ${getStatusClass(pin.approved)}`
+            const statusLabel = getStatusLabel(pin.approved)
+            toggleBtn.title = `${statusLabel} (click to cycle)`
+            const statusIcon = pin.approved === 1
+              ? icons.statusApproved
+              : (pin.approved === -1 ? icons.statusRejected : icons.statusPending)
+            const iconEl = toggleBtn.querySelector('.status-icon')
+            if (iconEl) iconEl.innerHTML = statusIcon
+            const sr = toggleBtn.querySelector('.sr-only')
+            if (sr) sr.textContent = statusLabel
+          } catch (error) {
+            shell.setStatus(error.message, true)
+          } finally {
+            toggleBtn.disabled = false
+          }
+          return
+        }
+
         if (e.target.closest('input[type="checkbox"]')) return
-        if (e.target.closest('button.toggle')) return
+        const row = e.target.closest('tr.pin-row')
+        if (!row) return
+        const id = row.dataset.id
+        const detailsRow = pinsBody.querySelector(`tr.pin-details[data-id="${CSS.escape(id)}"]`)
+        if (!detailsRow) return
         const willShow = detailsRow.classList.contains('is-hidden')
         if (willShow) {
-          await renderDetails()
+          if (detailsRow.dataset.rendered !== '1') {
+            detailsRow._renderDetails?.()
+            detailsRow.dataset.rendered = '1'
+          }
           detailsRow.classList.remove('is-hidden')
           row.classList.add('is-expanded')
           const caret = row.querySelector('.pin-expand')
@@ -180,29 +238,7 @@ export function createPinsRenderer({ state, views, api, shell }) {
           if (caret) caret.textContent = '›'
         }
       })
-    })
-
-    pinsBody.querySelectorAll('.toggle').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const id = Number(button.dataset.id)
-        const pin = state.pins.find((item) => item.id === id)
-        if (!pin) return
-        const nextApproved = getNextStatus(pin.approved)
-        button.disabled = true
-        try {
-          await api.updatePinApprovalBulk({
-            token: state.token,
-            ids: [id],
-            approved: nextApproved,
-          })
-          pin.approved = nextApproved
-          renderPins()
-        } catch (error) {
-          shell.setStatus(error.message, true)
-          button.disabled = false
-        }
-      })
-    })
+    }
   }
 
   return { renderPins }

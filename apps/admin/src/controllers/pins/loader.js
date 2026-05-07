@@ -14,6 +14,8 @@ export function createPinsLoader({ state, api }) {
     approved: Number(pin.approved),
     group_key: pin.group_key || null,
     questionnaire_key: pin.questionnaire_key || 'default',
+    // Cache timestamps for fast sorting/filtering.
+    _created_ts: pin.created_at ? Date.parse(pin.created_at) : 0,
   })
 
   const loadPins = async () => {
