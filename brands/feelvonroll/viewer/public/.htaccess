@@ -14,8 +14,10 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Keep /issue/ MPA entry stable.
-  RewriteRule ^issue$ /issue/ [R=301,L]
+  # /issue is legacy; redirect to /feedback (new).
+  RewriteRule ^issue/?$ /feedback/ [R=301,L]
+  # Keep /feedback/ SPA entry stable.
+  RewriteRule ^feedback$ /feedback/ [R=301,L]
 
   # Path-based station/kiosk routes (used especially for iOS home-screen mode).
   RewriteRule ^kiosk/[^/]+/?$ /index.html [L]

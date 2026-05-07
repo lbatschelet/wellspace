@@ -128,7 +128,7 @@ if (APP === 'all') {
   mkdirSync(target, { recursive: true })
   cpSync(viewerDist, target, { recursive: true })
   cpSync(adminDist, resolve(target, 'admin'), { recursive: true })
-  cpSync(issueDist, resolve(target, 'issue'), { recursive: true })
+  cpSync(issueDist, resolve(target, 'feedback'), { recursive: true })
 
   console.log(`[build] done -> ${target}`)
 } else {

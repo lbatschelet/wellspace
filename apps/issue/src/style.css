@@ -96,6 +96,12 @@ body {
   font-size: 0.9rem;
 }
 
+.issue-context {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
 .issue-header p em {
   font-style: italic;
   font-weight: 400;

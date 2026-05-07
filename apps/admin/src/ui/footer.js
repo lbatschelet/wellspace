@@ -8,7 +8,7 @@ const issueBase =
   (typeof import.meta.env.VITE_WEBAPP_URL === 'string' && import.meta.env.VITE_WEBAPP_URL.trim()
     ? import.meta.env.VITE_WEBAPP_URL.trim().replace(/\/+$/, '')
     : getPublicWebappBase()) || ''
-const ISSUE_URL = issueBase ? `${issueBase}/issue/?source=admin` : '#'
+const ISSUE_URL = issueBase ? `${issueBase}/feedback/?source=admin` : '#'
 
 export function createFooter() {
   const footer = document.createElement('footer')

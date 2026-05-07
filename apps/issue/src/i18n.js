@@ -8,6 +8,8 @@ const translations = {
     'page.title': 'Meldung senden',
     'page.subtitle':
       'Melde einen Fehler oder schlage ein Feature vor. Wenn möglich, beschreibe kurz, was du erwartet hast und was passiert ist.',
+    'page.context':
+      '{{brand}} ist ein Projekt auf der Wellspace-Plattform. Dein Feedback wird als Issue im Wellspace-Repository erfasst.',
     'category.label': 'Kategorie',
     'category.bug': 'Fehler',
     'category.feature': 'Feature',
@@ -40,6 +42,8 @@ const translations = {
     'page.title': 'Send report',
     'page.subtitle':
       'Report a bug or propose a feature. If possible, briefly describe what you expected and what happened.',
+    'page.context':
+      '{{brand}} is a project built on the Wellspace platform. Your feedback is tracked as an issue in the Wellspace repository.',
     'category.label': 'Category',
     'category.bug': 'Bug',
     'category.feature': 'Feature',
@@ -75,7 +79,14 @@ export function createI18n({ initialLang }) {
   let lang = supported.includes(initialLang) ? initialLang : 'en'
   const listeners = new Set()
 
-  const t = (key) => translations[lang]?.[key] ?? translations.en?.[key] ?? key
+  const t = (key, vars = null) => {
+    const raw = translations[lang]?.[key] ?? translations.en?.[key] ?? key
+    if (!vars) return raw
+    return Object.entries(vars).reduce(
+      (acc, [k, v]) => acc.replaceAll(`{{${k}}}`, String(v)),
+      String(raw)
+    )
+  }
 
   const setLang = (next) => {
     if (!supported.includes(next)) return

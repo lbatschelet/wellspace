@@ -90,8 +90,8 @@ jobs:
             mkdir -p deploy-root/admin
             rsync -a apps/admin/dist/ deploy-root/admin/
           elif [[ "${{ inputs.app }}" == "issue" ]]; then
-            mkdir -p deploy-root/issue
-            rsync -a apps/issue/dist/ deploy-root/issue/
+            mkdir -p deploy-root/feedback
+            rsync -a apps/issue/dist/ deploy-root/feedback/
           else
             echo "Unknown app input: ${{ inputs.app }}"
             exit 1

@@ -14,7 +14,7 @@ export default defineConfig(async () => {
 
   return {
     appType: 'spa',
-    base: '/issue/',
+    base: '/feedback/',
     publicDir,
     resolve: {
       alias: {
