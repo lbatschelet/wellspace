@@ -85,10 +85,14 @@ jobs:
           mkdir -p deploy-root/api
           rsync -a --delete \
             --exclude='config.local.php' \
+            --exclude='.gitignore' \
             --exclude='.env' \
             --exclude='.env.*' \
             --exclude='vendor' \
             services/api/ deploy-root/api/
+
+          # Ensure vendor/ can be committed to deploy branch (services/api/.gitignore ignores it)
+          rm -f deploy-root/api/.gitignore
 
       - name: Composer install (API vendor)
         working-directory: services/api
