@@ -33,6 +33,7 @@ export default defineConfig(async () => {
       rollupOptions: {
         input: {
           main: resolve(here, 'index.html'),
+          notFound: resolve(here, '404.html'),
         },
       },
     },
