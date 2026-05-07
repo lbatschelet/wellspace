@@ -1,4 +1,4 @@
-import{g as a}from"./webappBase-BtC6Se1U.js";import"./config-BJ-Z3s_A.js";const t=a()||"",o=t?`${t}/issue/?source=admin`:"#";function l(){const e=document.createElement("footer");e.className="app-footer";const r=new Date().getFullYear();return e.innerHTML=`
+import{g as o}from"./webappBase-BtC6Se1U.js";import"./config-BJ-Z3s_A.js";const t=o()||"",s=t?`${t}/issue/?source=admin`:"#";function c(){const e=document.createElement("footer");e.className="app-footer";const r=new Date().getFullYear(),a="v1.0.0-beta.1";return e.innerHTML=`
     <div class="footer-left">
       <span class="footer-credit">
         © ${r}
@@ -9,8 +9,11 @@ import{g as a}from"./webappBase-BtC6Se1U.js";import"./config-BJ-Z3s_A.js";const 
       <span class="footer-license">
         Licensed under <a href="https://github.com/lbatschelet/wellspace/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a>
       </span>
+      <a class="footer-version" href="https://wellspace.ch" target="_blank" rel="noopener">
+        Wellspace ${a}
+      </a>
     </div>
-    <a class="footer-bug" href="${o}" target="_blank" rel="noopener" title="Report a bug or request a feature">
+    <a class="footer-bug" href="${s}" target="_blank" rel="noopener" title="Report a bug or request a feature">
       Report a bug
     </a>
-  `,{element:e}}export{l as createFooter};
+  `,{element:e}}export{c as createFooter};
