@@ -33,7 +33,6 @@ export default defineConfig(async () => {
       rollupOptions: {
         input: {
           main: resolve(here, 'index.html'),
-          issue: resolve(here, 'issue/index.html'),
         },
       },
     },
@@ -49,11 +48,6 @@ export default defineConfig(async () => {
         configureServer(server) {
           server.middlewares.use((req, res, next) => {
             const url = req.url || ''
-            if (req.url === '/issue') {
-              res.writeHead(301, { Location: '/issue/' })
-              res.end()
-              return
-            }
             // Dev convenience for iOS-home-screen-friendly path routes:
             // serve the main app entry for /kiosk/<station>, /station/<station>, /s/<station>.
             if (url.startsWith('/kiosk/') || url.startsWith('/station/') || url.startsWith('/s/')) {

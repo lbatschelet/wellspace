@@ -59,12 +59,15 @@ jobs:
           mkdir -p deploy-root
 
           if [[ "${{ matrix.app }}" == "all" ]]; then
-            cp -R dist/* deploy-root/
+            rsync -a dist/ deploy-root/
           elif [[ "${{ matrix.app }}" == "viewer" ]]; then
-            cp -R apps/viewer/dist/* deploy-root/
+            rsync -a apps/viewer/dist/ deploy-root/
           elif [[ "${{ matrix.app }}" == "admin" ]]; then
             mkdir -p deploy-root/admin
-            cp -R apps/admin/dist/* deploy-root/admin/
+            rsync -a apps/admin/dist/ deploy-root/admin/
+          elif [[ "${{ matrix.app }}" == "issue" ]]; then
+            mkdir -p deploy-root/issue
+            rsync -a apps/issue/dist/ deploy-root/issue/
           else
             echo "Unknown app: ${{ matrix.app }}"
             exit 1

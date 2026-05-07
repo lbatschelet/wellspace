@@ -404,6 +404,13 @@ body {
   font-size: 0.75rem;
 }
 
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
 .footer-bug {
   display: inline-flex;
   align-items: center;
@@ -414,6 +421,15 @@ body {
 .footer-bug svg {
   width: 14px;
   height: 14px;
+}
+
+.footer-version {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.footer-version:hover {
+  opacity: 1;
 }
 
 /* ── Responsive ────────────────────────────── */
@@ -440,4 +456,9 @@ body {
   .footer-credit {
     justify-content: center;
   }
+
+  .footer-right {
+    align-items: center;
+  }
 }
+

@@ -42,7 +42,7 @@ function showForm() {
         ...formData,
         debug: collectDebugInfo(context),
       }
-      const result = await api.submitIssue(payload)
+      await api.submitIssue(payload)
       const card = app.querySelector('.issue-card')
       renderSuccess(card, {
         t: i18n.t,
@@ -51,3 +51,4 @@ function showForm() {
     },
   })
 }
+

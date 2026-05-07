@@ -12,7 +12,7 @@ on:
           - wohlopti
           - feelvonroll
       app:
-        description: "App to build (viewer | admin | all)"
+        description: "App to build (viewer | admin | issue | all)"
         type: choice
         required: true
         default: all
@@ -20,6 +20,7 @@ on:
           - all
           - viewer
           - admin
+          - issue
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

@@ -29,7 +29,12 @@ function parseOS(ua) {
  */
 export function collectDebugInfo({ source, language }) {
   const ua = navigator.userAgent
+  const version = String(import.meta.env.VITE_APP_VERSION || 'dev')
+  const brand = typeof __BRAND__ === 'string' ? __BRAND__ : ''
   return {
+    app: 'issue',
+    version,
+    brand: brand || '(unknown)',
     source,
     browser: parseBrowser(ua),
     os: parseOS(ua),
@@ -41,3 +46,4 @@ export function collectDebugInfo({ source, language }) {
     userAgent: ua,
   }
 }
+

@@ -43,7 +43,7 @@ if (!APP) {
   process.exit(1)
 }
 
-const validApps = new Set(['viewer', 'admin', 'all'])
+const validApps = new Set(['viewer', 'admin', 'issue', 'all'])
 if (!validApps.has(APP)) {
   console.error(`[build] APP must be one of: ${[...validApps].join(', ')} (got "${APP}")`)
   process.exit(1)
@@ -111,13 +111,15 @@ const buildOne = (name) => {
 if (APP === 'all') {
   buildOne('viewer')
   buildOne('admin')
+  buildOne('issue')
 
   const target = resolve(repoRoot, OUTPUT ?? 'dist')
   const viewerDist = resolve(repoRoot, 'apps/viewer/dist')
   const adminDist = resolve(repoRoot, 'apps/admin/dist')
+  const issueDist = resolve(repoRoot, 'apps/issue/dist')
 
-  if (!existsSync(viewerDist) || !existsSync(adminDist)) {
-    console.error('[build] expected viewer and admin dist directories to exist after build')
+  if (!existsSync(viewerDist) || !existsSync(adminDist) || !existsSync(issueDist)) {
+    console.error('[build] expected viewer/admin/issue dist directories to exist after build')
     process.exit(1)
   }
 
@@ -126,6 +128,7 @@ if (APP === 'all') {
   mkdirSync(target, { recursive: true })
   cpSync(viewerDist, target, { recursive: true })
   cpSync(adminDist, resolve(target, 'admin'), { recursive: true })
+  cpSync(issueDist, resolve(target, 'issue'), { recursive: true })
 
   console.log(`[build] done -> ${target}`)
 } else {
