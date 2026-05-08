@@ -5,6 +5,7 @@
  *          admin_users_update_self, admin_users_delete.
  */
 require_once __DIR__ . '/token_service.php';
+require_once __DIR__ . '/../lib/admin_app_public_url.php';
 
 /**
  * Returns admin users list.
@@ -118,9 +119,9 @@ function admin_users_create_and_notify(PDO $pdo, array $config, ?int $userId, st
 
         if ($user) {
             $expiryHours = isset($data['expiry_hours']) ? max(1, intval($data['expiry_hours'])) : 24;
-            $resetLink = rtrim($config['app_url'] ?? '', '/') . '/reset?token=' . $result['reset_token'];
+            $resetLink = build_admin_reset_link($config, $result['reset_token']);
             try {
-                send_reset_email($config, $user['email'], $user['first_name'] ?? '', $resetLink, $expiryHours);
+                send_reset_email($config, $user['email'], $user['first_name'] ?? '', $resetLink, $expiryHours, api_mail_brand_display($config));
                 $emailSent = true;
             } catch (\Throwable $e) {
                 error_log('Welcome email failed for user ' . $result['id'] . ': ' . $e->getMessage());
@@ -175,9 +176,9 @@ function admin_users_reset_and_notify(PDO $pdo, array $config, ?int $userId, int
 
     $emailSent = false;
     if ($user) {
-        $resetLink = rtrim($config['app_url'] ?? '', '/') . '/reset?token=' . $tokenResult['reset_token'];
+        $resetLink = build_admin_reset_link($config, $tokenResult['reset_token']);
         try {
-            send_reset_email($config, $user['email'], $user['first_name'] ?? '', $resetLink, $expiryHours);
+            send_reset_email($config, $user['email'], $user['first_name'] ?? '', $resetLink, $expiryHours, api_mail_brand_display($config));
             $emailSent = true;
         } catch (\Throwable $e) {
             error_log('Reset email failed for user ' . $targetId . ': ' . $e->getMessage());
