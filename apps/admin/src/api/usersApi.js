@@ -3,7 +3,7 @@
  * Exports: fetchUsers, fetchSelf, createUser, createUserAndNotify, updateUser, updateSelf,
  *          deleteUser, resetUserPassword, resetUserPasswordAndNotify.
  */
-import { API_BASE, requestJson } from './baseClient'
+import { API_BASE, requestJson, withAdminMailHeaders } from './baseClient'
 
 export function fetchUsers({ token }) {
   return requestJson(`${API_BASE}/admin_users.php`, {
@@ -32,7 +32,10 @@ export function createUserAndNotify({ token, first_name, last_name, email, passw
   if (expiry_hours !== undefined) body.expiry_hours = expiry_hours
   return requestJson(`${API_BASE}/admin_users.php`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: withAdminMailHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    }),
     body: JSON.stringify(body),
   })
 }
@@ -84,7 +87,10 @@ export function resetUserPasswordAndNotify({ token, id, expiry_hours }) {
   if (expiry_hours !== undefined) body.expiry_hours = expiry_hours
   return requestJson(`${API_BASE}/admin_users.php`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: withAdminMailHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    }),
     body: JSON.stringify(body),
   })
 }

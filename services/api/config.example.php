@@ -30,7 +30,8 @@ return [
     'smtp_from_name' => 'Wellspace Admin',
 
     /* ── Frontend ── */
-    'app_url' => '',   // public URL of admin frontend, e.g. https://admin.example.com
+    'app_url' => '',   // Fallback public URL of admin (e.g. https://example.com/admin); prefer request headers from the admin app in production.
+    'brand_mail_display' => '',   // Optional fallback for password-reset email branding if the client does not send X-Admin-Brand-Display
 
     /* ── Debug ── */
     'api_debug' => false,

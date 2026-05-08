@@ -8,6 +8,34 @@ export function getApiBase() {
   return API_BASE
 }
 
+/**
+ * Headers so the API can build correct password-reset URLs and email branding
+ * for the tenant that triggered the request (same-origin admin host + base path).
+ */
+export function withAdminMailHeaders(headers = {}) {
+  if (typeof window === 'undefined') {
+    return headers
+  }
+  try {
+    const baseRel = String(import.meta.env.BASE_URL || '/')
+    const absolute = new URL(baseRel, window.location.origin).href.replace(/\/$/, '')
+    const display =
+      typeof import.meta.env.VITE_BRAND_DISPLAY_NAME === 'string'
+        ? import.meta.env.VITE_BRAND_DISPLAY_NAME.trim()
+        : ''
+    /** @type {Record<string, string>} */
+    const extra = {
+      'X-Admin-Public-Base': absolute,
+    }
+    if (display) {
+      extra['X-Admin-Brand-Display'] = display
+    }
+    return { ...extra, ...headers }
+  } catch {
+    return headers
+  }
+}
+
 async function parseError(response) {
   let text = ''
   try {

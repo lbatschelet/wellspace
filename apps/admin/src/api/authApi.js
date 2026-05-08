@@ -2,7 +2,7 @@
  * Auth API client for admin authentication flows.
  * Exports: fetchAuthStatus, loginWithToken, loginUser, setPassword, requestReset, refreshToken.
  */
-import { API_BASE, requestJson } from './baseClient'
+import { API_BASE, requestJson, withAdminMailHeaders } from './baseClient'
 
 export function fetchAuthStatus() {
   return requestJson(`${API_BASE}/admin_auth.php`)
@@ -43,7 +43,7 @@ export function setPassword({ reset_token, password }) {
 export function requestReset({ email }) {
   return requestJson(`${API_BASE}/admin_auth.php`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withAdminMailHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ action: 'request_reset', email }),
   })
 }

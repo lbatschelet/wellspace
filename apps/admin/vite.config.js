@@ -28,6 +28,9 @@ export default defineConfig(async () => {
     define: {
       __BRAND__: JSON.stringify(brandName),
       'import.meta.env.VITE_API_BASE': JSON.stringify(brand.apiBase || '/api'),
+      'import.meta.env.VITE_BRAND_DISPLAY_NAME': JSON.stringify(
+        typeof brand.displayName === 'string' ? brand.displayName : ''
+      ),
     },
     server: {
       port: 5173,
