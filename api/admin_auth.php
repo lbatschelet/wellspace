@@ -5,7 +5,7 @@
 
 require_once __DIR__ . '/admin_common.php';
 require_once __DIR__ . '/services/admin_auth_service.php';
-admin_handle_options('GET, POST, OPTIONS', 'Content-Type, Authorization, X-Admin-Token, X-Admin-Public-Base, X-Admin-Brand-Display');
+admin_handle_options('GET, POST, OPTIONS', 'Content-Type, Authorization, X-Admin-Token, X-Admin-Public-Base, X-Admin-Brand-Display, X-Admin-Brand-Wordmark-B64');
 
 $config = require __DIR__ . '/config.php';
 $pdo = require __DIR__ . '/db.php';

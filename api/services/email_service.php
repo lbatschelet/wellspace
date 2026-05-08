@@ -33,7 +33,8 @@ function format_expiry(int $hours): string
  * @param string $name        Recipient first name (for personalisation).
  * @param string $link        Full password reset URL.
  * @param int    $expiryHours How long the link is valid (for display in email).
- * @param string $brandDisplay Optional tenant label (e.g. wohlOpti) for subject/body; falls back to Wellspace.
+ * @param string $brandDisplay Optional tenant label (e.g. wohlOpti) for subject/alt text; falls back to Wellspace.
+ * @param string $brandWordmarkHtml Optional HTML wordmark (em/strong) for HTML body; empty uses plain display name.
  * @return void
  * @throws Exception
  */
@@ -43,7 +44,8 @@ function send_reset_email(
     string $name,
     string $link,
     int $expiryHours = 24,
-    string $brandDisplay = ''
+    string $brandDisplay = '',
+    string $brandWordmarkHtml = ''
 ): void
 {
     $mail = new PHPMailer(true);
@@ -71,7 +73,10 @@ function send_reset_email(
     $validity = format_expiry($expiryHours);
     $year = date('Y');
     $product = $brandDisplay !== '' ? $brandDisplay : 'Wellspace';
-    $productHtml = htmlspecialchars($product, ENT_QUOTES, 'UTF-8');
+    $productHtmlPlain = htmlspecialchars($product, ENT_QUOTES, 'UTF-8');
+    $wordHtml = trim($brandWordmarkHtml) !== ''
+        ? $brandWordmarkHtml
+        : ('<span style="font-style:normal;font-weight:inherit;">' . $productHtmlPlain . '</span>');
     $linkHtml = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
 
     $mail->isHTML(true);
@@ -83,11 +88,11 @@ function send_reset_email(
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #222; line-height: 1.6; max-width: 520px; margin: 0 auto; padding: 20px;">
 
   <p style="font-size: 1.35em; margin: 0 0 24px; font-weight: 650; letter-spacing: -0.02em;">
-    {$productHtml} <span style="color: #94a3b8; font-weight: 400;"> Admin</span>
+    {$wordHtml} <span style="color: #94a3b8; font-weight: 400;font-style:normal;"> Admin</span>
   </p>
 
   <p>{$greeting}</p>
-  <p>Someone requested a password reset for your {$productHtml} admin account.</p>
+  <p style="margin:16px 0;">Someone requested a password reset for your {$wordHtml} admin account.</p>
   <p>This link is valid for <strong>{$validity}</strong>.</p>
 
   <p style="margin: 24px 0;">
