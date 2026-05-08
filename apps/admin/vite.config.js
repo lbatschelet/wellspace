@@ -31,6 +31,9 @@ export default defineConfig(async () => {
       'import.meta.env.VITE_BRAND_DISPLAY_NAME': JSON.stringify(
         typeof brand.displayName === 'string' ? brand.displayName : ''
       ),
+      'import.meta.env.VITE_BRAND_WORDMARK_HTML': JSON.stringify(
+        typeof brand.wordmarkHtml === 'string' ? brand.wordmarkHtml : ''
+      ),
     },
     server: {
       port: 5173,

@@ -8,6 +8,16 @@ export function getApiBase() {
   return API_BASE
 }
 
+/** @param {string} str */
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
+}
+
 /**
  * Headers so the API can build correct password-reset URLs and email branding
  * for the tenant that triggered the request (same-origin admin host + base path).
@@ -23,12 +33,19 @@ export function withAdminMailHeaders(headers = {}) {
       typeof import.meta.env.VITE_BRAND_DISPLAY_NAME === 'string'
         ? import.meta.env.VITE_BRAND_DISPLAY_NAME.trim()
         : ''
+    const wordmarkHtml =
+      typeof import.meta.env.VITE_BRAND_WORDMARK_HTML === 'string'
+        ? import.meta.env.VITE_BRAND_WORDMARK_HTML.trim()
+        : ''
     /** @type {Record<string, string>} */
     const extra = {
       'X-Admin-Public-Base': absolute,
     }
     if (display) {
       extra['X-Admin-Brand-Display'] = display
+    }
+    if (wordmarkHtml) {
+      extra['X-Admin-Brand-Wordmark-B64'] = utf8ToBase64(wordmarkHtml)
     }
     return { ...extra, ...headers }
   } catch {

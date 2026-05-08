@@ -40,6 +40,13 @@ final class AdminAppPublicUrlTest extends TestCase
         $this->assertSame('https://correct.example/admin', $base);
     }
 
+    public function testBrandWordmarkSanitizesToEmStrongOnly(): void
+    {
+        $raw = '<em onclick="evil">wohl</em><strong class="x">Opti</strong><script>x</script>';
+        $clean = api_sanitize_brand_wordmark_html($raw);
+        $this->assertSame('<em>wohl</em><strong>Opti</strong>', $clean);
+    }
+
     public function testRefererSubpathAdminWhenNoHeader(): void
     {
         $_SERVER['HTTP_HOST'] = 'wohlopti.ch';
