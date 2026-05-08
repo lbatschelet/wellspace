@@ -33,10 +33,18 @@ function format_expiry(int $hours): string
  * @param string $name        Recipient first name (for personalisation).
  * @param string $link        Full password reset URL.
  * @param int    $expiryHours How long the link is valid (for display in email).
+ * @param string $brandDisplay Optional tenant label (e.g. wohlOpti) for subject/body; falls back to Wellspace.
  * @return void
  * @throws Exception
  */
-function send_reset_email(array $config, string $to, string $name, string $link, int $expiryHours = 24): void
+function send_reset_email(
+    array $config,
+    string $to,
+    string $name,
+    string $link,
+    int $expiryHours = 24,
+    string $brandDisplay = ''
+): void
 {
     $mail = new PHPMailer(true);
 
@@ -62,31 +70,33 @@ function send_reset_email(array $config, string $to, string $name, string $link,
     $greeting = $name ? "Hi $name," : 'Hi,';
     $validity = format_expiry($expiryHours);
     $year = date('Y');
+    $product = $brandDisplay !== '' ? $brandDisplay : 'Wellspace';
+    $productHtml = htmlspecialchars($product, ENT_QUOTES, 'UTF-8');
+    $linkHtml = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
 
     $mail->isHTML(true);
-    $mail->Subject = 'Password reset – Wellspace Admin';
+    $mail->Subject = 'Password reset – ' . $product . ' Admin';
     $mail->Body = <<<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #222; line-height: 1.6; max-width: 520px; margin: 0 auto; padding: 20px;">
 
-  <!-- Platform brand (deployed UX stays product-branded separately) -->
   <p style="font-size: 1.35em; margin: 0 0 24px; font-weight: 650; letter-spacing: -0.02em;">
-    Wellspace <span style="color: #94a3b8; font-weight: 400;"> Admin</span>
+    {$productHtml} <span style="color: #94a3b8; font-weight: 400;"> Admin</span>
   </p>
 
   <p>{$greeting}</p>
-  <p>Someone requested a password reset for your Wellspace admin account.</p>
+  <p>Someone requested a password reset for your {$productHtml} admin account.</p>
   <p>This link is valid for <strong>{$validity}</strong>.</p>
 
   <p style="margin: 24px 0;">
-    <a href="{$link}" style="display:inline-block;padding:10px 24px;background:#0066cc;color:#fff;text-decoration:none;border-radius:4px;font-weight:500;">Reset password</a>
+    <a href="{$linkHtml}" style="display:inline-block;padding:10px 24px;background:#0066cc;color:#fff;text-decoration:none;border-radius:4px;font-weight:500;">Reset password</a>
   </p>
 
   <p style="font-size: 13px; color: #666;">
     If the button doesn't work, copy this link:<br>
-    <a href="{$link}" style="color: #0066cc;">{$link}</a>
+    <a href="{$linkHtml}" style="color: #0066cc;">{$linkHtml}</a>
   </p>
 
   <p style="font-size: 13px; color: #666;">
@@ -109,12 +119,12 @@ function send_reset_email(array $config, string $to, string $name, string $link,
 HTML;
 
     $mail->AltBody = <<<TEXT
-Wellspace Admin
+{$product} Admin
 ─────────────────
 
 {$greeting}
 
-Someone requested a password reset for your Wellspace admin account.
+Someone requested a password reset for your {$product} admin account.
 
 This link is valid for {$validity}.
 
