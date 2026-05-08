@@ -73,6 +73,53 @@ function api_mail_brand_display(array $config): string
 }
 
 /**
+ * Minimal HTML wordmark for email (&lt;em&gt;/&lt;strong&gt; only, no attributes).
+ *
+ * @param string $html
+ */
+function api_sanitize_brand_wordmark_html(string $html): string
+{
+    $html = trim($html);
+    if ($html === '') {
+        return '';
+    }
+
+    /* Remove risky blocks entirely (strip_tags leaves inner text from removed tags). */
+    $html = preg_replace('#<script\b[^>]*>.*?</script>#is', '', $html) ?? $html;
+    $html = preg_replace('#<style\b[^>]*>.*?</style>#is', '', $html) ?? $html;
+
+    /* Drop attributes / unexpected tag shapes on allowed tag names only */
+    $html = preg_replace('/<(em|strong)\s[^>]*>/i', '<$1>', $html) ?? $html;
+    return strip_tags($html, '<em><strong>');
+}
+
+/**
+ * Brand wordmark HTML from trusted client header (Base64 UTF-8) or server config fallback.
+ *
+ * @param array $config
+ */
+function api_mail_brand_wordmark_html(array $config): string
+{
+    $b64Header = isset($_SERVER['HTTP_X_ADMIN_BRAND_WORDMARK_B64'])
+        ? preg_replace('/\s+/', '', (string)$_SERVER['HTTP_X_ADMIN_BRAND_WORDMARK_B64'])
+        : '';
+
+    if ($b64Header !== '') {
+        $decoded = base64_decode($b64Header, true);
+        if ($decoded !== false && $decoded !== '') {
+            $clean = api_sanitize_brand_wordmark_html($decoded);
+            return $clean;
+        }
+    }
+
+    $fromConfig = isset($config['brand_mail_wordmark_html'])
+        ? trim((string)$config['brand_mail_wordmark_html'])
+        : '';
+
+    return $fromConfig !== '' ? api_sanitize_brand_wordmark_html($fromConfig) : '';
+}
+
+/**
  * Validates X-Admin-Public-Base: same hostname as API request (anti-phishing).
  */
 function api_try_parse_trusted_absolute_base(string $candidate): ?string

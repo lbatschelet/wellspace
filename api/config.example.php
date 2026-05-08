@@ -32,6 +32,7 @@ return [
     /* ── Frontend ── */
     'app_url' => '',   // Fallback public URL of admin (e.g. https://example.com/admin); prefer request headers from the admin app in production.
     'brand_mail_display' => '',   // Optional fallback for password-reset email branding if the client does not send X-Admin-Brand-Display
+    'brand_mail_wordmark_html' => '',   // Optional HTML wordmark (only <em>/<strong>), e.g. <em>wohl</em><strong>Opti</strong>
 
     /* ── Debug ── */
     'api_debug' => false,

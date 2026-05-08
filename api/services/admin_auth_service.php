@@ -194,7 +194,15 @@ function admin_auth_request_reset(PDO $pdo, array $config, string $email): array
         $resetLink = build_admin_reset_link($config, $result['reset_token']);
         try {
             require_once __DIR__ . '/email_service.php';
-            send_reset_email($config, $email, $user['first_name'] ?? '', $resetLink, 24, api_mail_brand_display($config));
+            send_reset_email(
+                $config,
+                $email,
+                $user['first_name'] ?? '',
+                $resetLink,
+                24,
+                api_mail_brand_display($config),
+                api_mail_brand_wordmark_html($config)
+            );
         } catch (\Throwable $e) {
             // Silently fail – never reveal whether email exists
             error_log('Reset email failed: ' . $e->getMessage());

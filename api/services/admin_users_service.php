@@ -121,7 +121,15 @@ function admin_users_create_and_notify(PDO $pdo, array $config, ?int $userId, st
             $expiryHours = isset($data['expiry_hours']) ? max(1, intval($data['expiry_hours'])) : 24;
             $resetLink = build_admin_reset_link($config, $result['reset_token']);
             try {
-                send_reset_email($config, $user['email'], $user['first_name'] ?? '', $resetLink, $expiryHours, api_mail_brand_display($config));
+                send_reset_email(
+                    $config,
+                    $user['email'],
+                    $user['first_name'] ?? '',
+                    $resetLink,
+                    $expiryHours,
+                    api_mail_brand_display($config),
+                    api_mail_brand_wordmark_html($config)
+                );
                 $emailSent = true;
             } catch (\Throwable $e) {
                 error_log('Welcome email failed for user ' . $result['id'] . ': ' . $e->getMessage());
@@ -178,7 +186,15 @@ function admin_users_reset_and_notify(PDO $pdo, array $config, ?int $userId, int
     if ($user) {
         $resetLink = build_admin_reset_link($config, $tokenResult['reset_token']);
         try {
-            send_reset_email($config, $user['email'], $user['first_name'] ?? '', $resetLink, $expiryHours, api_mail_brand_display($config));
+            send_reset_email(
+                $config,
+                $user['email'],
+                $user['first_name'] ?? '',
+                $resetLink,
+                $expiryHours,
+                api_mail_brand_display($config),
+                api_mail_brand_wordmark_html($config)
+            );
             $emailSent = true;
         } catch (\Throwable $e) {
             error_log('Reset email failed for user ' . $targetId . ': ' . $e->getMessage());
