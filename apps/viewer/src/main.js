@@ -106,6 +106,15 @@ const modelFloorIndices = Array.from(
 const modelDir = typeof brand?.modelDir === 'string' && brand.modelDir.length
   ? brand.modelDir
   : '/models'
+const hideBasePlanes = brand?.viewer?.hideBasePlanes !== false
+const materialSide =
+  brand?.viewer?.materialSide === 'double' || brand?.viewer?.materialSide === 'back'
+    ? brand.viewer.materialSide
+    : 'front'
+const groundPlateColor =
+  typeof brand?.backgroundColor === 'string' && brand.backgroundColor
+    ? brand.backgroundColor
+    : null
 let building
 try {
   // Stacked prototype:
@@ -121,8 +130,14 @@ try {
   if (!Object.prototype.hasOwnProperty.call(modelUrlsByFloorIndex, 0)) {
     modelUrlsByFloorIndex[0] = BUILDING_MODEL_URL
   }
-  building = await createBuildingProvider(scene, 'gltf', { modelUrlsByFloorIndex })
-} catch {
+  building = await createBuildingProvider(scene, 'gltf', {
+    modelUrlsByFloorIndex,
+    hideBasePlanes,
+    materialSide,
+    groundPlateColor,
+  })
+} catch (error) {
+  console.warn('[Wellspace viewer] Falling back to procedural building:', error)
   building = await createBuildingProvider(scene, 'procedural')
 }
 

@@ -23,6 +23,12 @@ export const brand = {
     // WohlOpti currently ships as a single-floor model.
     modelFloorIndices: [0],
     floorSelectorEnabled: false,
+    // Base plate is removed offline in the OBJ->GLB step.
+    // Keep runtime base-plane heuristics disabled to avoid hiding valid geometry.
+    hideBasePlanes: false,
+    // Closed volumes in this export can have inconsistent face winding.
+    // Render both sides so walls remain visible from all views.
+    materialSide: 'double',
   },
 
   viewerTitle: 'wohlOpti',

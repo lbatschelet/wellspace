@@ -20,6 +20,7 @@
  */
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { FLOOR } from '../config'
 
 /** Nur bei sichtbaren Ausblendern: ?noFrustumCull=1 (Standard: Culling an = weniger Draw) */
@@ -61,8 +62,8 @@ function findSlabTopWorldY(floorGroup, { unitScale = 1 } = {}) {
 function hideBasePlanesForFloorGroups({ floorGroups }) {
   // Heuristic: base planes are usually very thin but cover a large area.
   // Important: keep thresholds narrow so we don't hide walls/markings.
-  const minThicknessY = 0.06 // only extremely flat meshes
-  const epsilonMinY = 0.03 // hide only meshes that sit at/near the base level (local to each floor)
+  const minThicknessY = 0.35 // allow thicker exported base plates as well
+  const epsilonMinY = 0.08 // hide only meshes that sit at/near the base level (local to each floor)
 
   floorGroups.forEach((floorGroup) => {
     const groupBox = new THREE.Box3().setFromObject(floorGroup)
@@ -70,7 +71,7 @@ function hideBasePlanesForFloorGroups({ floorGroups }) {
     const groupArea = groupSize.x * groupSize.z
     if (!groupArea || !Number.isFinite(groupArea) || groupArea <= 0) return
 
-    const minFootprint = groupArea * 0.35 // only very large footprints
+    const minFootprint = groupArea * 0.75 // only floor-covering footprints
     const baseY = groupBox.min.y
 
     floorGroup.traverse((obj) => {
@@ -93,8 +94,141 @@ function hideBasePlanesForFloorGroups({ floorGroups }) {
   })
 }
 
-export async function createGltfBuilding(scene, { modelUrl, debugSimulateFloors } = {}) {
+function hideLargestBottomPlate(root) {
+  const rootBox = new THREE.Box3().setFromObject(root)
+  if (rootBox.isEmpty()) return
+  const size = rootBox.getSize(new THREE.Vector3())
+  const minY = rootBox.min.y
+  const sceneFootprint = Math.max(size.x * size.z, 1e-6)
+  const thicknessLimit = Math.max(0.35, size.y * 0.03)
+  const minFootprint = sceneFootprint * 0.8
+  const baseTolerance = Math.max(0.08, size.y * 0.01)
+
+  let best = null
+  root.traverse((obj) => {
+    if (!obj?.isMesh) return
+    const box = new THREE.Box3().setFromObject(obj)
+    if (box.isEmpty()) return
+    const s = box.getSize(new THREE.Vector3())
+    const footprint = s.x * s.z
+    const thicknessY = s.y
+    const bottomOffset = box.min.y - minY
+    if (bottomOffset > baseTolerance) return
+    if (thicknessY > thicknessLimit) return
+    if (footprint < minFootprint) return
+    if (!best || footprint > best.footprint) {
+      best = { obj, footprint }
+    }
+  })
+
+  if (best?.obj) {
+    best.obj.visible = false
+    best.obj.castShadow = false
+    best.obj.receiveShadow = false
+  }
+}
+
+function hideLargestFlatMesh(root) {
+  const rootBox = new THREE.Box3().setFromObject(root)
+  if (rootBox.isEmpty()) return
+  const size = rootBox.getSize(new THREE.Vector3())
+  const sceneFootprint = Math.max(size.x * size.z, 1e-6)
+  const maxHorizontal = Math.max(size.x, size.z, 1e-6)
+  const minFootprint = sceneFootprint * 0.85
+  // Explicitly allow paper-thin/flat plates.
+  const flatnessThreshold = maxHorizontal * 0.0025
+
+  let best = null
+  root.traverse((obj) => {
+    if (!obj?.isMesh) return
+    const box = new THREE.Box3().setFromObject(obj)
+    if (box.isEmpty()) return
+    const s = box.getSize(new THREE.Vector3())
+    const footprint = s.x * s.z
+    if (footprint < minFootprint) return
+    if (s.y > flatnessThreshold) return
+    if (!best || footprint > best.footprint) {
+      best = { obj, footprint }
+    }
+  })
+
+  if (best?.obj) {
+    best.obj.visible = false
+    best.obj.castShadow = false
+    best.obj.receiveShadow = false
+  }
+}
+
+function findLargestFlatMesh(root) {
+  const rootBox = new THREE.Box3().setFromObject(root)
+  if (rootBox.isEmpty()) return null
+  const size = rootBox.getSize(new THREE.Vector3())
+  const sceneFootprint = Math.max(size.x * size.z, 1e-6)
+  const maxHorizontal = Math.max(size.x, size.z, 1e-6)
+  const minFootprint = sceneFootprint * 0.85
+  // Explicitly allow paper-thin/flat plates.
+  const flatnessThreshold = maxHorizontal * 0.0025
+
+  let best = null
+  root.traverse((obj) => {
+    if (!obj?.isMesh) return
+    const box = new THREE.Box3().setFromObject(obj)
+    if (box.isEmpty()) return
+    const s = box.getSize(new THREE.Vector3())
+    const footprint = s.x * s.z
+    if (footprint < minFootprint) return
+    if (s.y > flatnessThreshold) return
+    if (!best || footprint > best.footprint) {
+      best = { obj, footprint }
+    }
+  })
+
+  return best?.obj || null
+}
+
+function tintLargestFlatMesh(root, color) {
+  if (typeof color !== 'string' || !color) return
+  const target = findLargestFlatMesh(root)
+  if (!target?.material) return
+  const materials = Array.isArray(target.material) ? target.material : [target.material]
+  materials.forEach((material) => {
+    if (!material) return
+    if ('map' in material) material.map = null
+    if ('color' in material && material.color) material.color = new THREE.Color(color)
+    material.needsUpdate = true
+  })
+}
+
+function applyMaterialSide(root, materialSide = 'front') {
+  const sideByName = {
+    front: THREE.FrontSide,
+    back: THREE.BackSide,
+    double: THREE.DoubleSide,
+  }
+  const resolved = sideByName[materialSide] ?? THREE.FrontSide
+  root.traverse((obj) => {
+    if (!obj?.isMesh || !obj.material) return
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+    mats.forEach((mat) => {
+      if (!mat || !('side' in mat)) return
+      mat.side = resolved
+      mat.needsUpdate = true
+    })
+  })
+}
+
+export async function createGltfBuilding(
+  scene,
+  {
+    modelUrl,
+    debugSimulateFloors,
+    hideBasePlanes = true,
+    materialSide = 'front',
+    groundPlateColor = null,
+  } = {}
+) {
   const loader = new GLTFLoader()
+  loader.setMeshoptDecoder(MeshoptDecoder)
   const gltf = await loader.loadAsync(modelUrl)
 
   const root = gltf.scene || gltf.scenes?.[0]
@@ -130,6 +264,8 @@ export async function createGltfBuilding(scene, { modelUrl, debugSimulateFloors 
 
   scene.add(root)
   disableFrustumCullForDebug(root)
+  applyMaterialSide(root, materialSide)
+  tintLargestFlatMesh(root, groundPlateColor)
 
   // Collect floor groups by name.
   const floorEntries = []
@@ -149,6 +285,12 @@ export async function createGltfBuilding(scene, { modelUrl, debugSimulateFloors 
         root.userData.floorIndex = 0
         return [root]
       })()
+
+  if (hideBasePlanes) {
+    hideBasePlanesForFloorGroups({ floorGroups })
+    hideLargestBottomPlate(root)
+    hideLargestFlatMesh(root)
+  }
 
   // Debug / prototype helper:
   // If the model only contains `floor_0` (typical for per-floor exports),
@@ -240,7 +382,15 @@ export async function createGltfBuilding(scene, { modelUrl, debugSimulateFloors 
  * - Each floor glb is aligned so its local "min Y" is near the slab/base level.
  * - We then stack floors vertically based on procedural floor step.
  */
-export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex } = {}) {
+export async function createStackedGltfBuilding(
+  scene,
+  {
+    modelUrlsByFloorIndex,
+    hideBasePlanes = true,
+    materialSide = 'front',
+    groundPlateColor = null,
+  } = {}
+) {
   const debugStack = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('debugStack') === '1'
   const debugFloorMarkers = typeof window !== 'undefined'
@@ -255,6 +405,7 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
   }
 
   const loader = new GLTFLoader()
+  loader.setMeshoptDecoder(MeshoptDecoder)
   // Load the reference floor first so the initial view appears quickly.
   // Other floors are loaded in the background and attached as they arrive.
   const floorIndices = entries.map((e) => e.floorIndex)
@@ -293,11 +444,18 @@ export async function createStackedGltfBuilding(scene, { modelUrlsByFloorIndex }
     root.position.y += (floorIndex - refIndex) * floorStepY
 
     disableFrustumCullForDebug(root)
+    applyMaterialSide(root, materialSide)
+    tintLargestFlatMesh(root, groundPlateColor)
 
     const group = groupByFloorIndex.get(floorIndex)
     if (!group) return
     group.clear()
     group.add(root)
+    if (hideBasePlanes) {
+      hideBasePlanesForFloorGroups({ floorGroups: [group] })
+      hideLargestBottomPlate(root)
+      hideLargestFlatMesh(root)
+    }
 
     slabTopByFloorIndex.set(floorIndex, findSlabTopWorldY(root, { unitScale }))
 
