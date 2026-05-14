@@ -7,7 +7,8 @@ import * as THREE from 'three'
 /* ── Shared geometry (created once, reused by all pins) ─────────── */
 
 // Slightly larger pins for better legibility.
-const SPHERE_RADIUS = 0.24
+export const PIN_VISUAL_ORB_RADIUS = 0.24
+const SPHERE_RADIUS = PIN_VISUAL_ORB_RADIUS
 let _sharedGeo = null
 
 function getSharedSphereGeometry() {
@@ -34,6 +35,9 @@ export function createPinMesh(pin, headColor) {
       transparent: true,
       opacity: 0.3,
       depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
     })
   )
   halo.scale.setScalar(1.14)
@@ -44,6 +48,9 @@ export function createPinMesh(pin, headColor) {
       color: headColor,
       emissive: headColor,
       emissiveIntensity: 0.25,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
     })
   )
   orb.userData.pinData = pin

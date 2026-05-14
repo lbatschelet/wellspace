@@ -3,6 +3,7 @@
  * Exports: setupPinRaycaster.
  */
 import * as THREE from 'three'
+import { intersectFloorFromRay } from './floorPick'
 
 // Interaction heuristics:
 // - Only a short + stationary tap triggers actions (open pin/cluster, or place pin in pin-mode).
@@ -41,6 +42,7 @@ function getHitSpheres(pinGroup) {
  * @param {Function} deps.getState - Returns current pin state.
  * @param {Function} deps.getSelectedFloor - Returns the current floor index.
  * @param {Function} deps.getFloorSlabTopY - Returns the slab top Y for a floor.
+ * @param {(floorIndex: number) => THREE.Object3D[]} [deps.getFloorIntersectTargets] - Meshes to raycast (e.g. glTF floor group).
  * @param {Function} deps.onPinClick - Called when an existing pin is clicked.
  * @param {Function} deps.onFloorClick - Called when the floor is clicked in pin mode.
  */
@@ -51,6 +53,7 @@ export function setupPinRaycaster({
   getState,
   getSelectedFloor,
   getFloorSlabTopY,
+  getFloorIntersectTargets,
   onPinClick,
   onClusterClick,
   onEmptyClick,
@@ -99,12 +102,11 @@ export function setupPinRaycaster({
     pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1
     pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
     raycaster.setFromCamera(pointer, camera)
-    const floorIndex = getSelectedFloor()
-    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
-    const point = new THREE.Vector3()
-    if (!raycaster.ray.intersectPlane(plane, point)) return null
-    return { floorIndex, position: point.clone() }
+    return intersectFloorFromRay(raycaster, {
+      getSelectedFloor,
+      getFloorSlabTopY,
+      getFloorIntersectTargets,
+    })
   }
 
   function isDeferredPinFloorTouch(event) {

@@ -4,6 +4,7 @@
  * Exports: setupLongPress, setupDoubleClickPlacePin.
  */
 import * as THREE from 'three'
+import { intersectFloorFromRay } from './floorPick'
 
 const HOLD_MS = 400
 const MOVE_THRESHOLD = 10 // px
@@ -17,6 +18,7 @@ const LONGPRESS_CONTEXTMENU_BLOCK_MS = 6000
  * @param {Function} deps.getState — returns current pin state
  * @param {Function} deps.getSelectedFloor — returns current floor index
  * @param {Function} deps.getFloorSlabTopY — returns slab top Y for a floor
+ * @param {(floorIndex: number) => THREE.Object3D[]} [deps.getFloorIntersectTargets]
  * @param {object} deps.controls — OrbitControls instance
  * @param {Function} deps.onFloorClick — called with { floorIndex, position }
  */
@@ -26,6 +28,7 @@ export function setupLongPress({
   getState,
   getSelectedFloor,
   getFloorSlabTopY,
+  getFloorIntersectTargets,
   controls,
   onFloorClick,
 }) {
@@ -101,13 +104,11 @@ export function setupLongPress({
     pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
     raycaster.setFromCamera(pointer, camera)
 
-    const floorIndex = getSelectedFloor()
-    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
-    const point = new THREE.Vector3()
-
-    if (!raycaster.ray.intersectPlane(plane, point)) return null
-    return { floorIndex, position: point }
+    return intersectFloorFromRay(raycaster, {
+      getSelectedFloor,
+      getFloorSlabTopY,
+      getFloorIntersectTargets,
+    })
   }
 
   // ── Pointer events ───────────────────────────────────────────
@@ -258,6 +259,7 @@ export function setupDoubleClickPlacePin({
   getState,
   getSelectedFloor,
   getFloorSlabTopY,
+  getFloorIntersectTargets,
   controls,
   onFloorClick,
 }) {
@@ -278,13 +280,12 @@ export function setupDoubleClickPlacePin({
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
     raycaster.setFromCamera(pointer, camera)
 
-    const floorIndex = getSelectedFloor()
-    const planeY = typeof getFloorSlabTopY === 'function' ? getFloorSlabTopY(floorIndex) : 0
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -planeY)
-    const point = new THREE.Vector3()
-
-    if (!raycaster.ray.intersectPlane(plane, point)) return
-
+    const hit = intersectFloorFromRay(raycaster, {
+      getSelectedFloor,
+      getFloorSlabTopY,
+      getFloorIntersectTargets,
+    })
+    if (!hit) return
     const backdrop = document.querySelector('.ui-modal-backdrop')
     if (backdrop) {
       backdrop.style.setProperty('--longpress-x', event.clientX + 'px')
@@ -297,6 +298,6 @@ export function setupDoubleClickPlacePin({
       controls.enabled = true
     })
 
-    onFloorClick({ floorIndex, position: point })
+    onFloorClick({ floorIndex: hit.floorIndex, position: hit.position })
   })
 }

@@ -27,7 +27,10 @@ export default defineConfig(async () => {
     },
     define: {
       __BRAND__: JSON.stringify(brandName),
-      'import.meta.env.VITE_API_BASE': JSON.stringify(brand.apiBase || '/api'),
+      // Allow `.env.local` / shell override for local API testing (falls back to brand config).
+      'import.meta.env.VITE_API_BASE': JSON.stringify(
+        process.env.VITE_API_BASE || brand.apiBase || '/api'
+      ),
     },
     build: {
       rollupOptions: {
@@ -41,6 +44,20 @@ export default defineConfig(async () => {
       port: 5174,
       strictPort: true,
       middlewareMode: false,
+      // Optional: avoid CORS when calling a remote API from localhost, e.g.
+      //   VITE_DEV_API_ORIGIN=https://wohlopti.ch pnpm --filter viewer dev
+      // Keep `VITE_API_BASE=/api` (default) so requests stay same-origin in dev.
+      ...(process.env.VITE_DEV_API_ORIGIN
+        ? {
+            proxy: {
+              '/api': {
+                target: process.env.VITE_DEV_API_ORIGIN.replace(/\/$/, ''),
+                changeOrigin: true,
+                secure: true,
+              },
+            },
+          }
+        : {}),
     },
     plugins: [
       brandHtmlPlugin(brand),

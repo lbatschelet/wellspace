@@ -37,6 +37,10 @@ export const brand = {
     pinReferenceSurface: 'bottomPlate',
     // Huge ground plate inflates bounds; do not treat as mm-export (no 100× pin scale).
     pinMmHeuristic: false,
+    // Orb-Radius in pinMesh ist 0.24 m → pinScale ~1.6 ≈ 0.77 m Kugeldurchmesser (Lesbarkeit ohne Riesenkugel).
+    pinScale: 1.6,
+    // Keine zusätzliche Vergrösserung mit Kameraabstand (sonst schnell wieder 10×+).
+    pinScaleByCamera: false,
     // Keep close zoom usable even with the large bottom plate in bounds.
     closestZoom: 0.02,
     closestRelativeMin: 0.005,

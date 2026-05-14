@@ -19,6 +19,7 @@ import { createLanguageSwitcher } from './ui/languageSwitcher'
 import { createAboutOverlay } from './ui/aboutOverlay'
 import { createTitleBar } from './ui/titleBar'
 import { createPinSystem } from './pins'
+import { PIN_VISUAL_ORB_RADIUS } from './pins/pinMesh'
 import { fetchLanguages, fetchQuestions, fetchContent, fetchStation, fetchQuestionnaire } from './api'
 import { getFallbackQuestions } from './questionnaire'
 import { ORBIT_GLTF_ZOOM, ORBIT_GROUND, ORBIT_NAVIGATION } from './config'
@@ -205,6 +206,43 @@ function applyImportedModelCameraLimits(b) {
 }
 
 applyImportedModelCameraLimits(building)
+
+/** Orb radius from `pinMesh.js` — used for lift so scaled pins sit on the plate, not inside it. */
+const PIN_ORB_RADIUS = PIN_VISUAL_ORB_RADIUS
+
+function resolvePinScale() {
+  const explicit = Number(brand?.viewer?.pinScale)
+  let scale
+  if (Number.isFinite(explicit) && explicit > 0) {
+    scale = explicit
+  } else {
+    const ground = Number(building?.suggestedGroundSize)
+    if (pinMmHeuristic) {
+      if (!Number.isFinite(ground) || ground <= 0) scale = 1
+      else scale = ground > 2000 ? 100 : 1
+    } else {
+      if (!Number.isFinite(ground) || ground <= 0) scale = 1
+      else scale = THREE.MathUtils.clamp(Math.pow(ground / 100, 0.28), 1, 8)
+    }
+  }
+  if (!pinMmHeuristic && brand?.viewer?.pinScaleByCamera !== false) {
+    const d = camera.position.distanceTo(controls.target)
+    if (Number.isFinite(d) && d > 45) {
+      scale = Math.max(scale, THREE.MathUtils.clamp(d / 20, 1, 24))
+    }
+  }
+  return scale
+}
+
+function resolvePinLift() {
+  const ground = Number(building?.suggestedGroundSize)
+  if (pinMmHeuristic) {
+    if (!Number.isFinite(ground) || ground <= 0) return 0.35
+    return ground > 2000 ? 35 : 0.35
+  }
+  const scale = resolvePinScale()
+  return Math.max(0.35, PIN_ORB_RADIUS * scale * 1.08)
+}
 
 // Resize the ground plane — viel grösser als die Modell-Footprint, damit keine Quadrat-Kante sichtbar wird.
 if (building?.source === 'gltf' && typeof building?.suggestedGroundSize === 'number') {
@@ -514,20 +552,14 @@ const pinSystem = createPinSystem({
   requestFrame: scheduleFrame,
   getSelectedFloor: () => selectedFloor,
   getFloorSlabTopY: (floorIndex) => building.getFloorSlabTopY(floorIndex),
-  getPinScale: () => {
-    if (!pinMmHeuristic) return 1
-    // If the imported model is huge (often cm/mm export), scale pins up so they're visible.
-    const ground = Number(building?.suggestedGroundSize)
-    if (!Number.isFinite(ground) || ground <= 0) return 1
-    return ground > 2000 ? 100 : 1
+  getFloorIntersectTargets: (floorIndex) => {
+    if (building?.source !== 'gltf' || !Array.isArray(building.floorGroups)) return []
+    const idx = Number(floorIndex)
+    const match = building.floorGroups.find((g) => Number(g?.userData?.floorIndex) === idx)
+    return match ? [match] : building.floorGroups.filter(Boolean)
   },
-  getPinLift: () => {
-    if (!pinMmHeuristic) return 0.35
-    // Lift pins above the floor/baseplate. Keep this unit-aware.
-    const ground = Number(building?.suggestedGroundSize)
-    if (!Number.isFinite(ground) || ground <= 0) return 0.35
-    return ground > 2000 ? 35 : 0.35
-  },
+  getPinScale: () => resolvePinScale(),
+  getPinLift: () => resolvePinLift(),
   questions: [],
 })
 app.appendChild(pinSystem.ui)

@@ -37,6 +37,7 @@ export function createPinSystem({
   controls,
   getSelectedFloor,
   getFloorSlabTopY,
+  getFloorIntersectTargets,
   getPinScale,
   getPinLift,
   questions,
@@ -97,6 +98,7 @@ export function createPinSystem({
   }
 
   const pinGroup = new THREE.Group()
+  pinGroup.renderOrder = 4
   scene.add(pinGroup)
 
   const clusterTextureCache = new Map()
@@ -250,6 +252,7 @@ export function createPinSystem({
     getState: () => state,
     getSelectedFloor,
     getFloorSlabTopY,
+    getFloorIntersectTargets,
     onPinClick: (pin) => openForm({ pin }),
     onClusterClick: (clusterKey) => {
       state.expandedClusterKey = clusterKey || null
@@ -273,6 +276,7 @@ export function createPinSystem({
     getState: () => state,
     getSelectedFloor,
     getFloorSlabTopY,
+    getFloorIntersectTargets,
     controls,
     onFloorClick: ({ floorIndex, position }) => {
       placePendingPin({ floorIndex, position })
