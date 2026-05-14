@@ -9,6 +9,17 @@
   RewriteEngine On
   RewriteBase /
 
+  # Prefer precompressed GLB payloads for much faster model downloads.
+  RewriteCond %{REQUEST_URI} \.glb$ [NC]
+  RewriteCond %{HTTP:Accept-Encoding} br [NC]
+  RewriteCond %{REQUEST_FILENAME}.br -f
+  RewriteRule ^ %{REQUEST_URI}.br [L]
+
+  RewriteCond %{REQUEST_URI} \.glb$ [NC]
+  RewriteCond %{HTTP:Accept-Encoding} gzip [NC]
+  RewriteCond %{REQUEST_FILENAME}.gz -f
+  RewriteRule ^ %{REQUEST_URI}.gz [L]
+
   # Serve existing files/directories directly.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
@@ -27,4 +38,17 @@
   RewriteRule ^station/[^/]+/?$ /index.html [L]
   # Short station route for QR codes: /s/<station>
   RewriteRule ^s/[^/]+/?$ /index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.glb\.br$">
+    Header set Content-Encoding br
+    Header set Content-Type model/gltf-binary
+    Header append Vary Accept-Encoding
+  </FilesMatch>
+  <FilesMatch "\.glb\.gz$">
+    Header set Content-Encoding gzip
+    Header set Content-Type model/gltf-binary
+    Header append Vary Accept-Encoding
+  </FilesMatch>
 </IfModule>
