@@ -323,7 +323,7 @@ export function createPinSystem({
         }
         : saved
       finalizePendingPin(hydrated)
-      await loadPins()
+      await loadPinsForFloor(state.activeFloor)
       closeForm()
       state.pinMode = false
       toggleButton.classList.remove('active')
