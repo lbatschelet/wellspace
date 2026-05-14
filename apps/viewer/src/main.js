@@ -331,14 +331,17 @@ function handleTouchPointerEnd(event) {
     controls.enablePan = panWasEnabledBeforeTwist
   }
 }
-rotButtons.forEach((btn) => {
-  btn.addEventListener('click', (e) => {
-    e.preventDefault()
-    const dir = Number(btn.dataset.rot || 0)
-    if (dir === 0) return
-    rotateCameraAroundTarget(dir * Math.PI / 18)
+const rotateButtonsEnabled = brand?.viewer?.rotateButtonsEnabled !== false
+if (rotateButtonsEnabled) {
+  rotButtons.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault()
+      const dir = Number(btn.dataset.rot || 0)
+      if (dir === 0) return
+      rotateCameraAroundTarget(dir * Math.PI / 18)
+    })
   })
-})
+}
 
 // ── Floor selector ──────────────────────────────────────────
 let selectedFloor = 0
@@ -352,9 +355,11 @@ const { floorButtons, ui: floorSelectorUi } = createFloorSelector(
 )
 const floorSelectorEnabled = brand?.viewer?.floorSelectorEnabled !== false
 if (floorSelectorEnabled) {
-  floorSelectorUi.prepend(rotateOverlay)
+  if (rotateButtonsEnabled) {
+    floorSelectorUi.prepend(rotateOverlay)
+  }
   app.appendChild(floorSelectorUi)
-} else {
+} else if (rotateButtonsEnabled) {
   app.appendChild(rotateOverlay)
 }
 
