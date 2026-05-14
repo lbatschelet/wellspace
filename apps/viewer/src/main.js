@@ -111,8 +111,11 @@ const materialSide =
   brand?.viewer?.materialSide === 'double' || brand?.viewer?.materialSide === 'back'
     ? brand.viewer.materialSide
     : 'front'
+const tintGroundPlate = brand?.viewer?.tintGroundPlate === true
+const pinReferenceSurface =
+  brand?.viewer?.pinReferenceSurface === 'bottomPlate' ? 'bottomPlate' : 'auto'
 const groundPlateColor =
-  typeof brand?.backgroundColor === 'string' && brand.backgroundColor
+  tintGroundPlate && typeof brand?.backgroundColor === 'string' && brand.backgroundColor
     ? brand.backgroundColor
     : null
 let building
@@ -135,6 +138,7 @@ try {
     hideBasePlanes,
     materialSide,
     groundPlateColor,
+    pinReferenceSurface,
   })
 } catch (error) {
   console.warn('[Wellspace viewer] Falling back to procedural building:', error)
@@ -150,13 +154,20 @@ function applyImportedModelCameraLimits(b) {
   if (!D || !Number.isFinite(D)) return
 
   const z = ORBIT_GLTF_ZOOM
+  const hasFinite = (v) => Number.isFinite(Number(v))
+  const toFinite = (v, fallback) => (hasFinite(v) ? Number(v) : fallback)
+  const closestZoom = toFinite(brand?.viewer?.closestZoom, z.closestZoom)
+  const closestRelativeMin = toFinite(brand?.viewer?.closestRelativeMin, z.closestRelativeMin)
+  const closestRelativeMax = toFinite(brand?.viewer?.closestRelativeMax, z.closestRelativeMax)
+  const farthestZoom = toFinite(brand?.viewer?.farthestZoom, z.farthestZoom)
+  const defaultViewMult = toFinite(brand?.viewer?.defaultViewMult, z.defaultViewMult)
   const minDist = THREE.MathUtils.clamp(
-    D * z.closestZoom,
-    D * z.closestRelativeMin,
-    D * z.closestRelativeMax
+    D * closestZoom,
+    D * closestRelativeMin,
+    D * closestRelativeMax
   )
   const maxDist = Math.max(
-    D * z.farthestZoom,
+    D * farthestZoom,
     minDist * z.farthestMinOverClosest,
     z.farthestFloor
   )
@@ -181,7 +192,7 @@ function applyImportedModelCameraLimits(b) {
   if (desired > maxDist) desired = maxDist
 
   const desiredStart = THREE.MathUtils.clamp(
-    D * z.defaultViewMult,
+    D * defaultViewMult,
     minDist,
     maxDist
   )

@@ -31,6 +31,14 @@ export const brand = {
     // Closed volumes in this export can have inconsistent face winding.
     // Render both sides so walls remain visible from all views.
     materialSide: 'double',
+    // Do not recolor the bottom plate at runtime.
+    tintGroundPlate: false,
+    // Pin placement reference: top side of the bottom plate.
+    pinReferenceSurface: 'bottomPlate',
+    // Keep close zoom usable even with the large bottom plate in bounds.
+    closestZoom: 0.02,
+    closestRelativeMin: 0.005,
+    defaultViewMult: 0.12,
   },
 
   viewerTitle: 'wohlOpti',

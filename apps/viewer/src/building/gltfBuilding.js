@@ -59,6 +59,17 @@ function findSlabTopWorldY(floorGroup, { unitScale = 1 } = {}) {
   return box.min.y + slabThickness
 }
 
+function getPinReferenceY(floorGroup, { unitScale = 1, pinReferenceSurface = 'auto' } = {}) {
+  if (pinReferenceSurface === 'bottomPlate') {
+    const bottomPlate = findLargestBottomPlateMesh(floorGroup)
+    if (bottomPlate) {
+      const box = new THREE.Box3().setFromObject(bottomPlate)
+      if (!box.isEmpty()) return box.max.y
+    }
+  }
+  return findSlabTopWorldY(floorGroup, { unitScale })
+}
+
 function hideBasePlanesForFloorGroups({ floorGroups }) {
   // Heuristic: base planes are usually very thin but cover a large area.
   // Important: keep thresholds narrow so we don't hide walls/markings.
@@ -186,17 +197,70 @@ function findLargestFlatMesh(root) {
   return best?.obj || null
 }
 
-function tintLargestFlatMesh(root, color) {
-  if (typeof color !== 'string' || !color) return
-  const target = findLargestFlatMesh(root)
-  if (!target?.material) return
-  const materials = Array.isArray(target.material) ? target.material : [target.material]
+function findLargestBottomPlateMesh(root) {
+  const rootBox = new THREE.Box3().setFromObject(root)
+  if (rootBox.isEmpty()) return null
+  const size = rootBox.getSize(new THREE.Vector3())
+  const minY = rootBox.min.y
+  const sceneFootprint = Math.max(size.x * size.z, 1e-6)
+
+  // "Bottom plate" heuristic:
+  // - close to the absolute base (minY)
+  // - fairly thin compared to total height
+  // - large horizontal footprint
+  const thicknessLimit = Math.max(0.6, size.y * 0.06)
+  const minFootprint = sceneFootprint * 0.55
+  const baseTolerance = Math.max(0.2, size.y * 0.02)
+
+  let best = null
+  root.traverse((obj) => {
+    if (!obj?.isMesh) return
+    const box = new THREE.Box3().setFromObject(obj)
+    if (box.isEmpty()) return
+    const s = box.getSize(new THREE.Vector3())
+    const footprint = s.x * s.z
+    const thicknessY = s.y
+    const bottomOffset = box.min.y - minY
+
+    if (bottomOffset > baseTolerance) return
+    if (thicknessY > thicknessLimit) return
+    if (footprint < minFootprint) return
+
+    if (!best || footprint > best.footprint) {
+      best = { obj, footprint }
+    }
+  })
+
+  return best?.obj || null
+}
+
+function tintMeshSolid(mesh, color) {
+  if (!mesh?.material) return
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
   materials.forEach((material) => {
     if (!material) return
     if ('map' in material) material.map = null
+    if ('aoMap' in material) material.aoMap = null
+    if ('normalMap' in material) material.normalMap = null
+    if ('roughnessMap' in material) material.roughnessMap = null
+    if ('metalnessMap' in material) material.metalnessMap = null
+    if ('emissiveMap' in material) material.emissiveMap = null
     if ('color' in material && material.color) material.color = new THREE.Color(color)
+    if ('emissive' in material && material.emissive) material.emissive = new THREE.Color(0x000000)
+    if ('metalness' in material) material.metalness = 0
+    if ('roughness' in material) material.roughness = 1
+    if ('transparent' in material) material.transparent = false
+    if ('opacity' in material) material.opacity = 1
     material.needsUpdate = true
   })
+}
+
+function tintLargestFlatMesh(root, color) {
+  if (typeof color !== 'string' || !color) return
+  // Prefer the bottom plate. Fallback to the largest flat mesh.
+  const target = findLargestBottomPlateMesh(root) || findLargestFlatMesh(root)
+  if (!target) return
+  tintMeshSolid(target, color)
 }
 
 function applyMaterialSide(root, materialSide = 'front') {
@@ -225,6 +289,7 @@ export async function createGltfBuilding(
     hideBasePlanes = true,
     materialSide = 'front',
     groundPlateColor = null,
+    pinReferenceSurface = 'auto',
   } = {}
 ) {
   const loader = new GLTFLoader()
@@ -347,7 +412,10 @@ export async function createGltfBuilding(
     const groupSize = groupBox.getSize(new THREE.Vector3())
     const footprint = Math.max(groupSize.x, groupSize.z)
     const unitScale = footprint > 2000 ? 100 : 1
-    slabTopByFloorIndex.set(idx, findSlabTopWorldY(group, { unitScale }))
+    slabTopByFloorIndex.set(
+      idx,
+      getPinReferenceY(group, { unitScale, pinReferenceSurface })
+    )
   })
 
   // Baseplane removal is handled in the model pipeline (offline).
@@ -389,6 +457,7 @@ export async function createStackedGltfBuilding(
     hideBasePlanes = true,
     materialSide = 'front',
     groundPlateColor = null,
+    pinReferenceSurface = 'auto',
   } = {}
 ) {
   const debugStack = typeof window !== 'undefined'
@@ -457,7 +526,10 @@ export async function createStackedGltfBuilding(
       hideLargestFlatMesh(root)
     }
 
-    slabTopByFloorIndex.set(floorIndex, findSlabTopWorldY(root, { unitScale }))
+    slabTopByFloorIndex.set(
+      floorIndex,
+      getPinReferenceY(root, { unitScale, pinReferenceSurface })
+    )
 
     if (debugFloorMarkers) {
       const markerColor =
