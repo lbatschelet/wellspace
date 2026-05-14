@@ -28,6 +28,11 @@ export const brand = {
   adminBase: '/admin/',
 
   modelDir: '/models',
+  viewer: {
+    // Multi-floor campus model.
+    modelFloorIndices: [-2, -1, 0, 1, 2, 3],
+    floorSelectorEnabled: true,
+  },
 
   viewerTitle: 'feelvonRoll',
   adminTitle: 'feelvonRoll Admin',

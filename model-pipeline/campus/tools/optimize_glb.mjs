@@ -6,11 +6,12 @@ import {
   dedup,
   flatten,
   join,
+  meshopt,
   prune,
   weld,
   simplify,
 } from '@gltf-transform/functions'
-import { MeshoptSimplifier } from 'meshoptimizer'
+import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer'
 
 function usage() {
   console.error('Usage: node optimize_glb.mjs <in.glb> <out.glb> [--simplify <ratio>] [--weld <tolerance>]')
@@ -45,7 +46,7 @@ async function main() {
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
   const doc = await io.read(inPath)
 
-  // Fast + safe: removes unused accessors/textures/materials/etc, and merges duplicates.
+  // 1) Fast + safe cleanup: removes unused accessors/textures/materials/etc, and merges duplicates.
   await doc.transform(
     dedup(),
     prune(),
@@ -53,7 +54,7 @@ async function main() {
     prune(),
   )
 
-  // Big win for SweetHome exports: flatten scene graph and join primitives to reduce drawcalls.
+  // 2) Big win for SweetHome exports: flatten scene graph and join primitives to reduce drawcalls.
   // KeepNamed=false is OK for our static floors (no semantic node names needed at runtime).
   await doc.transform(
     flatten(),
@@ -61,7 +62,14 @@ async function main() {
     prune(),
   )
 
-  // Optional: geometry simplification (can be a big win for SweetHome exports).
+  // 3) Geometry compression first (as requested for faster transfer + decode).
+  if (MeshoptEncoder?.ready) await MeshoptEncoder.ready
+  await doc.transform(
+    meshopt({ encoder: MeshoptEncoder }),
+    prune(),
+  )
+
+  // 4) Optional: geometry simplification (can be a big win for SweetHome exports).
   // This uses meshoptimizer under the hood.
   if (simplifyRatio != null) {
     const ratio = THREE_CLAMP(simplifyRatio, 0.01, 1)
@@ -72,6 +80,8 @@ async function main() {
         simplify({ ratio, simplifier: MeshoptSimplifier }),
         // Joining again after simplification can further reduce primitives.
         join({ keepNamed: false, keepMeshes: false }),
+        // Re-apply compression after simplification for smallest payload.
+        meshopt({ encoder: MeshoptEncoder }),
         prune(),
       )
       console.log(`[optimize_glb] simplified ratio=${ratio}`)

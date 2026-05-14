@@ -1,0 +1,3 @@
+# SketchUp/OBJ-Quellen sind oft >100 MB und passen nicht in GitHub.
+# Bitte lokal halten oder separat archivieren; das deploybare Modell ist floor_0.glb.
+*.obj

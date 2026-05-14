@@ -1,9 +1,7 @@
 /**
  * Brand configuration for wohlOpti (slug: wohlopti).
  *
- * Pre-launch: still uses the feelvonroll 3D model and a placeholder theme.
- * Replace assets under brands/wohlopti/{viewer,admin}/public/ when the real
- * branding and the dedicated 3D model are available.
+ * Current setup uses brand-local viewer assets and a single-floor 3D model.
  */
 export const brand = {
   name: 'wohlopti',
@@ -21,6 +19,11 @@ export const brand = {
   adminBase: '/admin/',
 
   modelDir: '/models',
+  viewer: {
+    // WohlOpti currently ships as a single-floor model.
+    modelFloorIndices: [0],
+    floorSelectorEnabled: false,
+  },
 
   viewerTitle: 'wohlOpti',
   adminTitle: 'wohlOpti Admin',

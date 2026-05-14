@@ -24,6 +24,7 @@ import { getFallbackQuestions } from './questionnaire'
 import { ORBIT_GLTF_ZOOM, ORBIT_GROUND, ORBIT_NAVIGATION } from './config'
 import { getLanguage, onLanguageChange, setLanguage, t } from './i18n'
 import { marked } from 'marked'
+import { brand } from '@brand/config.js'
 
 // ── URL parameters ──────────────────────────────────────────
 const urlParams = new URLSearchParams(window.location.search)
@@ -91,6 +92,20 @@ addLights(scene)
 // If `/models/floor_0.glb` exists, we try to load it. Otherwise we fall back
 // to the procedural building provider so the app still runs.
 const BUILDING_MODEL_URL = '/models/floor_0.glb'
+const DEFAULT_MODEL_FLOOR_INDICES = [-2, -1, 0, 1, 2, 3]
+const configuredModelFloorIndices = Array.isArray(brand?.viewer?.modelFloorIndices)
+  ? brand.viewer.modelFloorIndices
+  : DEFAULT_MODEL_FLOOR_INDICES
+const modelFloorIndices = Array.from(
+  new Set(
+    configuredModelFloorIndices
+      .map((index) => Number(index))
+      .filter((index) => Number.isInteger(index))
+  )
+).sort((a, b) => a - b)
+const modelDir = typeof brand?.modelDir === 'string' && brand.modelDir.length
+  ? brand.modelDir
+  : '/models'
 let building
 try {
   // Stacked prototype:
@@ -99,16 +114,14 @@ try {
   // - /models/floor_0.glb
   // - /models/floor_1.glb
   // If only a subset exists, the loader skips missing files.
-  building = await createBuildingProvider(scene, 'gltf', {
-    modelUrlsByFloorIndex: {
-      [-2]: '/models/floor_-2.glb',
-      [-1]: '/models/floor_-1.glb',
-      [0]: BUILDING_MODEL_URL,
-      [1]: '/models/floor_1.glb',
-      [2]: '/models/floor_2.glb',
-      [3]: '/models/floor_3.glb',
-    },
+  const modelUrlsByFloorIndex = {}
+  modelFloorIndices.forEach((floorIndex) => {
+    modelUrlsByFloorIndex[floorIndex] = `${modelDir}/floor_${floorIndex}.glb`
   })
+  if (!Object.prototype.hasOwnProperty.call(modelUrlsByFloorIndex, 0)) {
+    modelUrlsByFloorIndex[0] = BUILDING_MODEL_URL
+  }
+  building = await createBuildingProvider(scene, 'gltf', { modelUrlsByFloorIndex })
 } catch {
   building = await createBuildingProvider(scene, 'procedural')
 }
@@ -322,8 +335,13 @@ const { floorButtons, ui: floorSelectorUi } = createFloorSelector(
   building.maxBasements,
   building.maxAboveGroundFloors
 )
-floorSelectorUi.prepend(rotateOverlay)
-app.appendChild(floorSelectorUi)
+const floorSelectorEnabled = brand?.viewer?.floorSelectorEnabled !== false
+if (floorSelectorEnabled) {
+  floorSelectorUi.prepend(rotateOverlay)
+  app.appendChild(floorSelectorUi)
+} else {
+  app.appendChild(rotateOverlay)
+}
 
 // ── Title bar ────────────────────────────────────────────────
 const titleBar = createTitleBar()
