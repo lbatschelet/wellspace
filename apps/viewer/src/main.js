@@ -112,6 +112,8 @@ const materialSide =
     ? brand.viewer.materialSide
     : 'front'
 const tintGroundPlate = brand?.viewer?.tintGroundPlate === true
+/** Wenn false: keine 100×-Pin-Skalierung bei großem Bounds (z. B. riesige Grundplatte in Metern). */
+const pinMmHeuristic = brand?.viewer?.pinMmHeuristic !== false
 const pinReferenceSurface =
   brand?.viewer?.pinReferenceSurface === 'bottomPlate' ? 'bottomPlate' : 'auto'
 const groundPlateColor =
@@ -513,12 +515,14 @@ const pinSystem = createPinSystem({
   getSelectedFloor: () => selectedFloor,
   getFloorSlabTopY: (floorIndex) => building.getFloorSlabTopY(floorIndex),
   getPinScale: () => {
+    if (!pinMmHeuristic) return 1
     // If the imported model is huge (often cm/mm export), scale pins up so they're visible.
     const ground = Number(building?.suggestedGroundSize)
     if (!Number.isFinite(ground) || ground <= 0) return 1
     return ground > 2000 ? 100 : 1
   },
   getPinLift: () => {
+    if (!pinMmHeuristic) return 0.35
     // Lift pins above the floor/baseplate. Keep this unit-aware.
     const ground = Number(building?.suggestedGroundSize)
     if (!Number.isFinite(ground) || ground <= 0) return 0.35
@@ -772,7 +776,7 @@ function bootCaptureMode() {
 
     // Visible marker so it's obvious what will be captured
     const ground = Number(building?.suggestedGroundSize)
-    const unitScale = Number.isFinite(ground) && ground > 2000 ? 100 : 1
+    const unitScale = pinMmHeuristic && Number.isFinite(ground) && ground > 2000 ? 100 : 1
     const marker = new THREE.Mesh(
       new THREE.SphereGeometry(0.18 * unitScale, 16, 12),
       new THREE.MeshBasicMaterial({ color: 0xff2d55 })

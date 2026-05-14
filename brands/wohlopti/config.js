@@ -35,6 +35,8 @@ export const brand = {
     tintGroundPlate: false,
     // Pin placement reference: top side of the bottom plate.
     pinReferenceSurface: 'bottomPlate',
+    // Huge ground plate inflates bounds; do not treat as mm-export (no 100× pin scale).
+    pinMmHeuristic: false,
     // Keep close zoom usable even with the large bottom plate in bounds.
     closestZoom: 0.02,
     closestRelativeMin: 0.005,
