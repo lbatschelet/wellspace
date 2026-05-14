@@ -8,13 +8,9 @@ Authoring sources (lokal halten):
 
 Target runtime asset:
 - `floor_0.glb` (optimized + simplified)
-- `floor_0.glb.br` / `floor_0.glb.gz` (precompressed transfer assets)
 
 Current runtime result:
 - `floor_0.glb` is generated and reduced to ~51 MB.
-- Transfer payload with precompression:
-  - Brotli: ~4.9 MB
-  - Gzip: ~14 MB
 
 Typical pipeline (from repo root):
 
