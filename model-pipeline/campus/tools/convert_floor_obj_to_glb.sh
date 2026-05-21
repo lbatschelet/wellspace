@@ -57,9 +57,16 @@ OPT_ARGS=(--weld 0.0001)
 if [[ -n "${SIMPLIFY_RATIO:-}" ]]; then
   OPT_ARGS+=(--simplify "$SIMPLIFY_RATIO")
 fi
-node "$ROOT_DIR/tools/optimize_glb.mjs" "$OUT_GLB" "$TMP_GLB" "${OPT_ARGS[@]}"
-if [[ -f "$TMP_GLB" ]]; then
-  mv -f "$TMP_GLB" "$OUT_GLB"
+if node "$ROOT_DIR/tools/optimize_glb.mjs" "$OUT_GLB" "$TMP_GLB" "${OPT_ARGS[@]}"; then
+  if [[ -f "$TMP_GLB" ]]; then
+    mv -f "$TMP_GLB" "$OUT_GLB"
+  fi
+else
+  echo "[convert] optimize_glb.mjs failed; retrying without meshopt compression..."
+  node "$ROOT_DIR/tools/optimize_glb_no_meshopt.mjs" "$OUT_GLB" "$TMP_GLB" "${OPT_ARGS[@]}"
+  if [[ -f "$TMP_GLB" ]]; then
+    mv -f "$TMP_GLB" "$OUT_GLB"
+  fi
 fi
 
 echo "Done: $OUT_GLB"
