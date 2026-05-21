@@ -1,27 +1,30 @@
 WohlOpti model assets for the public viewer.
 
-The viewer is configured for a single floor (`floor_0.glb`) in this brand.
+The viewer loads **`floor_0.glb`** only. Materials are baked in at conversion time.
 
-Authoring sources (lokal halten):
-- `WohlOpti_ohne_gruen_boden.obj` wird wegen der GitHub-Dateigrössenbegrenzung **nicht** ins Repo committed (siehe `.gitignore`).
-- `WohlOpti_ohne_gruen_boden.mtl` / `WohlOpti_alles.mtl` (Material-Exports, im Repo)
+## Files in this folder
 
-Target runtime asset:
-- `floor_0.glb` (optimized + simplified)
+| File | Role |
+|------|------|
+| `floor_0.glb` | Runtime 3D model (~40 MB, pushable) |
+| `WohlOpti_Viktoriaplatz_sliced.mtl` | Material catalog for the OBJ export (reference / re-build) |
+| `.gitignore` | `*.obj` excluded (>100 MB GitHub limit) |
 
-Current runtime result:
-- `floor_0.glb` is generated and reduced to ~51 MB.
+## Source export (local, not in git)
 
-Typical pipeline (from repo root):
+- `WohlOpti_Viktoriaplatz_sliced.obj` + `WohlOpti_Viktoriaplatz_sliced.mtl` (same folder, meters)
+- Y clipped at ~14.7 m, shifted to Y=0
+- Texture images (`grille1.png`, …) optional; GLB uses **Kd colors** if images are missing
+
+## Rebuild pipeline (from repo root)
 
 ```bash
-# 1) Put your SweetHome/OBJ export under model-pipeline/campus/03_export_obj/floor_0/latest/
-# 2) Build optimized GLB:
-./model-pipeline/campus/tools/convert_floor_obj_to_glb.sh floor_0
-# 3) Copy into this brand:
+# 1) Copy OBJ+MTL into:
+#    model-pipeline/campus/03_export_obj/floor_0/latest/
+# 2) Strip `g` lines if obj2gltf fails (see convert script / awk)
+# 3) Build + copy:
+SIMPLIFY_RATIO=0.25 ./model-pipeline/campus/tools/convert_floor_obj_to_glb.sh floor_0
 BRAND=wohlopti ./model-pipeline/campus/tools/copy_glb_to_webapp.sh floor_0
 ```
 
-Fallback for very large OBJ exports:
-- Remove excessive `g` group lines before conversion (keeps geometry, lowers converter memory pressure),
-  then run conversion and optimization.
+Latest build: **2026-05-21** — `WohlOpti_Viktoriaplatz_sliced` + matching MTL, simplify 0.25.
