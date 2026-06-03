@@ -20,6 +20,14 @@ export default defineConfig(async () => {
     appType: 'spa',
     base: brand.adminBase || '/',
     publicDir,
+    build: {
+      rollupOptions: {
+        input: {
+          main: resolve(here, 'index.html'),
+          notFound: resolve(here, '404.html'),
+        },
+      },
+    },
     resolve: {
       alias: {
         '@brand': brandDir,

@@ -1,12 +1,23 @@
-# SPA fallback for the admin app deployed under /admin/
-# (single-origin routing: viewer at /, admin at /admin/, api at /api/).
+# Admin app deployed under /admin/ (single-origin: viewer /, admin /admin/, api /api/).
+#
+# Known client-side routes fall back to index.html so SPA deep links / reloads work.
+# Truly unknown paths return a real 404 → branded admin 404 page (Issue #1).
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /admin/
 
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
+  # Serve existing files/directories directly (assets, 404.html, etc.).
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
 
-  RewriteRule ^ index.html [L]
+  # Custom 404 document for unknown paths.
+  ErrorDocument 404 /admin/404.html
+
+  # Known SPA routes → index.html (client router takes over).
+  RewriteRule ^(dashboard|pins|questionnaire|questionnaires|stations|calibration|languages|users|audit|content|login|reset)/?$ index.html [L]
+
+  # Root of the admin app.
+  RewriteRule ^$ index.html [L]
 </IfModule>
