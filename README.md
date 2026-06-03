@@ -23,6 +23,19 @@ graph LR
 
 The **viewer** loads a tenant-specific theme from `brands/<brand>/` and talks to the API via `VITE_API_BASE`. The **admin** panel manages pins, questions, questionnaires, stations, users, translations, optional LV95 calibration, etc.
 
+### Questionnaire features
+
+- **Display mode per questionnaire** — each questionnaire has a `display_mode`
+  (`scroll`, default, or `step`). In `step` mode the viewer shows one question per
+  screen with Back/Next navigation and per-step validation; `scroll` keeps the single
+  scrollable form. Configurable in the admin questionnaire editor.
+- **Extended multiple choice** — `multi` questions support an optional "Other" choice
+  (`allow_other`) with a free-text field (`other_max_length`). Answers are stored as
+  JSON `{"selected":[...], "other_text":"..."}` in `pin_answers.answer_text` and shown
+  human-readable in the CSV export. See [`services/api/API.md`](services/api/API.md).
+- **Branded 404 pages** — viewer (`/`), admin (`/admin/`) and feedback (`/feedback/`)
+  each ship a localized 404 page, wired via per-app `.htaccess` `ErrorDocument`.
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) ≥ 20

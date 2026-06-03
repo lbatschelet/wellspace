@@ -89,6 +89,26 @@ Reine wohlopti-Änderungen lösen **keinen** Hostinger-Publish mehr aus.
 
 Nach erfolgreichen Deploy: `index.html`, `admin/`, `api/`, `models/`, …
 
+### DB-Migrationen (manuell, nach Deploy)
+
+Der Deploy spielt **keine** SQL-Migrationen automatisch ein. Nach einem Deploy, der
+neue Migrationen unter `services/api/migrations/` mitbringt, einmal per SSH ausführen:
+
+```bash
+ssh uid373276@u58gso.ftp.infomaniak.com
+cd sites/wohlopti.ch/api
+php bin/migrate.php --status   # zeigt applied / pending
+php bin/migrate.php            # wendet ausstehende Migrationen an (idempotent)
+```
+
+Der Runner liest die DB-Zugangsdaten aus `config.local.php` (liegt nur auf dem Server),
+trackt angewendete Dateien in `schema_migrations` und ist idempotent — wiederholtes
+Ausführen ist gefahrlos.
+
+> **Aktuell ausstehend:** `013_questionnaire_display_mode.sql` (Spalte `display_mode`
+> auf `questionnaires` für den Schritt-Modus). Bestehende Fragebögen bleiben auf
+> `scroll`. Ohne diese Migration schlägt das Speichern eines Fragebogens fehl.
+
 ### Admin: «Unexpected token '<' … is not valid JSON»
 
 Die API antwortet, aber PHP schreibt **Warnungen als HTML** vor das JSON (häufig nach Umzug auf Infomaniak mit PHP 8.4). Fix im Repo: `?array` in `admin_common.php`, `display_errors=0` in `helpers.php` — erneut deployen.
