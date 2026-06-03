@@ -35,7 +35,7 @@ function admin_handle_options(string $methods, string $headers = 'Content-Type, 
  * @return array
  * @throws ApiError
  */
-function admin_init(array $config = null, bool $allowBootstrap = false): array
+function admin_init(?array $config = null, bool $allowBootstrap = false): array
 {
     if (!$config) {
         $config = require __DIR__ . '/config.php';

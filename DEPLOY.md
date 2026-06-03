@@ -88,3 +88,9 @@ Fehler `mkdir: cannot create directory '/home/uid373276'`: absoluter Pfad im Dep
 Reine wohlopti-Änderungen lösen **keinen** Hostinger-Publish mehr aus.
 
 Nach erfolgreichen Deploy: `index.html`, `admin/`, `api/`, `models/`, …
+
+### Admin: «Unexpected token '<' … is not valid JSON»
+
+Die API antwortet, aber PHP schreibt **Warnungen als HTML** vor das JSON (häufig nach Umzug auf Infomaniak mit PHP 8.4). Fix im Repo: `?array` in `admin_common.php`, `display_errors=0` in `helpers.php` — erneut deployen.
+
+**API-Konfiguration auf dem Server** (nicht im Git): `api/config.local.php` vom Hostinger-Setup kopieren (DB, `jwt_secret`, `admin_token`, SMTP). Ohne diese Datei: DB-Fehler oder leere Secrets. Deploy schließt `config.local.php` bewusst aus.
