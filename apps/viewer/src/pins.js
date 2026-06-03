@@ -91,10 +91,14 @@ export function createPinSystem({
     }
 
     const next = questionsCache.get(cacheKey)
-    if (next && qKey !== activeQuestionnaireKey) {
-      activeQuestionnaireKey = qKey
-      setQuestions(next.questions, qKey, next.displayMode)
-      needRender()
+    if (next) {
+      const needsUpdate =
+        qKey !== activeQuestionnaireKey || next.displayMode !== state.displayMode
+      if (needsUpdate) {
+        activeQuestionnaireKey = qKey
+        setQuestions(next.questions, qKey, next.displayMode)
+        needRender()
+      }
     }
   }
 
@@ -443,7 +447,18 @@ export function createPinSystem({
     applyQuestionLabels(state, uiRefs, colorMode.updateColorModeButtons)
     colorMode.updateLegend()
     colorMode.refreshPinColors()
+    syncWizardForOpenCreateForm()
     needRender()
+  }
+
+  /** Re-apply step wizard when the form is re-rendered while the create dialog is open. */
+  function syncWizardForOpenCreateForm() {
+    if (form.dataset.mode !== 'create') return
+    if (!backdrop.classList.contains('is-visible')) return
+    wizard.begin({
+      displayMode: state.displayMode,
+      context: () => ({ questions: state.questions, questionElements: state.questionElements }),
+    })
   }
 
   /**

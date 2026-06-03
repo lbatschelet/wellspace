@@ -31,6 +31,11 @@ export function renderQuestions(questions, formContent, questionElements, option
     label.textContent = question.label || question.key
     group.appendChild(label)
 
+    // Step mode: only the first question is visible until the wizard advances.
+    if (displayMode === 'step' && index > 0) {
+      group.classList.add('is-hidden')
+    }
+
     let elements = { group, label, type: question.type, inputs: [] }
 
     if (question.type === 'slider') {
