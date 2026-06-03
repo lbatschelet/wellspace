@@ -5,6 +5,14 @@ on:
     branches:
       - main
       - chore/monorepo # optional long-lived integration branch name
+    paths:
+      - 'apps/**'
+      - 'brands/feelvonroll/**'
+      - 'services/api/**'
+      - 'infra/**'
+      - '.github/workflows/publish-hostinger-auto.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
 
 permissions:
   contents: write

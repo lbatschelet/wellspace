@@ -8,7 +8,7 @@
 | GitHub-Repo | `lbatschelet/wellspace` |
 | Workflow | [.github/workflows/deploy-wohlopti-infomaniak.yml](.github/workflows/deploy-wohlopti-infomaniak.yml) |
 | Trigger | Push auf `main` (nur relevante Pfade) oder **workflow_dispatch** |
-| Ziel auf dem Server | `/home/uid373276/sites/wohlopti.ch/` |
+| Ziel auf dem Server | `sites/wohlopti.ch/` (relativ zum SSH-Login, ≈ `~/sites/wohlopti.ch/`) |
 
 ### Hosting (Infomaniak)
 
@@ -71,8 +71,20 @@ Manueller Hostinger-Publish (beliebige Brand): [.github/workflows/publish-hostin
 
 ### Server
 
-Site-Ordner: `/home/uid373276/sites/wohlopti.ch/` (im Manager unter Hosting → **Mehr Informationen** den absoluten Pfad prüfen).
+Site-Ordner: **`sites/wohlopti.ch/`** relativ zum SSH-Login (nicht `/home/uid373276/…` im rsync — sonst `Permission denied`).
 
-Fehler `mkdir …/wohlopti.ch failed: No such file or directory`: Site im Infomaniak-Manager anlegen oder Ordner `sites/wohlopti.ch` existiert noch nicht — der Workflow führt vor dem rsync `mkdir -p` aus. Wenn das fehlschlägt, zuerst die Domain/Site im Manager zu diesem Hosting hinzufügen.
+Im Manager steht oft der absolute Pfad `/home/uid373276/sites/wohlopti.ch/`; per SSH/rsync nutzt ihr den relativen Teil unter eurem Home.
+
+Fehler `mkdir: cannot create directory '/home/uid373276'`: absoluter Pfad im Deploy — mit relativem `sites/wohlopti.ch/` beheben.
+
+### Drei GitHub Actions bei Push?
+
+| Workflow | Zweck |
+|----------|--------|
+| **CI** | Tests + Build-Matrix (feelvonroll + wohlopti) — bei jedem Push auf `main` |
+| **Deploy wohlopti to Infomaniak** | Produktion wohlopti.ch (nur bei relevanten Pfaden) |
+| **Publish to deploy branches (auto)** | feelvonRoll → Hostinger-Branch (nur bei feelvonroll-relevanten Pfaden) |
+
+Reine wohlopti-Änderungen lösen **keinen** Hostinger-Publish mehr aus.
 
 Nach erfolgreichen Deploy: `index.html`, `admin/`, `api/`, `models/`, …

@@ -21,8 +21,8 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   BRAND: wohlopti
-  # Infomaniak site root for wohlopti.ch (public path; credentials via secrets)
-  SSH_TARGET_PATH: /home/uid373276/sites/wohlopti.ch/
+  # Relative to SSH login dir (Infomaniak: ~/sites/<domain>/). Do not use /home/uid… absolut.
+  SSH_TARGET_PATH: sites/wohlopti.ch/
 
 jobs:
   deploy:
@@ -134,8 +134,9 @@ jobs:
             trap 'rm -f "$PASS_FILE"' EXIT
           fi
 
-          TARGET="${SSH_TARGET%/}"
-          # Site folder may not exist until first deploy (Infomaniak Manager or mkdir -p).
+          TARGET="${SSH_TARGET#/}"
+          TARGET="${TARGET%/}"
+          # Relative path: avoids Permission denied on /home/uid… when chrooted to $HOME.
           $RSYNC_RSH "${SSH_USER}@${SSH_HOST}" "mkdir -p $(printf '%q' "$TARGET")"
 
           rsync -avz --delete \
