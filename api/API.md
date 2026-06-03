@@ -129,6 +129,12 @@ Response:
 | `other_option_key` | string | `"other"` | Option key used for the "Other" choice. A real `question_options` row with this key is created so the label is translatable (`options.{question}.other`). |
 | `other_max_length` | int | `500` | Maximum length of the free-text entered for "Other". |
 
+The viewer shows the free-text alternative as an inline text field (no separate
+"Other" checkbox). Its placeholder comes from the translation key
+`questions.{question_key}.other_placeholder` per language (editable in the admin
+question editor when «Allow Other» is enabled). Until that key exists, the API
+falls back to `options.{question_key}.other`.
+
 ### `GET /languages.php`
 List enabled languages for the webapp switcher.
 
