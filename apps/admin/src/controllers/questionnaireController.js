@@ -125,6 +125,9 @@ export function createQuestionnaireController({ state, views, api, shell, render
     shell.setStatus('Saving...', false)
     try {
       await actions.saveSingleQuestion(question, translationsByLang)
+      if (type === 'multi' && config.allow_other) {
+        await actions.ensureOtherOption(key, config.other_option_key || 'other')
+      }
       await actions.reloadAndRender()
 
       if (type === 'multi' || type === 'influence') {

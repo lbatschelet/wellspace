@@ -165,6 +165,19 @@ export function createQuestionnaireRender({ state, views }) {
         group.appendChild(createLabeled('Scale: negative', legendNeg))
         group.appendChild(createLabeled('Scale: positive', legendPos))
       }
+      if (question.type === 'multi' && question.config?.allow_other) {
+        const placeholderKey = `questions.${question.question_key}.other_placeholder`
+        const fallbackKey = `options.${question.question_key}.${question.config?.other_option_key || 'other'}`
+        const otherPlaceholderInput = createInput(
+          'text',
+          getTranslationFor(language.lang, placeholderKey) ||
+            getTranslationFor(language.lang, fallbackKey)
+        )
+        otherPlaceholderInput.dataset.lang = language.lang
+        otherPlaceholderInput.dataset.field = 'other_placeholder'
+        otherPlaceholderInput.title = 'Placeholder in the free-text field (no separate checkbox)'
+        group.appendChild(createLabeled('Other (placeholder)', otherPlaceholderInput))
+      }
       newQuestionTranslations.appendChild(group)
     })
   }
@@ -176,8 +189,11 @@ export function createQuestionnaireRender({ state, views }) {
     container.innerHTML = ''
     if (question.type !== 'multi' && question.type !== 'influence') return
 
+    const otherKey = question.config?.other_option_key || 'other'
+    const hideOtherRow = question.type === 'multi' && question.config?.allow_other
     const options = state.options
       .filter((o) => o.question_key === question.question_key)
+      .filter((o) => !(hideOtherRow && o.option_key === otherKey))
       .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0))
 
     const section = document.createElement('div')
@@ -186,6 +202,13 @@ export function createQuestionnaireRender({ state, views }) {
     title.className = 'section-title'
     title.textContent = 'Options (key + label per language)'
     section.appendChild(title)
+    if (hideOtherRow) {
+      const hint = document.createElement('p')
+      hint.className = 'options-hint'
+      hint.textContent =
+        'The free-text alternative uses the «Other (placeholder)» labels above — not a separate option row.'
+      section.appendChild(hint)
+    }
 
     if (options.length > 0) {
       const table = document.createElement('table')
@@ -335,8 +358,19 @@ export function createQuestionnaireRender({ state, views }) {
         group.appendChild(createLabeled('Scale: negative', legendNeg))
         group.appendChild(createLabeled('Scale: positive', legendPos))
       }
+      if (type === 'multi') {
+        const otherWrap = document.createElement('div')
+        otherWrap.className = 'multi-other-only'
+        const otherPlaceholderInput = createInput('text', '')
+        otherPlaceholderInput.dataset.lang = language.lang
+        otherPlaceholderInput.dataset.field = 'other_placeholder'
+        otherPlaceholderInput.title = 'Placeholder in the free-text field'
+        otherWrap.appendChild(createLabeled('Other (placeholder)', otherPlaceholderInput))
+        group.appendChild(otherWrap)
+      }
       newQuestionTranslations.appendChild(group)
     })
+    renderCreateFormVisibility()
   }
 
   const renderCreateOptionsHint = (type) => {

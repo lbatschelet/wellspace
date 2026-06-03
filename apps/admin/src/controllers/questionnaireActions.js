@@ -116,6 +116,14 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
           text: translations.legend_positive || '',
         })
       }
+      if (question.type === 'multi' && question.config?.allow_other) {
+        await api.upsertTranslation({
+          token: state.token,
+          translation_key: `questions.${question.question_key}.other_placeholder`,
+          lang,
+          text: translations.other_placeholder || '',
+        })
+      }
     }
   }
 
@@ -155,8 +163,31 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
         text,
       })
     }
+    await ensureOtherPlaceholder(questionKey, defaults)
     await data.loadOptions()
     await data.loadTranslations()
+  }
+
+  /**
+   * Seeds per-language placeholder text for the inline "other" text field
+   * (questions.{key}.other_placeholder). Skips langs that already have a value.
+   */
+  const ensureOtherPlaceholder = async (questionKey, defaults = { de: 'Sonstiges', en: 'Other' }) => {
+    const placeholderKey = `questions.${questionKey}.other_placeholder`
+    for (const language of state.languages) {
+      const existing =
+        state.translationsByLang[language.lang]?.[placeholderKey] ||
+        state.pendingTranslationsByLang[language.lang]?.[placeholderKey]
+      if (existing) continue
+      const text = defaults[language.lang]
+      if (!text) continue
+      await api.upsertTranslation({
+        token: state.token,
+        translation_key: placeholderKey,
+        lang: language.lang,
+        text,
+      })
+    }
   }
 
   /**
@@ -207,6 +238,13 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
         )
         translationsByLang[language.lang].legend_negative = legendNeg?.value.trim() || ''
         translationsByLang[language.lang].legend_positive = legendPos?.value.trim() || ''
+      }
+      if (type === 'multi' && views.questionnaireView.newQuestionAllowOther?.checked) {
+        const otherPlaceholderInput = newQuestionTranslations.querySelector(
+          `input[data-lang="${language.lang}"][data-field="other_placeholder"]`
+        )
+        translationsByLang[language.lang].other_placeholder =
+          otherPlaceholderInput?.value.trim() || ''
       }
     }
     const validation = validateQuestionTranslations({

@@ -105,9 +105,45 @@ Der Runner liest die DB-Zugangsdaten aus `config.local.php` (liegt nur auf dem S
 trackt angewendete Dateien in `schema_migrations` und ist idempotent — wiederholtes
 Ausführen ist gefahrlos.
 
-> **Aktuell ausstehend:** `013_questionnaire_display_mode.sql` (Spalte `display_mode`
+#### Bestehende Prod-DB (Baseline) — «Duplicate column name»
+
+Wenn die Datenbank **schon** den Stand von `schema.sql` / früheren manuellen Migrationen
+hat, `schema_migrations` aber **leer** ist, schlägt `php bin/migrate.php` bei `001_*`
+fehl (`Duplicate column name 'group_key'`). Das ist erwartbar — die DB ist aktuell,
+nur der Migrations-Tracker nicht.
+
+**Einmalig so vorgehen** (nur die wirklich neue Migration ausführen, Rest als erledigt markieren):
+
+```bash
+cd sites/wohlopti.ch/api
+php bin/migrate.php --status          # alle 001–013 stehen vermutlich auf «pending»
+
+# 1) Nur die neue Migration 013 einspielen (Spalte display_mode)
+php -r '
+$config = require "config.local.php";
+$pdo = new PDO(
+  sprintf("mysql:host=%s;dbname=%s;charset=utf8mb4", $config["db_host"] ?? "localhost", $config["db_name"]),
+  $config["db_user"],
+  $config["db_pass"] ?? "",
+  [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+$pdo->exec(file_get_contents("migrations/013_questionnaire_display_mode.sql"));
+echo "013 applied OK\n";
+'
+
+# 2) Alle Migrationsdateien als «applied» eintragen, ohne sie erneut auszuführen
+php bin/migrate.php --mark-applied
+
+# 3) Kontrolle — «Pending migrations (0)»
+php bin/migrate.php --status
+```
+
+Ab dann reicht für künftige Releases wieder nur `php bin/migrate.php` (wendet dann
+ausschliesslich neue Dateien ab 014 an).
+
+> **Aktuell relevant:** `013_questionnaire_display_mode.sql` (Spalte `display_mode`
 > auf `questionnaires` für den Schritt-Modus). Bestehende Fragebögen bleiben auf
-> `scroll`. Ohne diese Migration schlägt das Speichern eines Fragebogens fehl.
+> `scroll`. Ohne diese Spalte schlägt das Speichern eines Fragebogens im Admin fehl.
 
 ### Admin: «Unexpected token '<' … is not valid JSON»
 

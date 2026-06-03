@@ -271,6 +271,14 @@ function load_question_translations(PDO $pdo, string $lang, array $questions, ar
             $translationKeys[] = "questions.$key.legend_negative";
             $translationKeys[] = "questions.$key.legend_positive";
         }
+        if ($q['type'] === 'multi') {
+            $config = $q['config'] ? json_decode($q['config'], true) : [];
+            if (!empty($config['allow_other'])) {
+                $translationKeys[] = "questions.$key.other_placeholder";
+                $otherKey = $config['other_option_key'] ?? 'other';
+                $translationKeys[] = "options.$key.$otherKey";
+            }
+        }
         if (!empty($optionsByQuestion[$key])) {
             foreach ($optionsByQuestion[$key] as $opt) {
                 $translationKeys[] = "options.$key.{$opt['option_key']}";
@@ -338,6 +346,13 @@ function assemble_question_list(array $resolvedSlots, array $questions, array $o
                         'label' => $translations[$labelKey] ?? $opt['option_key'],
                     ];
                 }, $optionsByQuestion[$key]);
+            }
+
+            if ($q['type'] === 'multi' && !empty($config['allow_other'])) {
+                $otherKey = $config['other_option_key'] ?? 'other';
+                $entry['other_placeholder'] = $translations["questions.$key.other_placeholder"]
+                    ?? $translations["options.$key.$otherKey"]
+                    ?? '';
             }
 
             $result[] = $entry;

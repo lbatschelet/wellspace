@@ -93,10 +93,10 @@ export function renderQuestions(questions, formContent, questionElements, option
       const otherMax = Number(question.config?.other_max_length) || 500
       const inputType = allowMultiple ? 'checkbox' : 'radio'
       const optionDefs = Array.isArray(question.options) ? question.options : []
-      let otherInput = null
       let otherTextInput = null
 
       optionDefs.forEach((option) => {
+        if (allowOther && option.key === otherKey) return
         const optionLabel = document.createElement('label')
         optionLabel.className = 'ui-checkbox'
         const input = document.createElement('input')
@@ -109,33 +109,57 @@ export function renderQuestions(questions, formContent, questionElements, option
         optionLabel.appendChild(text)
         wrapper.appendChild(optionLabel)
         elements.inputs.push({ input, label: text, key: option.key })
-        if (allowOther && option.key === otherKey) {
-          otherInput = input
-        }
       })
-      group.appendChild(wrapper)
 
       if (allowOther) {
         otherTextInput = document.createElement('input')
         otherTextInput.type = 'text'
         otherTextInput.className = 'ui-multi-other-text'
         otherTextInput.maxLength = otherMax
-        otherTextInput.placeholder = t('ui.otherPlaceholder')
-        otherTextInput.disabled = true
-        group.appendChild(otherTextInput)
+        otherTextInput.placeholder =
+          question.other_placeholder || t('ui.otherPlaceholder')
+        otherTextInput.setAttribute('aria-label', otherTextInput.placeholder)
+        wrapper.appendChild(otherTextInput)
 
-        const syncOther = () => {
-          const on = Boolean(otherInput && otherInput.checked)
-          otherTextInput.disabled = !on
-          otherTextInput.classList.toggle('is-active', on)
-          if (!on) otherTextInput.value = ''
+        const clearOtherField = () => {
+          otherTextInput.value = ''
+          otherTextInput.classList.remove('is-active')
         }
-        // Any change to this question's options re-evaluates the free-text state.
-        elements.inputs.forEach(({ input }) => input.addEventListener('change', syncOther))
-        syncOther()
 
-        elements = { ...elements, allowOther, otherKey, otherInput, otherTextInput, syncOther }
+        const activateOtherField = () => {
+          otherTextInput.classList.add('is-active')
+          if (!allowMultiple) {
+            elements.inputs.forEach(({ input }) => {
+              input.checked = false
+            })
+          }
+        }
+
+        otherTextInput.addEventListener('focus', activateOtherField)
+        otherTextInput.addEventListener('input', () => {
+          if (otherTextInput.value.trim()) activateOtherField()
+        })
+        otherTextInput.addEventListener('blur', () => {
+          if (!otherTextInput.value.trim()) clearOtherField()
+        })
+
+        elements.inputs.forEach(({ input }) => {
+          input.addEventListener('change', () => {
+            if (!input.checked) return
+            clearOtherField()
+          })
+        })
+
+        elements = {
+          ...elements,
+          allowOther,
+          otherKey,
+          otherTextInput,
+          allowMultiple,
+        }
       }
+
+      group.appendChild(wrapper)
     }
 
     if (question.type === 'text') {
@@ -330,17 +354,33 @@ export function readAnswer(question, elements) {
     return elements.input.value.trim()
   }
   if (question.type === 'multi') {
-    const selected = elements.inputs
+    const allowMultiple = Boolean(
+      elements.allowMultiple ?? question.config?.allow_multiple
+    )
+    let selected = elements.inputs
       .filter((item) => item.input.checked)
       .map((item) => item.input.value)
-    if (elements.allowOther) {
-      const otherSelected = selected.includes(elements.otherKey)
-      const otherText = (elements.otherTextInput?.value || '').trim()
-      const value = { selected }
-      if (otherSelected) value.other_text = otherText
-      return value
+
+    if (elements.allowOther && elements.otherTextInput) {
+      const otherText = elements.otherTextInput.value.trim()
+      const otherActive =
+        otherText.length > 0 ||
+        elements.otherTextInput.classList.contains('is-active') ||
+        document.activeElement === elements.otherTextInput
+
+      if (otherActive) {
+        if (!allowMultiple) {
+          selected = [elements.otherKey]
+        } else if (!selected.includes(elements.otherKey)) {
+          selected = [...selected, elements.otherKey]
+        }
+        const value = { selected }
+        if (otherText) value.other_text = otherText
+        return value
+      }
+      selected = selected.filter((key) => key !== elements.otherKey)
     }
-    const allowMultiple = Boolean(question.config?.allow_multiple)
+
     return allowMultiple ? selected : selected[0] || ''
   }
   if (question.type === 'influence') {
@@ -365,7 +405,8 @@ export function validateAnswer(question, elements, value) {
   if (question.type === 'multi' && elements?.allowOther) {
     const selected = Array.isArray(value?.selected) ? value.selected : []
     const otherSelected = selected.includes(elements.otherKey)
-    if (otherSelected && (!value.other_text || value.other_text === '')) {
+    const otherText = (value?.other_text || '').trim()
+    if (otherSelected && !otherText) {
       return 'error.otherRequired'
     }
   }
@@ -422,10 +463,18 @@ export function setQuestionValue(key, value, questions, questionElements) {
       item.input.checked = selected.includes(item.input.value)
     })
     if (elements.otherTextInput) {
-      const otherOn = Boolean(elements.otherInput && elements.otherInput.checked)
+      const otherOn = selected.includes(elements.otherKey)
+      const allowMultiple = Boolean(
+        elements.allowMultiple ??
+          questions.find((item) => item.key === key)?.config?.allow_multiple
+      )
       elements.otherTextInput.value = otherOn ? (value.other_text || '') : ''
-      elements.otherTextInput.disabled = !otherOn
       elements.otherTextInput.classList.toggle('is-active', otherOn)
+      if (otherOn && !allowMultiple) {
+        elements.inputs.forEach((item) => {
+          item.input.checked = false
+        })
+      }
     }
     return
   }
@@ -438,7 +487,6 @@ export function setQuestionValue(key, value, questions, questionElements) {
       item.input.checked = item.input.value === value
     })
   }
-  if (typeof elements.syncOther === 'function') elements.syncOther()
 }
 
 /**
@@ -453,8 +501,7 @@ export function disableQuestions(disabled, questionElements) {
       item.input.disabled = disabled
     })
     if (elements.otherTextInput) {
-      const otherOn = Boolean(elements.otherInput && elements.otherInput.checked)
-      elements.otherTextInput.disabled = disabled || !otherOn
+      elements.otherTextInput.disabled = disabled
     }
     elements.optionRows?.forEach((row) => {
       row.checkbox.disabled = disabled

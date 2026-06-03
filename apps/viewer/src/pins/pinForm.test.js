@@ -17,12 +17,13 @@ function makeForm() {
   return { form, content }
 }
 
-const multiQuestion = (config) => ({
+const multiQuestion = (config, extra = {}) => ({
   key: 'topics',
   type: 'multi',
   required: false,
   sort: 1,
   config,
+  other_placeholder: extra.other_placeholder,
   options: [
     { key: 'a', label: 'A' },
     { key: 'b', label: 'B' },
@@ -44,7 +45,7 @@ describe('isAnswerEmpty', () => {
     expect(isAnswerEmpty(undefined)).toBe(true)
   })
 
-  it('returns true for empty/whitespace string', () => {
+  it('returns true for empty string', () => {
     expect(isAnswerEmpty('')).toBe(true)
     expect(isAnswerEmpty('   ')).toBe(true)
   })
@@ -53,9 +54,12 @@ describe('isAnswerEmpty', () => {
     expect(isAnswerEmpty('hello')).toBe(false)
   })
 
-  it('returns false for number', () => {
-    expect(isAnswerEmpty(0)).toBe(false)
-    expect(isAnswerEmpty(42)).toBe(false)
+  it('returns true for empty object', () => {
+    expect(isAnswerEmpty({})).toBe(true)
+  })
+
+  it('returns false for non-empty object', () => {
+    expect(isAnswerEmpty({ a: 1 })).toBe(false)
   })
 
   it('treats empty extended-multi selection as empty', () => {
@@ -65,19 +69,21 @@ describe('isAnswerEmpty', () => {
 })
 
 describe('multi with allow_other', () => {
-  it('renders a disabled free-text input enabled only when "other" is selected', () => {
+  it('renders options in a vertical list without a separate "other" checkbox', () => {
     const { content } = makeForm()
     const elements = new Map()
-    renderQuestions([multiQuestion({ allow_multiple: true, allow_other: true })], content, elements)
+    renderQuestions(
+      [multiQuestion({ allow_multiple: true, allow_other: true }, { other_placeholder: 'Bitte angeben…' })],
+      content,
+      elements
+    )
 
+    expect(content.querySelector('.ui-form-reasons')).not.toBeNull()
+    expect(content.querySelector('input[value="other"]')).toBeNull()
     const otherText = content.querySelector('.ui-multi-other-text')
     expect(otherText).not.toBeNull()
-    expect(otherText.disabled).toBe(true)
-
-    const otherCheckbox = content.querySelector('input[value="other"]')
-    otherCheckbox.checked = true
-    otherCheckbox.dispatchEvent(new Event('change'))
     expect(otherText.disabled).toBe(false)
+    expect(otherText.placeholder).toBe('Bitte angeben…')
   })
 
   it('does not render a free-text input without allow_other', () => {
@@ -87,31 +93,50 @@ describe('multi with allow_other', () => {
     expect(content.querySelector('.ui-multi-other-text')).toBeNull()
   })
 
-  it('collects { selected, other_text } when other has text', () => {
+  it('selects "other" on focus and collects text on submit', () => {
     const { form, content } = makeForm()
     const elements = new Map()
     const question = multiQuestion({ allow_multiple: true, allow_other: true })
+    renderQuestions([question], content, elements)
+
+    const otherText = content.querySelector('.ui-multi-other-text')
+    otherText.focus()
+    otherText.value = 'My text'
+
+    const payload = collectFormData(form, [question], elements)
+    expect(payload.generic_answers.topics).toEqual({
+      selected: ['other'],
+      other_text: 'My text',
+    })
+  })
+
+  it('activates "other" on input without prior checkbox click', () => {
+    const { form, content } = makeForm()
+    const elements = new Map()
+    const question = multiQuestion({ allow_multiple: false, allow_other: true })
     renderQuestions([question], content, elements)
 
     content.querySelector('input[value="a"]').checked = true
-    const other = content.querySelector('input[value="other"]')
-    other.checked = true
-    other.dispatchEvent(new Event('change'))
-    content.querySelector('.ui-multi-other-text').value = 'My text'
+    const otherText = content.querySelector('.ui-multi-other-text')
+    otherText.value = 'Freitext'
+    otherText.dispatchEvent(new Event('input'))
 
     const payload = collectFormData(form, [question], elements)
-    expect(payload.generic_answers.topics).toEqual({ selected: ['a', 'other'], other_text: 'My text' })
+    expect(payload.generic_answers.topics).toEqual({
+      selected: ['other'],
+      other_text: 'Freitext',
+    })
+    expect(content.querySelector('input[value="a"]').checked).toBe(false)
   })
 
-  it('blocks submit when other is selected without text', () => {
+  it('blocks submit when other is active without text', () => {
     const { form, content } = makeForm()
     const elements = new Map()
     const question = multiQuestion({ allow_multiple: true, allow_other: true })
     renderQuestions([question], content, elements)
 
-    const other = content.querySelector('input[value="other"]')
-    other.checked = true
-    other.dispatchEvent(new Event('change'))
+    const otherText = content.querySelector('.ui-multi-other-text')
+    otherText.dispatchEvent(new Event('focus'))
 
     const payload = collectFormData(form, [question], elements)
     expect(payload).toBeNull()
@@ -138,12 +163,12 @@ describe('safeParseReasons', () => {
     expect(safeParseReasons('')).toEqual([])
   })
 
-  it('returns array as-is', () => {
-    expect(safeParseReasons(['a', 'b'])).toEqual(['a', 'b'])
+  it('parses JSON array string', () => {
+    expect(safeParseReasons('["a","b"]')).toEqual(['a', 'b'])
   })
 
-  it('parses JSON string', () => {
-    expect(safeParseReasons('["x","y"]')).toEqual(['x', 'y'])
+  it('returns array as-is', () => {
+    expect(safeParseReasons(['x'])).toEqual(['x'])
   })
 
   it('returns empty array for invalid JSON', () => {
