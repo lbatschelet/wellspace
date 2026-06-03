@@ -27,6 +27,7 @@ export function createRenderer(app) {
   renderer.setPixelRatio(getPreferredPixelRatio())
   renderer.setSize(app.clientWidth, app.clientHeight)
   renderer.setClearColor(0x000000, 0) // fully transparent clear
+  renderer.sortObjects = true
   app.appendChild(renderer.domElement)
   return renderer
 }

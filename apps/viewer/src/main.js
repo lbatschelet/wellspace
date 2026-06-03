@@ -14,6 +14,7 @@ import {
   getPreferredPixelRatio,
 } from './scene'
 import { createBuildingProvider } from './building/buildingProvider'
+import { preserveGltfBlendMaterial } from './building/gltfMaterialRendering.js'
 import { createFloorSelector } from './ui/floorSelector'
 import { createLanguageSwitcher } from './ui/languageSwitcher'
 import { createAboutOverlay } from './ui/aboutOverlay'
@@ -921,6 +922,15 @@ function setGroupOpacity(group, opacity) {
     if (child.material) {
       const materials = Array.isArray(child.material) ? child.material : [child.material]
       materials.forEach((material) => {
+        if (preserveGltfBlendMaterial(material, { ghostFactor: isGhost ? opacity : 1 })) {
+          if ('polygonOffset' in material) {
+            material.polygonOffset = isGhost
+            material.polygonOffsetFactor = isGhost ? 1 : 0
+            material.polygonOffsetUnits = isGhost ? 1 : 0
+          }
+          material.needsUpdate = true
+          return
+        }
         material.transparent = isGhost
         material.opacity = opacity
         if ('depthWrite' in material) material.depthWrite = !isGhost

@@ -22,6 +22,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { FLOOR } from '../config'
+import { applyGltfMaterialRendering } from './gltfMaterialRendering.js'
 
 /** Nur bei sichtbaren Ausblendern: ?noFrustumCull=1 (Standard: Culling an = weniger Draw) */
 function disableFrustumCullForDebug(root) {
@@ -330,6 +331,7 @@ export async function createGltfBuilding(
   scene.add(root)
   disableFrustumCullForDebug(root)
   applyMaterialSide(root, materialSide)
+  applyGltfMaterialRendering(root)
   tintLargestFlatMesh(root, groundPlateColor)
 
   // Collect floor groups by name.
@@ -514,6 +516,7 @@ export async function createStackedGltfBuilding(
 
     disableFrustumCullForDebug(root)
     applyMaterialSide(root, materialSide)
+    applyGltfMaterialRendering(root)
     tintLargestFlatMesh(root, groundPlateColor)
 
     const group = groupByFloorIndex.get(floorIndex)
