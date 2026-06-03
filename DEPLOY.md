@@ -93,4 +93,6 @@ Nach erfolgreichen Deploy: `index.html`, `admin/`, `api/`, `models/`, …
 
 Die API antwortet, aber PHP schreibt **Warnungen als HTML** vor das JSON (häufig nach Umzug auf Infomaniak mit PHP 8.4). Fix im Repo: `?array` in `admin_common.php`, `display_errors=0` in `helpers.php` — erneut deployen.
 
-**API-Konfiguration auf dem Server** (nicht im Git): `api/config.local.php` vom Hostinger-Setup kopieren (DB, `jwt_secret`, `admin_token`, SMTP). Ohne diese Datei: DB-Fehler oder leere Secrets. Deploy schließt `config.local.php` bewusst aus.
+**API-Konfiguration auf dem Server** (nicht im Git): einmalig `sites/wohlopti.ch/api/config.local.php` anlegen (z. B. von Hostinger kopieren: DB, `jwt_secret`, `admin_token`, SMTP). Liegt nur auf dem Server.
+
+Der Deploy packt `config.local.php` nicht ins Bundle **und** lässt sie per `rsync --exclude=api/config.local.php` beim `--delete` auf dem Server **stehen** — ein erneuter Deploy löscht sie nicht mehr (früherer Bug: `--delete` ohne Exclude).

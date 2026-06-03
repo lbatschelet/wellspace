@@ -139,6 +139,8 @@ jobs:
           # Relative path: avoids Permission denied on /home/uid… when chrooted to $HOME.
           $RSYNC_RSH "${SSH_USER}@${SSH_HOST}" "mkdir -p $(printf '%q' "$TARGET")"
 
+          # --delete syncs to deploy-root; exclude server-only secrets (not in bundle).
           rsync -avz --delete \
+            --exclude='api/config.local.php' \
             -e "$RSYNC_RSH" \
             deploy-root/ "${SSH_USER}@${SSH_HOST}:${TARGET}/"
