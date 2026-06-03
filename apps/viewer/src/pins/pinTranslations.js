@@ -17,6 +17,8 @@ export function applyStaticTranslations(refs, state) {
   refs.toggleButton.textContent = state.pinMode ? t('ui.pinToggleActive') : t('ui.pinToggleIdle')
   refs.closeButton.setAttribute('aria-label', t('ui.close'))
   refs.submitButton.textContent = t('ui.save')
+  if (refs.backButton) refs.backButton.textContent = t('ui.back')
+  if (refs.nextButton) refs.nextButton.textContent = t('ui.next')
   refs.viewWellbeingLabel.textContent = t('ui.viewWellbeing')
   if (refs.viewStation) refs.viewStation.textContent = ''
   refs.viewPending.textContent = t('ui.viewPending')

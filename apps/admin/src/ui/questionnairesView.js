@@ -52,6 +52,15 @@ export function createQuestionnairesView() {
           <span>Description</span>
           <textarea id="qnrDescInput" rows="2" placeholder="Optional description"></textarea>
         </label>
+        <div class="modal-fields-row">
+          <label class="field">
+            <span>Display mode</span>
+            <select id="qnrDisplayModeInput" title="How questions are shown in the viewer">
+              <option value="scroll">All questions (scroll)</option>
+              <option value="step">One question per step</option>
+            </select>
+          </label>
+        </div>
         <div class="modal-checks-row">
           <label class="checkbox-inline"><input type="checkbox" id="qnrActiveCheck" checked /> Active</label>
         </div>
@@ -83,6 +92,7 @@ export function createQuestionnairesView() {
     keyInput: card.querySelector('#qnrKeyInput'),
     nameInput: card.querySelector('#qnrNameInput'),
     descInput: card.querySelector('#qnrDescInput'),
+    displayModeInput: card.querySelector('#qnrDisplayModeInput'),
     activeCheck: card.querySelector('#qnrActiveCheck'),
     idInput: card.querySelector('#qnrIdInput'),
     deleteBtn: card.querySelector('#deleteQuestionnaireBtn'),

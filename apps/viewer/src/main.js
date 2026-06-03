@@ -668,9 +668,12 @@ async function loadLanguages() {
 
 async function loadQuestions(language) {
   let questions = null
+  let displayMode = 'scroll'
 
   try {
-    questions = await fetchQuestionnaire({ key: 'default', lang: language })
+    const qnr = await fetchQuestionnaire({ key: 'default', lang: language })
+    questions = qnr.questions
+    displayMode = qnr.displayMode
   } catch (err) {
     console.warn('[Wellspace viewer] fetchQuestionnaire failed:', err)
   }
@@ -688,7 +691,7 @@ async function loadQuestions(language) {
     questions = getFallbackQuestions()
   }
 
-  pinSystem.setQuestions(questions, 'default')
+  pinSystem.setQuestions(questions, 'default', displayMode)
 }
 
 // ── About content ────────────────────────────────────────────
@@ -895,9 +898,9 @@ async function bootStationMode(key) {
     // Load station-specific questionnaire
     const questionnaireKey = station.questionnaire_key || 'default'
     try {
-      const questions = await fetchQuestionnaire({ key: questionnaireKey, lang })
-      if (Array.isArray(questions)) {
-        pinSystem.setQuestions(questions, questionnaireKey)
+      const qnr = await fetchQuestionnaire({ key: questionnaireKey, lang })
+      if (Array.isArray(qnr.questions)) {
+        pinSystem.setQuestions(qnr.questions, questionnaireKey, qnr.displayMode)
         return
       }
     } catch (err) {

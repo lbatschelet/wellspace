@@ -832,6 +832,26 @@ canvas {
   font-weight: 400;
 }
 
+.ui-multi-other-text {
+  margin-top: 8px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 0.92rem;
+}
+
+.ui-multi-other-text:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.ui-multi-other-text.is-active {
+  border-color: #94a3b8;
+}
+
 /* Legend above track: left label flush left, right label flush right */
 .ui-slider-legend,
 .ui-influence-track-legend {
@@ -896,6 +916,42 @@ canvas {
 
 .ui-form-submit.is-hidden {
   display: none;
+}
+
+.ui-form-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ui-form-nav.is-hidden {
+  display: none;
+}
+
+.ui-form-back,
+.ui-form-next {
+  flex: 1;
+  font-weight: 700;
+}
+
+.ui-form-back {
+  background: #e2e8f0;
+  color: #1f2937;
+}
+
+.ui-form-next {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.ui-form-back.is-hidden,
+.ui-form-next.is-hidden {
+  display: none;
+}
+
+.ui-form-back:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .ui-pin-view {

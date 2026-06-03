@@ -28,6 +28,7 @@ import {
   showFormError,
   clearFormError,
 } from './pins/pinForm'
+import { createPinFormWizard } from './pins/pinFormWizard'
 
 export function createPinSystem({
   scene,
@@ -83,16 +84,16 @@ export function createPinSystem({
 
     const cacheKey = `${qKey}::${resolvedLang || ''}`
     if (!questionsCache.has(cacheKey)) {
-      const qs = await fetchQuestionnaire({ key: qKey, lang: resolvedLang }).catch(() => null)
-      if (Array.isArray(qs) && qs.length) {
-        questionsCache.set(cacheKey, qs)
+      const qnr = await fetchQuestionnaire({ key: qKey, lang: resolvedLang }).catch(() => null)
+      if (qnr && Array.isArray(qnr.questions) && qnr.questions.length) {
+        questionsCache.set(cacheKey, qnr)
       }
     }
 
-    const nextQuestions = questionsCache.get(cacheKey)
-    if (nextQuestions && qKey !== activeQuestionnaireKey) {
+    const next = questionsCache.get(cacheKey)
+    if (next && qKey !== activeQuestionnaireKey) {
       activeQuestionnaireKey = qKey
-      setQuestions(nextQuestions)
+      setQuestions(next.questions, qKey, next.displayMode)
       needRender()
     }
   }
@@ -107,13 +108,18 @@ export function createPinSystem({
   const ui = createPinUi()
   const {
     panel, toggleButton, backdrop, form, formContent, closeButton, submitButton,
+    formNav, backButton, nextButton,
     colorModeRow, legend, viewPanel, viewWellbeing, viewWellbeingLabel,
     viewAnswers, viewStation,
     viewPending, viewTimestamp, viewScoreDot,
   } = ui
 
+  const wizard = createPinFormWizard({
+    form, formContent, submitButton, formNav, backButton, nextButton,
+  })
+
   const uiRefs = {
-    toggleButton, closeButton, submitButton,
+    toggleButton, closeButton, submitButton, backButton, nextButton,
     viewWellbeingLabel, viewPending,
     viewTimestamp, viewStation,
   }
@@ -419,8 +425,9 @@ export function createPinSystem({
   }
 
   // ── Questions ───────────────────────────────────────────────
-  function setQuestions(nextQuestions, questionnaireKey) {
+  function setQuestions(nextQuestions, questionnaireKey, displayMode = 'scroll') {
     state.questions = Array.isArray(nextQuestions) ? [...nextQuestions].sort(bySort) : []
+    state.displayMode = displayMode === 'step' ? 'step' : 'scroll'
     state.questionElements = new Map()
     state.optionsByQuestion = new Map()
     state.questions.forEach((question) => {
@@ -432,7 +439,7 @@ export function createPinSystem({
       activeQuestionnaireKey = questionnaireKey
     }
     colorMode.updateColorQuestions()
-    renderFormQuestions(state.questions, formContent, state.questionElements)
+    renderFormQuestions(state.questions, formContent, state.questionElements, { displayMode: state.displayMode })
     applyQuestionLabels(state, uiRefs, colorMode.updateColorModeButtons)
     colorMode.updateLegend()
     colorMode.refreshPinColors()
@@ -733,7 +740,13 @@ export function createPinSystem({
     const isAnswered = (value) => {
       if (value == null) return false
       if (Array.isArray(value)) return value.length > 0
-      if (typeof value === 'object') return Object.keys(value).length > 0
+      if (typeof value === 'object') {
+        // Extended multi answer: { selected: [...], other_text?: "..." }.
+        if (Array.isArray(value.selected)) {
+          return value.selected.length > 0 || Boolean(value.other_text)
+        }
+        return Object.keys(value).length > 0
+      }
       if (typeof value === 'string') {
         const s = value.trim()
         if (!s) return false
@@ -768,6 +781,21 @@ export function createPinSystem({
       }
       if (question.type === 'text') return String(raw || '').trim() || t('ui.empty')
       if (question.type === 'multi') {
+        // Extended multi answer: { selected: [...], other_text?: "..." }.
+        let parsed = raw
+        if (typeof raw === 'string' && raw.trim()[0] === '{') {
+          try { parsed = JSON.parse(raw) } catch { /* ignore */ }
+        }
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.selected)) {
+          const otherKey = question.config?.other_option_key || 'other'
+          const labels = parsed.selected.map((k) => {
+            if (k === otherKey && parsed.other_text) {
+              return `${getOptionLabel(state, question.key, k)}: ${parsed.other_text}`
+            }
+            return getOptionLabel(state, question.key, k)
+          })
+          return labels.length ? labels.join(', ') : t('ui.empty')
+        }
         const arr = Array.isArray(raw) ? raw : (raw ? [raw] : [])
         return arr.length ? arr.map((k) => getOptionLabel(state, question.key, k)).join(', ') : t('ui.empty')
       }
@@ -880,6 +908,7 @@ export function createPinSystem({
       setQuestionValue('reasons', reasons, state.questions, state.questionElements)
       setQuestionValue('group', group ? [group] : [], state.questions, state.questionElements)
       disableQuestions(true, state.questionElements)
+      wizard.reset()
       submitButton.disabled = true
       submitButton.classList.add('is-hidden')
       formContent.classList.add('is-hidden')
@@ -910,6 +939,11 @@ export function createPinSystem({
       form.dataset.y = position.y - slabTopY
       form.dataset.z = position.z
       hasUnsavedFormChanges = false
+      // Step-mode wizard (one question per screen) when configured for this questionnaire.
+      wizard.begin({
+        displayMode: state.displayMode,
+        context: () => ({ questions: state.questions, questionElements: state.questionElements }),
+      })
     }
 
     colorMode.updatePreviewColor()
@@ -925,6 +959,7 @@ export function createPinSystem({
 
   function closeForm() {
     suppressBackdropDismissUntil = 0
+    wizard.reset()
     backdrop.classList.remove('is-visible')
     backdrop.classList.remove('is-longpress')
     form.dataset.floorIndex = ''

@@ -68,6 +68,7 @@ export function createQuestionnaireView() {
           <label class="checkbox-inline"><input type="checkbox" id="newQuestionActive" checked title="Visible to end users" /> Active</label>
           <label class="checkbox-inline slider-color-only"><input type="checkbox" id="newQuestionUseForColor" title="Use this slider to color pins on the map" /> Pin color</label>
           <label class="checkbox-inline multi-only"><input type="checkbox" id="newQuestionSingleChoice" checked title="Only one option can be selected" /> Single choice</label>
+          <label class="checkbox-inline multi-only"><input type="checkbox" id="newQuestionAllowOther" title="Add an &quot;Other&quot; option with a free-text field" /> Allow &quot;Other&quot;</label>
         </div>
         <div class="modal-translations" id="newQuestionTranslations"></div>
         <div class="modal-config-grid slider-range-only">
@@ -92,6 +93,12 @@ export function createQuestionnaireView() {
           <label class="field">
             <span>Rows</span>
             <input type="number" id="newQuestionRows" value="3" title="Height of the text field" />
+          </label>
+        </div>
+        <div class="modal-config-grid multi-only multi-other-only">
+          <label class="field">
+            <span>Other max length</span>
+            <input type="number" id="newQuestionOtherMax" value="500" min="1" title="Maximum characters for the free-text answer" />
           </label>
         </div>
         <div id="questionModalOptions"></div>
@@ -125,6 +132,8 @@ export function createQuestionnaireView() {
     newQuestionDefault: questionnaireCard.querySelector('#newQuestionDefault'),
     newQuestionUseForColor: questionnaireCard.querySelector('#newQuestionUseForColor'),
     newQuestionSingleChoice: questionnaireCard.querySelector('#newQuestionSingleChoice'),
+    newQuestionAllowOther: questionnaireCard.querySelector('#newQuestionAllowOther'),
+    newQuestionOtherMax: questionnaireCard.querySelector('#newQuestionOtherMax'),
     newQuestionRows: questionnaireCard.querySelector('#newQuestionRows'),
     globalColorPaletteOptions: questionnaireCard.querySelector('#globalColorPaletteOptions'),
     saveGlobalColorPaletteButton: questionnaireCard.querySelector('#saveGlobalColorPalette'),

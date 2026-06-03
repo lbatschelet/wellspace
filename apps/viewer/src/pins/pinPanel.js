@@ -47,6 +47,20 @@ export function createPinUi() {
   error.className = 'ui-form-error'
   form.appendChild(error)
 
+  const nav = document.createElement('div')
+  nav.className = 'ui-form-nav is-hidden'
+  const backButton = document.createElement('button')
+  backButton.type = 'button'
+  backButton.className = 'ui-form-back'
+  backButton.textContent = t('ui.back')
+  const nextButton = document.createElement('button')
+  nextButton.type = 'button'
+  nextButton.className = 'ui-form-next'
+  nextButton.textContent = t('ui.next')
+  nav.appendChild(backButton)
+  nav.appendChild(nextButton)
+  form.appendChild(nav)
+
   const submitButton = document.createElement('button')
   submitButton.type = 'submit'
   submitButton.className = 'ui-form-submit'
@@ -61,6 +75,9 @@ export function createPinUi() {
     formContent,
     closeButton,
     submitButton,
+    formNav: nav,
+    backButton,
+    nextButton,
     colorModeRow: modeRow,
     legend,
     ...viewRefs,

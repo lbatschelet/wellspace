@@ -11,15 +11,20 @@ import { toPercentValue, fromPercentValue, getSliderDefault } from '../utils/sli
  * @param {Array} questions - Sorted question definitions.
  * @param {HTMLElement} formContent - Container to append question groups into.
  * @param {Map} questionElements - Map<key, elements> to populate.
+ * @param {object} [options] - { displayMode: 'scroll'|'step' }.
  */
-export function renderQuestions(questions, formContent, questionElements) {
+export function renderQuestions(questions, formContent, questionElements, options = {}) {
   formContent.innerHTML = ''
   questionElements.clear()
 
-  questions.forEach((question) => {
+  const displayMode = options.displayMode === 'step' ? 'step' : 'scroll'
+  formContent.dataset.displayMode = displayMode
+
+  questions.forEach((question, index) => {
     const group = document.createElement('div')
     group.className = 'ui-form-group'
     group.dataset.questionKey = question.key
+    group.dataset.stepIndex = String(index)
 
     const label = document.createElement('div')
     label.className = 'ui-form-question'
@@ -83,9 +88,15 @@ export function renderQuestions(questions, formContent, questionElements) {
       const wrapper = document.createElement('div')
       wrapper.className = 'ui-form-reasons'
       const allowMultiple = Boolean(question.config?.allow_multiple)
+      const allowOther = Boolean(question.config?.allow_other)
+      const otherKey = question.config?.other_option_key || 'other'
+      const otherMax = Number(question.config?.other_max_length) || 500
       const inputType = allowMultiple ? 'checkbox' : 'radio'
-      const options = Array.isArray(question.options) ? question.options : []
-      options.forEach((option) => {
+      const optionDefs = Array.isArray(question.options) ? question.options : []
+      let otherInput = null
+      let otherTextInput = null
+
+      optionDefs.forEach((option) => {
         const optionLabel = document.createElement('label')
         optionLabel.className = 'ui-checkbox'
         const input = document.createElement('input')
@@ -98,8 +109,33 @@ export function renderQuestions(questions, formContent, questionElements) {
         optionLabel.appendChild(text)
         wrapper.appendChild(optionLabel)
         elements.inputs.push({ input, label: text, key: option.key })
+        if (allowOther && option.key === otherKey) {
+          otherInput = input
+        }
       })
       group.appendChild(wrapper)
+
+      if (allowOther) {
+        otherTextInput = document.createElement('input')
+        otherTextInput.type = 'text'
+        otherTextInput.className = 'ui-multi-other-text'
+        otherTextInput.maxLength = otherMax
+        otherTextInput.placeholder = t('ui.otherPlaceholder')
+        otherTextInput.disabled = true
+        group.appendChild(otherTextInput)
+
+        const syncOther = () => {
+          const on = Boolean(otherInput && otherInput.checked)
+          otherTextInput.disabled = !on
+          otherTextInput.classList.toggle('is-active', on)
+          if (!on) otherTextInput.value = ''
+        }
+        // Any change to this question's options re-evaluates the free-text state.
+        elements.inputs.forEach(({ input }) => input.addEventListener('change', syncOther))
+        syncOther()
+
+        elements = { ...elements, allowOther, otherKey, otherInput, otherTextInput, syncOther }
+      }
     }
 
     if (question.type === 'text') {
@@ -246,34 +282,13 @@ export function collectFormData(form, questions, questionElements) {
   for (const question of questions) {
     const elements = questionElements.get(question.key)
     if (!elements) continue
-    if (question.type === 'slider') {
-      answers[question.key] = toPercentValue(elements.input.value, question.config)
+    const value = readAnswer(question, elements)
+    if (value !== undefined) {
+      answers[question.key] = value
     }
-    if (question.type === 'text') {
-      answers[question.key] = elements.input.value.trim()
-    }
-    if (question.type === 'multi') {
-      const allowMultiple = Boolean(question.config?.allow_multiple)
-      const selected = elements.inputs
-        .filter((item) => item.input.checked)
-        .map((item) => item.input.value)
-      answers[question.key] = allowMultiple ? selected : selected[0] || ''
-    }
-
-    if (question.type === 'influence') {
-      const out = {}
-      const rows = elements.optionRows || []
-      for (const row of rows) {
-        if (row.checkbox.checked) {
-          const v = Number(row.slider.value)
-          out[row.key] = Number.isFinite(v) ? Math.round(v * 10000) / 10000 : 0
-        }
-      }
-      answers[question.key] = out
-    }
-
-    if (question.required && isAnswerEmpty(answers[question.key])) {
-      showFormError(form, t('error.required'))
+    const errorKey = validateAnswer(question, elements, value)
+    if (errorKey) {
+      showFormError(form, t(errorKey))
       return null
     }
   }
@@ -299,6 +314,65 @@ export function collectFormData(form, questions, questionElements) {
   }
 
   return result
+}
+
+/**
+ * Reads a single question's current answer value from its DOM elements.
+ * Mirrors the shapes expected by the API payload.
+ * @returns {*} The answer value, or undefined if the question has no inputs.
+ */
+export function readAnswer(question, elements) {
+  if (!elements) return undefined
+  if (question.type === 'slider') {
+    return toPercentValue(elements.input.value, question.config)
+  }
+  if (question.type === 'text') {
+    return elements.input.value.trim()
+  }
+  if (question.type === 'multi') {
+    const selected = elements.inputs
+      .filter((item) => item.input.checked)
+      .map((item) => item.input.value)
+    if (elements.allowOther) {
+      const otherSelected = selected.includes(elements.otherKey)
+      const otherText = (elements.otherTextInput?.value || '').trim()
+      const value = { selected }
+      if (otherSelected) value.other_text = otherText
+      return value
+    }
+    const allowMultiple = Boolean(question.config?.allow_multiple)
+    return allowMultiple ? selected : selected[0] || ''
+  }
+  if (question.type === 'influence') {
+    const out = {}
+    const rows = elements.optionRows || []
+    for (const row of rows) {
+      if (row.checkbox.checked) {
+        const v = Number(row.slider.value)
+        out[row.key] = Number.isFinite(v) ? Math.round(v * 10000) / 10000 : 0
+      }
+    }
+    return out
+  }
+  return undefined
+}
+
+/**
+ * Validates a single question's answer.
+ * @returns {string|null} An i18n error key, or null when valid.
+ */
+export function validateAnswer(question, elements, value) {
+  if (question.type === 'multi' && elements?.allowOther) {
+    const selected = Array.isArray(value?.selected) ? value.selected : []
+    const otherSelected = selected.includes(elements.otherKey)
+    if (otherSelected && (!value.other_text || value.other_text === '')) {
+      return 'error.otherRequired'
+    }
+  }
+  if (question.required && isAnswerEmpty(value)) {
+    return 'error.required'
+  }
+  return null
 }
 
 /**
@@ -341,6 +415,20 @@ export function setQuestionValue(key, value, questions, questionElements) {
     }
     return
   }
+  // Extended multi answer: { selected: [...], other_text?: "..." }.
+  if (value && typeof value === 'object' && !Array.isArray(value) && Array.isArray(value.selected)) {
+    const selected = value.selected
+    elements.inputs.forEach((item) => {
+      item.input.checked = selected.includes(item.input.value)
+    })
+    if (elements.otherTextInput) {
+      const otherOn = Boolean(elements.otherInput && elements.otherInput.checked)
+      elements.otherTextInput.value = otherOn ? (value.other_text || '') : ''
+      elements.otherTextInput.disabled = !otherOn
+      elements.otherTextInput.classList.toggle('is-active', otherOn)
+    }
+    return
+  }
   if (Array.isArray(value)) {
     elements.inputs.forEach((item) => {
       item.input.checked = value.includes(item.input.value)
@@ -350,6 +438,7 @@ export function setQuestionValue(key, value, questions, questionElements) {
       item.input.checked = item.input.value === value
     })
   }
+  if (typeof elements.syncOther === 'function') elements.syncOther()
 }
 
 /**
@@ -363,6 +452,10 @@ export function disableQuestions(disabled, questionElements) {
     elements.inputs?.forEach((item) => {
       item.input.disabled = disabled
     })
+    if (elements.otherTextInput) {
+      const otherOn = Boolean(elements.otherInput && elements.otherInput.checked)
+      elements.otherTextInput.disabled = disabled || !otherOn
+    }
     elements.optionRows?.forEach((row) => {
       row.checkbox.disabled = disabled
       row.slider.disabled = disabled || !row.checkbox.checked
@@ -388,6 +481,10 @@ export function isAnswerEmpty(value) {
   if (value === null || value === undefined) return true
   if (typeof value === 'string') return value.trim().length === 0
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    // Extended multi answer: { selected: [...], other_text?: "..." }.
+    if (Array.isArray(value.selected)) {
+      return value.selected.length === 0
+    }
     return Object.keys(value).length === 0
   }
   return false

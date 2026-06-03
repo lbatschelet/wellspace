@@ -62,6 +62,8 @@ export function createQuestionnaireRender({ state, views }) {
     v.newQuestionActive.checked = Boolean(question.is_active)
     v.newQuestionUseForColor.checked = Boolean(question.config?.use_for_color)
     v.newQuestionSingleChoice.checked = !question.config?.allow_multiple
+    if (v.newQuestionAllowOther) v.newQuestionAllowOther.checked = Boolean(question.config?.allow_other)
+    if (v.newQuestionOtherMax) v.newQuestionOtherMax.value = question.config?.other_max_length ?? 500
 
     if (question.type === 'slider') {
       v.newQuestionMin.value = question.config?.min ?? 0
@@ -97,6 +99,8 @@ export function createQuestionnaireRender({ state, views }) {
     v.newQuestionActive.checked = true
     v.newQuestionUseForColor.checked = false
     v.newQuestionSingleChoice.checked = true
+    if (v.newQuestionAllowOther) v.newQuestionAllowOther.checked = false
+    if (v.newQuestionOtherMax) v.newQuestionOtherMax.value = '500'
     v.newQuestionMin.value = '0'
     v.newQuestionMax.value = '1'
     v.newQuestionStep.value = '0.01'
@@ -293,9 +297,11 @@ export function createQuestionnaireRender({ state, views }) {
         node.style.display = condition ? (isInline ? 'inline-flex' : 'grid') : 'none'
       })
     }
+    const allowOther = Boolean(questionnaireView.newQuestionAllowOther?.checked)
     showIf('.slider-color-only', type === 'slider')
     showIf('.slider-range-only', type === 'slider' || type === 'influence')
     showIf('.multi-only', type === 'multi')
+    showIf('.multi-other-only', type === 'multi' && allowOther)
     showIf('.text-only', type === 'text')
   }
 

@@ -108,6 +108,8 @@ export function createQuestionnaireController({ state, views, api, shell, render
         default: v.newQuestionDefault.value,
         use_for_color: v.newQuestionUseForColor.checked,
         single_choice: v.newQuestionSingleChoice.checked,
+        allow_other: v.newQuestionAllowOther?.checked,
+        other_max_length: v.newQuestionOtherMax?.value,
         rows: v.newQuestionRows.value,
       },
     })
@@ -162,6 +164,14 @@ export function createQuestionnaireController({ state, views, api, shell, render
     }
     if (question.type === 'multi') {
       updated.config.allow_multiple = !v.newQuestionSingleChoice.checked
+      updated.config.allow_other = Boolean(v.newQuestionAllowOther?.checked)
+      if (updated.config.allow_other) {
+        updated.config.other_option_key = 'other'
+        updated.config.other_max_length = Number(v.newQuestionOtherMax?.value) || 500
+      } else {
+        delete updated.config.other_option_key
+        delete updated.config.other_max_length
+      }
     }
     if (question.type === 'text') {
       updated.config.rows = Number(v.newQuestionRows.value)
@@ -190,6 +200,9 @@ export function createQuestionnaireController({ state, views, api, shell, render
     try {
       await actions.saveSingleQuestion(updated, translationsByLang)
       await actions.saveOptionTranslationsFromModal(v.questionModalOptions)
+      if (updated.type === 'multi' && updated.config.allow_other) {
+        await actions.ensureOtherOption(editingQuestionKey, updated.config.other_option_key || 'other')
+      }
       closeModal()
       shell.setStatus('Question saved', false)
       await actions.reloadAndRender()
@@ -354,6 +367,9 @@ export function createQuestionnaireController({ state, views, api, shell, render
         render.renderNewQuestionTranslations(v.newQuestionType.value)
         render.renderCreateOptionsHint(type)
       }
+    })
+    views.questionnaireView.newQuestionAllowOther?.addEventListener('change', () => {
+      render.renderCreateFormVisibility()
     })
     views.questionnaireView.addQuestionButton.addEventListener('click', handleModalSave)
     views.questionnaireView.deleteQuestionButton.addEventListener('click', () => {

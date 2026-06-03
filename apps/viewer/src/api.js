@@ -82,7 +82,27 @@ export async function fetchQuestionnaire({ key, lang }) {
   if (!response.ok) {
     throw new Error(await parseError(response))
   }
-  return response.json()
+  return normalizeQuestionnaireResponse(await response.json())
+}
+
+/**
+ * Normalizes the questionnaire endpoint response into a stable shape.
+ * Supports both the legacy flat array (questions only) and the new object
+ * `{ display_mode, questions }`.
+ *
+ * @param {Array|Object} data
+ * @returns {{ questions: Array, displayMode: 'scroll'|'step' }}
+ */
+export function normalizeQuestionnaireResponse(data) {
+  if (Array.isArray(data)) {
+    return { questions: data, displayMode: 'scroll' }
+  }
+  if (data && typeof data === 'object') {
+    const questions = Array.isArray(data.questions) ? data.questions : []
+    const displayMode = data.display_mode === 'step' ? 'step' : 'scroll'
+    return { questions, displayMode }
+  }
+  return { questions: [], displayMode: 'scroll' }
 }
 
 async function parseError(response) {

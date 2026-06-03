@@ -76,6 +76,9 @@ export function createQuestionnairesController({ state, views, api, shell, quest
     view.keyInput.readOnly = questionnaire ? parseInt(questionnaire.is_default) : false
     view.nameInput.value = questionnaire ? questionnaire.name : ''
     view.descInput.value = questionnaire ? (questionnaire.description || '') : ''
+    if (view.displayModeInput) {
+      view.displayModeInput.value = questionnaire?.display_mode === 'step' ? 'step' : 'scroll'
+    }
     view.activeCheck.checked = questionnaire ? parseInt(questionnaire.is_active) : true
 
     if (questionnaire) {
@@ -292,6 +295,7 @@ export function createQuestionnairesController({ state, views, api, shell, quest
       questionnaire_key: view.keyInput.value.trim(),
       name: view.nameInput.value.trim(),
       description: view.descInput.value.trim() || null,
+      display_mode: view.displayModeInput?.value === 'step' ? 'step' : 'scroll',
       is_active: view.activeCheck.checked,
     }
     const id = view.idInput.value ? parseInt(view.idInput.value) : null

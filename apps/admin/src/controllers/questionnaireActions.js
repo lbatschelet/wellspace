@@ -19,6 +19,11 @@ export function buildQuestionConfig({ type, values }) {
   }
   if (type === 'multi') {
     config.allow_multiple = !values.single_choice
+    config.allow_other = Boolean(values.allow_other)
+    if (config.allow_other) {
+      config.other_option_key = 'other'
+      config.other_max_length = Number(values.other_max_length) || 500
+    }
   }
   if (type === 'influence') {
     config.min = Number(values.min ?? -1)
@@ -115,6 +120,46 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
   }
 
   /**
+   * Ensures a multi question with allow_other has a real "other" option row
+   * (so the viewer renders it and its label is translatable). Creates a default
+   * DE/EN label when the option is newly added.
+   */
+  const ensureOtherOption = async (questionKey, otherKey = 'other') => {
+    const exists = state.options.some(
+      (item) => item.question_key === questionKey && item.option_key === otherKey
+    )
+    if (exists) return
+    const maxSort = Math.max(
+      0,
+      ...state.options
+        .filter((item) => item.question_key === questionKey)
+        .map((item) => Number(item.sort || 0))
+    )
+    const translationKey = `options.${questionKey}.${otherKey}`
+    await api.upsertOption({
+      token: state.token,
+      question_key: questionKey,
+      option_key: otherKey,
+      sort: maxSort + 1,
+      is_active: true,
+      translation_key: translationKey,
+    })
+    const defaults = { de: 'Sonstiges', en: 'Other' }
+    for (const language of state.languages) {
+      const text = defaults[language.lang]
+      if (!text) continue
+      await api.upsertTranslation({
+        token: state.token,
+        translation_key: translationKey,
+        lang: language.lang,
+        text,
+      })
+    }
+    await data.loadOptions()
+    await data.loadTranslations()
+  }
+
+  /**
    * Deletes a question from the backend.
    */
   const deleteQuestion = async (questionKey) => {
@@ -206,6 +251,8 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
       newQuestionDefault,
       newQuestionUseForColor,
       newQuestionSingleChoice,
+      newQuestionAllowOther,
+      newQuestionOtherMax,
       newQuestionRows,
       newQuestionType,
     } = views.questionnaireView
@@ -218,6 +265,8 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
     newQuestionDefault.value = '0.5'
     newQuestionUseForColor.checked = false
     newQuestionSingleChoice.checked = true
+    if (newQuestionAllowOther) newQuestionAllowOther.checked = false
+    if (newQuestionOtherMax) newQuestionOtherMax.value = '500'
     newQuestionRows.value = '3'
     render.renderNewQuestionTranslations(newQuestionType.value)
   }
@@ -226,6 +275,7 @@ export function createQuestionnaireActions({ state, views, api, shell, data, ren
     saveOptionOrder,
     saveSingleQuestion,
     saveOptionTranslationsFromModal,
+    ensureOtherOption,
     deleteQuestion,
     reloadAndRender,
     collectNewQuestionTranslations,
