@@ -71,4 +71,8 @@ Manueller Hostinger-Publish (beliebige Brand): [.github/workflows/publish-hostin
 
 ### Server
 
-Site-Ordner im Infomaniak-Manager oder per SSH: `~/sites/wohlopti.ch/`. Document root zeigt auf diesen Ordner; nach dem ersten Deploy liegen dort u. a. `index.html`, `admin/`, `api/`, `models/`.
+Site-Ordner: `/home/uid373276/sites/wohlopti.ch/` (im Manager unter Hosting → **Mehr Informationen** den absoluten Pfad prüfen).
+
+Fehler `mkdir …/wohlopti.ch failed: No such file or directory`: Site im Infomaniak-Manager anlegen oder Ordner `sites/wohlopti.ch` existiert noch nicht — der Workflow führt vor dem rsync `mkdir -p` aus. Wenn das fehlschlägt, zuerst die Domain/Site im Manager zu diesem Hosting hinzufügen.
+
+Nach erfolgreichen Deploy: `index.html`, `admin/`, `api/`, `models/`, …

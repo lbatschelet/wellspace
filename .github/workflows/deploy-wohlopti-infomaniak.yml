@@ -134,6 +134,10 @@ jobs:
             trap 'rm -f "$PASS_FILE"' EXIT
           fi
 
+          TARGET="${SSH_TARGET%/}"
+          # Site folder may not exist until first deploy (Infomaniak Manager or mkdir -p).
+          $RSYNC_RSH "${SSH_USER}@${SSH_HOST}" "mkdir -p $(printf '%q' "$TARGET")"
+
           rsync -avz --delete \
             -e "$RSYNC_RSH" \
-            deploy-root/ "${SSH_USER}@${SSH_HOST}:${SSH_TARGET}/"
+            deploy-root/ "${SSH_USER}@${SSH_HOST}:${TARGET}/"
