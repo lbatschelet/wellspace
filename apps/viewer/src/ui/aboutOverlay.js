@@ -36,8 +36,55 @@ export function createAboutOverlay() {
     if (event.target === backdrop) hide()
   })
 
+  let isVisible = false
+
+  const resetViewportStyles = () => {
+    dialog.style.maxHeight = ''
+    backdrop.style.paddingTop = ''
+  }
+
+  const observer = new MutationObserver(() => {
+    const nowVisible = backdrop.classList.contains('is-visible')
+    if (nowVisible && !isVisible) {
+      isVisible = true
+    } else if (!nowVisible && isVisible) {
+      isVisible = false
+      window.scrollTo(0, 0)
+      resetViewportStyles()
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  })
+  observer.observe(backdrop, { attributes: true, attributeFilter: ['class'] })
+
+  window.addEventListener('scroll', () => {
+    if (isVisible) window.scrollTo(0, 0)
+  }, { passive: true })
+
+  if (window.visualViewport) {
+    const syncToViewport = () => {
+      if (!isVisible) return
+      window.scrollTo(0, 0)
+      const vv = window.visualViewport
+      const insetTop = Math.max(0, vv.offsetTop)
+      backdrop.style.paddingTop = (insetTop + 12) + 'px'
+      dialog.style.maxHeight = Math.max(120, vv.height - insetTop - 24) + 'px'
+    }
+    window.visualViewport.addEventListener('resize', syncToViewport)
+    window.visualViewport.addEventListener('scroll', syncToViewport)
+  }
+
   function show() {
+    window.scrollTo(0, 0)
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
     backdrop.classList.add('is-visible')
+    if (window.visualViewport) {
+      const vv = window.visualViewport
+      const insetTop = Math.max(0, vv.offsetTop)
+      backdrop.style.paddingTop = (insetTop + 12) + 'px'
+      dialog.style.maxHeight = Math.max(120, vv.height - insetTop - 24) + 'px'
+    }
   }
 
   function hide() {
