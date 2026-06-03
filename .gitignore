@@ -1,5 +1,6 @@
 .DS_Store
 *.local
+infomaniak-deploy.env
 
 # Node
 node_modules/

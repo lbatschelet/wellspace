@@ -1,0 +1,117 @@
+name: Deploy wohlopti to Infomaniak
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'brands/wohlopti/**'
+      - 'services/api/**'
+      - 'infra/**'
+      - '.github/workflows/deploy-wohlopti-infomaniak.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-wohlopti-infomaniak-${{ github.repository }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BRAND: wohlopti
+  # Infomaniak site root for wohlopti.ch (public path; credentials via secrets)
+  SSH_TARGET_PATH: /home/uid373276/sites/wohlopti.ch/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build + rsync → wohlopti.ch
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check required secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          missing=0
+          [ -n "$SSH_HOST" ] || { echo "::error::Secret fehlt: SSH_HOST"; missing=1; }
+          [ -n "$SSH_USER" ] || { echo "::error::Secret fehlt: SSH_USERNAME"; missing=1; }
+          [ -n "$SSH_PASS" ] || { echo "::error::Secret fehlt: SSH_PASSWORD"; missing=1; }
+          exit "$missing"
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (viewer + admin + issue + API tree)
+        env:
+          BRAND: wohlopti
+          APP: all
+        run: pnpm run build
+
+      - name: Prepare deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-root
+          mkdir -p deploy-root
+          # rsync (not cp) so dotfiles like .htaccess are included (SPA /s/… routes).
+          rsync -a dist/ deploy-root/
+          mkdir -p deploy-root/api
+          rsync -a --delete \
+            --exclude='config.local.php' \
+            --exclude='.gitignore' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='vendor' \
+            services/api/ deploy-root/api/
+          rm -f deploy-root/api/.gitignore
+
+      - name: Composer install (API vendor)
+        working-directory: services/api
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: Copy API vendor into deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deploy-root/api/vendor
+          cp -R services/api/vendor/* deploy-root/api/vendor/
+
+      - name: Install rsync + sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync sshpass
+
+      - name: Deploy via SSH (rsync)
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_TARGET: ${{ env.SSH_TARGET_PATH }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          rsync -avz --delete \
+            -e "sshpass -e ssh -p ${PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null" \
+            deploy-root/ "${SSH_USER}@${SSH_HOST}:${SSH_TARGET}/"

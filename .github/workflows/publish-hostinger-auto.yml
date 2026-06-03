@@ -26,9 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - brand: wohlopti
-            app: all
-            deploy_branch: deploy/wohlopti
+          # wohlopti → Infomaniak (.github/workflows/deploy-wohlopti-infomaniak.yml)
           - brand: feelvonroll
             app: all
             deploy_branch: deploy/feelvonroll

@@ -92,7 +92,8 @@ cd services/api && composer test
 
 ## Deployment
 
-GitHub Actions support building `feelvonroll` / `wohlopti` and publishing Hostinger-style deploy branches. See `.github/workflows/`.
+- **wohlopti.ch** → Infomaniak via GitHub Actions ([`DEPLOY.md`](DEPLOY.md), workflow `deploy-wohlopti-infomaniak.yml`).
+- **feelvonRoll** → Hostinger deploy branch (`publish-hostinger-auto.yml`). See `.github/workflows/`.
 
 Deploy the PHP API beside the static apps; frontends resolve the API URL from brand config unless overridden at build time.
 
