@@ -112,6 +112,17 @@ export function renderQuestions(questions, formContent, questionElements, option
       })
 
       if (allowOther) {
+        const otherRow = document.createElement('div')
+        otherRow.className = 'ui-multi-other-row'
+
+        const otherControl = document.createElement('label')
+        otherControl.className = 'ui-checkbox ui-multi-other-control'
+        const otherInput = document.createElement('input')
+        otherInput.type = inputType
+        otherInput.name = question.key
+        otherInput.value = otherKey
+        otherControl.appendChild(otherInput)
+
         otherTextInput = document.createElement('input')
         otherTextInput.type = 'text'
         otherTextInput.className = 'ui-multi-other-text'
@@ -119,21 +130,42 @@ export function renderQuestions(questions, formContent, questionElements, option
         otherTextInput.placeholder =
           question.other_placeholder || t('ui.otherPlaceholder')
         otherTextInput.setAttribute('aria-label', otherTextInput.placeholder)
-        wrapper.appendChild(otherTextInput)
+
+        otherRow.appendChild(otherControl)
+        otherRow.appendChild(otherTextInput)
+        wrapper.appendChild(otherRow)
+        elements.inputs.push({ input: otherInput, key: otherKey })
 
         const clearOtherField = () => {
+          otherInput.checked = false
           otherTextInput.value = ''
           otherTextInput.classList.remove('is-active')
         }
 
         const activateOtherField = () => {
+          otherInput.checked = true
           otherTextInput.classList.add('is-active')
           if (!allowMultiple) {
             elements.inputs.forEach(({ input }) => {
-              input.checked = false
+              if (input !== otherInput) input.checked = false
             })
           }
         }
+
+        otherInput.addEventListener('change', () => {
+          if (otherInput.checked) {
+            otherTextInput.classList.add('is-active')
+            otherTextInput.focus()
+            if (!allowMultiple) {
+              elements.inputs.forEach(({ input }) => {
+                if (input !== otherInput) input.checked = false
+              })
+            }
+          } else {
+            otherTextInput.value = ''
+            otherTextInput.classList.remove('is-active')
+          }
+        })
 
         otherTextInput.addEventListener('focus', activateOtherField)
         otherTextInput.addEventListener('input', () => {
@@ -144,6 +176,7 @@ export function renderQuestions(questions, formContent, questionElements, option
         })
 
         elements.inputs.forEach(({ input }) => {
+          if (input === otherInput) return
           input.addEventListener('change', () => {
             if (!input.checked) return
             clearOtherField()
@@ -154,6 +187,7 @@ export function renderQuestions(questions, formContent, questionElements, option
           ...elements,
           allowOther,
           otherKey,
+          otherInput,
           otherTextInput,
           allowMultiple,
         }
@@ -472,8 +506,9 @@ export function setQuestionValue(key, value, questions, questionElements) {
       elements.otherTextInput.classList.toggle('is-active', otherOn)
       if (otherOn && !allowMultiple) {
         elements.inputs.forEach((item) => {
-          item.input.checked = false
+          if (item.input.value !== elements.otherKey) item.input.checked = false
         })
+        if (elements.otherInput) elements.otherInput.checked = true
       }
     }
     return

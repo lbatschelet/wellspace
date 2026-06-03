@@ -832,7 +832,19 @@ canvas {
   font-weight: 400;
 }
 
+.ui-multi-other-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui-multi-other-control {
+  flex-shrink: 0;
+}
+
 .ui-multi-other-text {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   box-sizing: border-box;
   border-radius: 10px;

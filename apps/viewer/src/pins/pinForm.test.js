@@ -69,7 +69,7 @@ describe('isAnswerEmpty', () => {
 })
 
 describe('multi with allow_other', () => {
-  it('renders options in a vertical list without a separate "other" checkbox', () => {
+  it('renders a vertical list with radio left of the inline other text field', () => {
     const { content } = makeForm()
     const elements = new Map()
     renderQuestions(
@@ -79,11 +79,17 @@ describe('multi with allow_other', () => {
     )
 
     expect(content.querySelector('.ui-form-reasons')).not.toBeNull()
-    expect(content.querySelector('input[value="other"]')).toBeNull()
+    expect(content.querySelector('.ui-multi-other-row')).not.toBeNull()
+
+    const otherRadio = content.querySelector('input[value="other"]')
+    expect(otherRadio).not.toBeNull()
+    expect(otherRadio.type).toBe('checkbox')
+
     const otherText = content.querySelector('.ui-multi-other-text')
     expect(otherText).not.toBeNull()
     expect(otherText.disabled).toBe(false)
     expect(otherText.placeholder).toBe('Bitte angeben…')
+    expect(otherRadio.closest('.ui-multi-other-row')).toBe(otherText.closest('.ui-multi-other-row'))
   })
 
   it('does not render a free-text input without allow_other', () => {
