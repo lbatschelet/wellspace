@@ -43,6 +43,7 @@ export function createPinSystem({
   getPinLift,
   questions,
   requestFrame,
+  waitForStationQuestionnaire = () => Promise.resolve(),
 }) {
   const state = createPinState(getSelectedFloor())
   const pinsByFloor = new Map()
@@ -899,6 +900,16 @@ export function createPinSystem({
     clearFormError(form)
     form.dataset.mode = pin ? 'view' : 'create'
     state.viewPin = pin || null
+
+    // Station URL: wait for the station questionnaire before rendering the create form.
+    if (!pin && form.dataset.stationKey) {
+      try {
+        await waitForStationQuestionnaire()
+      } catch {
+        // bootStationMode logs errors; avoid showing a mismatched default questionnaire.
+      }
+      if (token !== viewLoadToken) return
+    }
 
     if (pin) {
       // Ensure we show labels/options from the right questionnaire (station-specific).

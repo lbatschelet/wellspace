@@ -544,6 +544,9 @@ function tick() {
 }
 
 // ── Pin system ──────────────────────────────────────────────
+/** Resolves when the station questionnaire has been loaded (station URLs only). */
+let stationQuestionnaireBoot = Promise.resolve()
+
 const pinSystem = createPinSystem({
   scene,
   camera,
@@ -562,6 +565,7 @@ const pinSystem = createPinSystem({
   getPinScale: () => resolvePinScale(),
   getPinLift: () => resolvePinLift(),
   questions: [],
+  waitForStationQuestionnaire: () => stationQuestionnaireBoot,
 })
 app.appendChild(pinSystem.ui)
 
@@ -610,7 +614,7 @@ onLanguageChange((language) => {
   // Keep the currently active questionnaire stable.
   // In station mode, reload the station-specific questionnaire instead of overwriting with "default".
   if (stationKey) {
-    bootStationMode(stationKey)
+    stationQuestionnaireBoot = bootStationMode(stationKey)
   } else {
     loadQuestions(language)
   }
@@ -631,7 +635,7 @@ loadLanguages()
 if (captureMode) {
   bootCaptureMode()
 } else if (stationKey) {
-  bootStationMode(stationKey)
+  stationQuestionnaireBoot = bootStationMode(stationKey)
 } else {
   loadQuestions(getLanguage())
   fetchQuestions({ lang: getLanguage() })
@@ -895,23 +899,29 @@ async function bootStationMode(key) {
       pinSystem.setGlobalColorQuestions(globalQuestions)
     }
 
-    // Load station-specific questionnaire
+    // Load station-specific questionnaire (never fall back to "default" here —
+    // that showed the wrong questions, e.g. "reasons" instead of the station's slots).
     const questionnaireKey = station.questionnaire_key || 'default'
     try {
       const qnr = await fetchQuestionnaire({ key: questionnaireKey, lang })
-      if (Array.isArray(qnr.questions)) {
+      if (Array.isArray(qnr.questions) && qnr.questions.length > 0) {
         pinSystem.setQuestions(qnr.questions, questionnaireKey, qnr.displayMode)
         return
       }
+      console.error(
+        '[Wellspace viewer] Station questionnaire returned no questions:',
+        { station: key, questionnaireKey, qnr }
+      )
     } catch (err) {
-      console.warn('[Wellspace viewer] Station questionnaire failed:', err)
+      console.error(
+        '[Wellspace viewer] Station questionnaire failed:',
+        { station: key, questionnaireKey },
+        err
+      )
     }
   } catch (error) {
-    console.warn('[Wellspace viewer] Failed to load station:', error)
+    console.error('[Wellspace viewer] Failed to load station:', key, error)
   }
-
-  // Fallback: load default questions
-  loadQuestions(lang)
 }
 
 // ── Floor visibility ────────────────────────────────────────
