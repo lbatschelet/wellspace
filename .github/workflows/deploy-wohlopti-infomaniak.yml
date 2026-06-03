@@ -39,11 +39,15 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USERNAME }}
           SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           missing=0
           [ -n "$SSH_HOST" ] || { echo "::error::Secret fehlt: SSH_HOST"; missing=1; }
           [ -n "$SSH_USER" ] || { echo "::error::Secret fehlt: SSH_USERNAME"; missing=1; }
-          [ -n "$SSH_PASS" ] || { echo "::error::Secret fehlt: SSH_PASSWORD"; missing=1; }
+          if [ -z "$SSH_PASS" ] && [ -z "$SSH_KEY" ]; then
+            echo "::error::Secret fehlt: SSH_PASSWORD oder SSH_PRIVATE_KEY"
+            missing=1
+          fi
           exit "$missing"
 
       - uses: shivammathur/setup-php@v2
@@ -105,6 +109,7 @@ jobs:
       - name: Deploy via SSH (rsync)
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USERNAME }}
           SSH_TARGET: ${{ env.SSH_TARGET_PATH }}
@@ -112,6 +117,23 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${SSH_PORT:-22}"
+          SSH_BASE="-p ${PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+
+          if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            RSYNC_RSH="ssh ${SSH_BASE} -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
+          else
+            # Trim accidental newlines from gh secret set -f / .env files
+            export SSHPASS="$(printf '%s' "${SSHPASS}" | tr -d '\r\n')"
+            PASS_FILE="$(mktemp)"
+            chmod 600 "$PASS_FILE"
+            printf '%s' "$SSHPASS" > "$PASS_FILE"
+            RSYNC_RSH="sshpass -f ${PASS_FILE} ssh ${SSH_BASE} -o PreferredAuthentications=password -o PubkeyAuthentication=no"
+            trap 'rm -f "$PASS_FILE"' EXIT
+          fi
+
           rsync -avz --delete \
-            -e "sshpass -e ssh -p ${PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null" \
+            -e "$RSYNC_RSH" \
             deploy-root/ "${SSH_USER}@${SSH_HOST}:${SSH_TARGET}/"

@@ -40,10 +40,28 @@ Erforderlich im Repo:
 
 - `SSH_HOST`
 - `SSH_USERNAME`
-- `SSH_PASSWORD`
+- **`SSH_PASSWORD`** *oder* **`SSH_PRIVATE_KEY`** (empfohlen für CI)
 - optional `SSH_PORT`
 
 Der Zielpfad für wohlopti ist im Workflow als `SSH_TARGET_PATH` hinterlegt (`/home/uid373276/sites/wohlopti.ch/`). `SSH_TARGET_PATH` im Secret ist nur für andere/generic Workflows relevant.
+
+#### SSH-Key (empfohlen)
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/wohlopti_infomaniak -N ""
+# Public key auf dem Server in ~/.ssh/authorized_keys (chmod 600)
+# Infomaniak: https://www.infomaniak.com/en/support/faq/2054/connect-with-ssh-key
+gh secret set SSH_PRIVATE_KEY -R lbatschelet/wellspace < ~/.ssh/wohlopti_infomaniak
+```
+
+#### Fehler «Permission denied» beim rsync
+
+Build war OK, nur SSH schlägt fehl. Typische Ursachen:
+
+1. **Falsches Passwort** — im Infomaniak-Manager unter **Hosting → FTP / SSH** das Passwort des **FTP+SSH-Benutzers** (`uid373276`), nicht das Login-Passwort des Infomaniak-Kontos.
+2. **Sonderzeichen im Passwort** — Secret neu setzen; der Workflow nutzt `sshpass -f` (robuster als `-e`).
+3. **SSH-Key statt Passwort** — `SSH_PRIVATE_KEY` setzen (ed25519, kein RSA).
+4. **Lokal testen:** `ssh uid373276@u58gso.ftp.infomaniak.com` — erst wenn das klappt, erneut den Workflow starten.
 
 ### feelvonRoll
 
