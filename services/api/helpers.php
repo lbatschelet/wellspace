@@ -17,3 +17,4 @@ require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/audit.php';
 require_once __DIR__ . '/lib/json.php';
 require_once __DIR__ . '/lib/admin_app_public_url.php';
+require_once __DIR__ . '/lib/answer_codec.php';

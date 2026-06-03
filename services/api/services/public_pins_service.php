@@ -204,6 +204,12 @@ function public_pins_store_generic_answers(PDO $pdo, int $pinId, array $genericA
 
         if ($type === 'influence') {
             $answerText = public_pins_normalize_influence_json($pdo, $qKey, $value, $config);
+        } elseif ($type === 'multi') {
+            $answerText = public_pins_normalize_multi_json($pdo, $qKey, $value, $config);
+            // Skip empty multi answers (no selection, no free text) so they read as unanswered.
+            if ($answerText === null) {
+                continue;
+            }
         } elseif (is_string($value)) {
             $answerText = $value;
         } elseif (is_numeric($value)) {
@@ -219,6 +225,105 @@ function public_pins_store_generic_answers(PDO $pdo, int $pinId, array $genericA
             'answer_numeric' => $answerNumeric,
         ]);
     }
+}
+
+/**
+ * Normalizes a multiple-choice answer into a JSON string for pin_answers.answer_text.
+ *
+ * Accepts:
+ *   - array of selected option keys (multi-select)
+ *   - string single option key (single-select)
+ *   - object { selected: [...], other_text: "..." } (extended with "other" free text)
+ *
+ * Output JSON shape: { "selected": [...], "other_text"?: "..." }
+ * Returns null when nothing is selected and no free text is present (skip storing).
+ *
+ * @param mixed $value
+ * @return string|null
+ */
+function public_pins_normalize_multi_json(PDO $pdo, string $qKey, $value, array $config): ?string
+{
+    $allowOther = !empty($config['allow_other']);
+    $otherKey = isset($config['other_option_key']) && is_string($config['other_option_key']) && $config['other_option_key'] !== ''
+        ? $config['other_option_key']
+        : 'other';
+    $otherMax = isset($config['other_max_length']) ? intval($config['other_max_length']) : 500;
+    if ($otherMax <= 0) {
+        $otherMax = 500;
+    }
+
+    $selected = [];
+    $otherText = null;
+
+    if (is_string($value)) {
+        if (trim($value) !== '') {
+            $selected[] = trim($value);
+        }
+    } elseif (is_array($value)) {
+        $isAssoc = array_keys($value) !== range(0, count($value) - 1);
+        if ($isAssoc) {
+            $rawSelected = isset($value['selected']) && is_array($value['selected']) ? $value['selected'] : [];
+            foreach ($rawSelected as $opt) {
+                if (is_string($opt) && trim($opt) !== '') {
+                    $selected[] = trim($opt);
+                }
+            }
+            if (isset($value['other_text']) && is_string($value['other_text'])) {
+                $otherText = $value['other_text'];
+            }
+        } else {
+            foreach ($value as $opt) {
+                if (is_string($opt) && trim($opt) !== '') {
+                    $selected[] = trim($opt);
+                }
+            }
+        }
+    } else {
+        json_error("Invalid answer for $qKey", 400);
+    }
+
+    $selected = array_values(array_unique($selected));
+
+    // Validate option keys against the question's active options.
+    if (!empty($selected)) {
+        $placeholders = implode(',', array_fill(0, count($selected), '?'));
+        $stmt = $pdo->prepare(
+            "SELECT option_key FROM question_options
+             WHERE question_key = ? AND is_active = 1 AND option_key IN ($placeholders)"
+        );
+        $stmt->execute(array_merge([$qKey], $selected));
+        $valid = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (count($valid) !== count($selected)) {
+            json_error("Invalid option for $qKey", 400);
+        }
+    }
+
+    $hasOther = in_array($otherKey, $selected, true);
+    if ($hasOther && !$allowOther) {
+        json_error("Free-text option not allowed for $qKey", 400);
+    }
+
+    if ($hasOther) {
+        $otherText = is_string($otherText) ? trim($otherText) : '';
+        if ($otherText === '') {
+            json_error("Missing free-text answer for $qKey", 400);
+        }
+        if (mb_strlen($otherText) > $otherMax) {
+            json_error("Free-text answer too long for $qKey", 400);
+        }
+    } else {
+        $otherText = null;
+    }
+
+    if (empty($selected) && $otherText === null) {
+        return null;
+    }
+
+    $out = ['selected' => $selected];
+    if ($otherText !== null) {
+        $out['other_text'] = $otherText;
+    }
+    return json_encode($out, JSON_UNESCAPED_UNICODE);
 }
 
 /**
@@ -298,6 +403,8 @@ function public_pins_attach_generic_answers(PDO $pdo, array &$pins): void
     $stmt->execute($ids);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $types = pin_answers_load_types($pdo, array_map(fn($r) => (string)($r['question_key'] ?? ''), $rows));
+
     $byPin = [];
     foreach ($rows as $r) {
         $pinId = intval($r['pin_id'] ?? 0);
@@ -306,7 +413,7 @@ function public_pins_attach_generic_answers(PDO $pdo, array &$pins): void
         if ($qKey === '') continue;
         $val = null;
         if (isset($r['answer_text']) && $r['answer_text'] !== null && $r['answer_text'] !== '') {
-            $val = $r['answer_text'];
+            $val = pin_answers_decode_value($types[$qKey] ?? null, $r['answer_text']);
         } elseif (isset($r['answer_numeric']) && $r['answer_numeric'] !== null && $r['answer_numeric'] !== '') {
             $val = floatval($r['answer_numeric']);
         }

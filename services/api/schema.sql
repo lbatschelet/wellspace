@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS questionnaires (
   description TEXT,
   is_default TINYINT(1) NOT NULL DEFAULT 0,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  display_mode VARCHAR(16) NOT NULL DEFAULT 'scroll',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_questionnaire_key (questionnaire_key)
