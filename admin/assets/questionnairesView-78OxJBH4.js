@@ -1,4 +1,4 @@
-import{i as t}from"./dom-DU-lIz3W.js";function a(){const e=document.createElement("section");return e.className="card questionnaires-card",e.style.display="none",e.innerHTML=`
+import{i as t}from"./dom-DU-lIz3W.js";function i(){const e=document.createElement("section");return e.className="card questionnaires-card",e.style.display="none",e.innerHTML=`
     <div class="card-header">
       <h2>Questionnaires</h2>
       <button class="button" id="addQuestionnaireBtn">+ New Questionnaire</button>
@@ -42,6 +42,15 @@ import{i as t}from"./dom-DU-lIz3W.js";function a(){const e=document.createElemen
           <span>Description</span>
           <textarea id="qnrDescInput" rows="2" placeholder="Optional description"></textarea>
         </label>
+        <div class="modal-fields-row">
+          <label class="field">
+            <span>Display mode</span>
+            <select id="qnrDisplayModeInput" title="How questions are shown in the viewer">
+              <option value="scroll">All questions (scroll)</option>
+              <option value="step">One question per step</option>
+            </select>
+          </label>
+        </div>
         <div class="modal-checks-row">
           <label class="checkbox-inline"><input type="checkbox" id="qnrActiveCheck" checked /> Active</label>
         </div>
@@ -61,4 +70,4 @@ import{i as t}from"./dom-DU-lIz3W.js";function a(){const e=document.createElemen
         </div>
       </div>
     </div>
-  `,{element:e,addBtn:e.querySelector("#addQuestionnaireBtn"),tableBody:e.querySelector("#questionnairesTableBody"),modal:e.querySelector("#questionnaireModal"),editTitle:e.querySelector("#questionnaireEditTitle"),closeModalBtn:e.querySelector("#closeQuestionnaireModal"),keyInput:e.querySelector("#qnrKeyInput"),nameInput:e.querySelector("#qnrNameInput"),descInput:e.querySelector("#qnrDescInput"),activeCheck:e.querySelector("#qnrActiveCheck"),idInput:e.querySelector("#qnrIdInput"),deleteBtn:e.querySelector("#deleteQuestionnaireBtn"),slotsContainer:e.querySelector("#slotsContainer"),addSlotBtn:e.querySelector("#addSlotBtn"),saveBtn:e.querySelector("#saveQuestionnaireBtn"),cancelBtn:e.querySelector("#cancelQuestionnaireBtn")}}export{a as createQuestionnairesView};
+  `,{element:e,addBtn:e.querySelector("#addQuestionnaireBtn"),tableBody:e.querySelector("#questionnairesTableBody"),modal:e.querySelector("#questionnaireModal"),editTitle:e.querySelector("#questionnaireEditTitle"),closeModalBtn:e.querySelector("#closeQuestionnaireModal"),keyInput:e.querySelector("#qnrKeyInput"),nameInput:e.querySelector("#qnrNameInput"),descInput:e.querySelector("#qnrDescInput"),displayModeInput:e.querySelector("#qnrDisplayModeInput"),activeCheck:e.querySelector("#qnrActiveCheck"),idInput:e.querySelector("#qnrIdInput"),deleteBtn:e.querySelector("#deleteQuestionnaireBtn"),slotsContainer:e.querySelector("#slotsContainer"),addSlotBtn:e.querySelector("#addSlotBtn"),saveBtn:e.querySelector("#saveQuestionnaireBtn"),cancelBtn:e.querySelector("#cancelQuestionnaireBtn")}}export{i as createQuestionnairesView};

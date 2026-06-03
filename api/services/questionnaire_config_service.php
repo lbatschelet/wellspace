@@ -48,12 +48,24 @@ function admin_questionnaires_upsert(PDO $pdo, ?int $adminUserId, array $data): 
     $id = isset($data['id']) ? intval($data['id']) : null;
     $description = $data['description'] ?? null;
     $isActive = isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1;
+    $displayMode = questionnaire_config_normalize_display_mode($data['display_mode'] ?? null);
 
     if ($id) {
-        return update_questionnaire($pdo, $adminUserId, $id, $key, $name, $description, $isActive);
+        return update_questionnaire($pdo, $adminUserId, $id, $key, $name, $description, $isActive, $displayMode);
     }
 
-    return create_questionnaire($pdo, $adminUserId, $key, $name, $description, $isActive);
+    return create_questionnaire($pdo, $adminUserId, $key, $name, $description, $isActive, $displayMode);
+}
+
+/**
+ * Normalizes a display mode value to a supported string.
+ *
+ * @param mixed $mode
+ * @return string  'scroll' | 'step'
+ */
+function questionnaire_config_normalize_display_mode($mode): string
+{
+    return $mode === 'step' ? 'step' : 'scroll';
 }
 
 /**
@@ -184,6 +196,7 @@ function admin_questionnaire_save_full(PDO $pdo, ?int $adminUserId, array $data)
     $id = isset($data['id']) ? intval($data['id']) : null;
     $description = $data['description'] ?? null;
     $isActive = isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1;
+    $displayMode = questionnaire_config_normalize_display_mode($data['display_mode'] ?? null);
     $slots = $data['slots'] ?? [];
 
     $pdo->beginTransaction();
@@ -199,12 +212,13 @@ function admin_questionnaire_save_full(PDO $pdo, ?int $adminUserId, array $data)
 
             $stmt = $pdo->prepare(
                 'UPDATE questionnaires
-                 SET questionnaire_key = :key, name = :name, description = :description, is_active = :is_active
+                 SET questionnaire_key = :key, name = :name, description = :description,
+                     is_active = :is_active, display_mode = :display_mode
                  WHERE id = :id'
             );
             $stmt->execute([
                 'key' => $key, 'name' => $name, 'description' => $description,
-                'is_active' => $isActive, 'id' => $id,
+                'is_active' => $isActive, 'display_mode' => $displayMode, 'id' => $id,
             ]);
             $action = 'update_questionnaire';
         } else {
@@ -216,11 +230,12 @@ function admin_questionnaire_save_full(PDO $pdo, ?int $adminUserId, array $data)
             }
 
             $stmt = $pdo->prepare(
-                'INSERT INTO questionnaires (questionnaire_key, name, description, is_default, is_active)
-                 VALUES (:key, :name, :description, 0, :is_active)'
+                'INSERT INTO questionnaires (questionnaire_key, name, description, is_default, is_active, display_mode)
+                 VALUES (:key, :name, :description, 0, :is_active, :display_mode)'
             );
             $stmt->execute([
-                'key' => $key, 'name' => $name, 'description' => $description, 'is_active' => $isActive,
+                'key' => $key, 'name' => $name, 'description' => $description,
+                'is_active' => $isActive, 'display_mode' => $displayMode,
             ]);
             $id = intval($pdo->lastInsertId());
             $action = 'create_questionnaire';
@@ -318,7 +333,7 @@ function admin_questionnaire_detail(PDO $pdo, int $id): array
 
 // ── Internal helpers ────────────────────────────────────────────
 
-function create_questionnaire(PDO $pdo, ?int $adminUserId, string $key, string $name, ?string $description, int $isActive): array
+function create_questionnaire(PDO $pdo, ?int $adminUserId, string $key, string $name, ?string $description, int $isActive, string $displayMode = 'scroll'): array
 {
     // Check unique key
     $existing = $pdo->prepare('SELECT COUNT(*) FROM questionnaires WHERE questionnaire_key = :key');
@@ -328,14 +343,15 @@ function create_questionnaire(PDO $pdo, ?int $adminUserId, string $key, string $
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO questionnaires (questionnaire_key, name, description, is_default, is_active)
-         VALUES (:key, :name, :description, 0, :is_active)'
+        'INSERT INTO questionnaires (questionnaire_key, name, description, is_default, is_active, display_mode)
+         VALUES (:key, :name, :description, 0, :is_active, :display_mode)'
     );
     $stmt->execute([
         'key' => $key,
         'name' => $name,
         'description' => $description,
         'is_active' => $isActive,
+        'display_mode' => $displayMode,
     ]);
 
     $id = $pdo->lastInsertId();
@@ -348,7 +364,7 @@ function create_questionnaire(PDO $pdo, ?int $adminUserId, string $key, string $
     return ['ok' => true, 'id' => intval($id)];
 }
 
-function update_questionnaire(PDO $pdo, ?int $adminUserId, int $id, string $key, string $name, ?string $description, int $isActive): array
+function update_questionnaire(PDO $pdo, ?int $adminUserId, int $id, string $key, string $name, ?string $description, int $isActive, string $displayMode = 'scroll'): array
 {
     // Check unique key (exclude self)
     $existing = $pdo->prepare('SELECT COUNT(*) FROM questionnaires WHERE questionnaire_key = :key AND id != :id');
@@ -359,7 +375,8 @@ function update_questionnaire(PDO $pdo, ?int $adminUserId, int $id, string $key,
 
     $stmt = $pdo->prepare(
         'UPDATE questionnaires
-         SET questionnaire_key = :key, name = :name, description = :description, is_active = :is_active
+         SET questionnaire_key = :key, name = :name, description = :description,
+             is_active = :is_active, display_mode = :display_mode
          WHERE id = :id'
     );
     $stmt->execute([
@@ -367,6 +384,7 @@ function update_questionnaire(PDO $pdo, ?int $adminUserId, int $id, string $key,
         'name' => $name,
         'description' => $description,
         'is_active' => $isActive,
+        'display_mode' => $displayMode,
         'id' => $id,
     ]);
 

@@ -20,25 +20,41 @@ require_once __DIR__ . '/../lib/translations.php';
  * @param PDO    $pdo
  * @param string $questionnaireKey
  * @param string $lang
- * @return array  List of question objects with translations and options resolved.
+ * @return array  { display_mode: string, questions: array } with translations and options resolved.
  * @throws ApiError If questionnaire not found or inactive.
  */
 function resolve_questionnaire(PDO $pdo, string $questionnaireKey, string $lang): array
 {
     $questionnaire = load_questionnaire($pdo, $questionnaireKey);
+    $displayMode = questionnaire_normalize_display_mode($questionnaire['display_mode'] ?? null);
+
     $slots = load_slots($pdo, intval($questionnaire['id']));
     $resolvedSlots = resolve_slots($slots);
 
     $allKeys = collect_resolved_keys($resolvedSlots);
     if (empty($allKeys)) {
-        return [];
+        return ['display_mode' => $displayMode, 'questions' => []];
     }
 
     $questions = load_questions_by_keys($pdo, $allKeys);
     $optionsByQuestion = load_options_for_questions($pdo, $allKeys);
     $translations = load_question_translations($pdo, $lang, $questions, $optionsByQuestion);
 
-    return assemble_question_list($resolvedSlots, $questions, $optionsByQuestion, $translations);
+    return [
+        'display_mode' => $displayMode,
+        'questions' => assemble_question_list($resolvedSlots, $questions, $optionsByQuestion, $translations),
+    ];
+}
+
+/**
+ * Normalizes a questionnaire display mode to a supported value.
+ *
+ * @param mixed $mode
+ * @return string  'scroll' | 'step'
+ */
+function questionnaire_normalize_display_mode($mode): string
+{
+    return $mode === 'step' ? 'step' : 'scroll';
 }
 
 /**

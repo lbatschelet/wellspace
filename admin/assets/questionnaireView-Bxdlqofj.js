@@ -58,6 +58,7 @@ import{i as t}from"./dom-DU-lIz3W.js";function o(){const e=document.createElemen
           <label class="checkbox-inline"><input type="checkbox" id="newQuestionActive" checked title="Visible to end users" /> Active</label>
           <label class="checkbox-inline slider-color-only"><input type="checkbox" id="newQuestionUseForColor" title="Use this slider to color pins on the map" /> Pin color</label>
           <label class="checkbox-inline multi-only"><input type="checkbox" id="newQuestionSingleChoice" checked title="Only one option can be selected" /> Single choice</label>
+          <label class="checkbox-inline multi-only"><input type="checkbox" id="newQuestionAllowOther" title="Add an &quot;Other&quot; option with a free-text field" /> Allow &quot;Other&quot;</label>
         </div>
         <div class="modal-translations" id="newQuestionTranslations"></div>
         <div class="modal-config-grid slider-range-only">
@@ -84,6 +85,12 @@ import{i as t}from"./dom-DU-lIz3W.js";function o(){const e=document.createElemen
             <input type="number" id="newQuestionRows" value="3" title="Height of the text field" />
           </label>
         </div>
+        <div class="modal-config-grid multi-only multi-other-only">
+          <label class="field">
+            <span>Other max length</span>
+            <input type="number" id="newQuestionOtherMax" value="500" min="1" title="Maximum characters for the free-text answer" />
+          </label>
+        </div>
         <div id="questionModalOptions"></div>
         <div class="modal-actions">
           <button class="icon-btn danger" id="deleteQuestion" type="button" title="Delete this question" style="display:none">${t.trash}</button>
@@ -93,4 +100,4 @@ import{i as t}from"./dom-DU-lIz3W.js";function o(){const e=document.createElemen
         </div>
       </div>
     </div>
-  `,{element:e,addQuestionBtn:e.querySelector("#addQuestionBtn"),questionModal:e.querySelector("#questionModal"),questionModalTitle:e.querySelector("#questionModalTitle"),closeQuestionModalButton:e.querySelector("#closeQuestionModal"),cancelQuestionModalButton:e.querySelector("#cancelQuestionModal"),languageSelect:e.querySelector("#languageSelect"),questionsBody:e.querySelector("#questionsBody"),newQuestionKey:e.querySelector("#newQuestionKey"),newQuestionType:e.querySelector("#newQuestionType"),newQuestionRequired:e.querySelector("#newQuestionRequired"),newQuestionActive:e.querySelector("#newQuestionActive"),newQuestionTranslations:e.querySelector("#newQuestionTranslations"),newQuestionMin:e.querySelector("#newQuestionMin"),newQuestionMax:e.querySelector("#newQuestionMax"),newQuestionStep:e.querySelector("#newQuestionStep"),newQuestionDefault:e.querySelector("#newQuestionDefault"),newQuestionUseForColor:e.querySelector("#newQuestionUseForColor"),newQuestionSingleChoice:e.querySelector("#newQuestionSingleChoice"),newQuestionRows:e.querySelector("#newQuestionRows"),globalColorPaletteOptions:e.querySelector("#globalColorPaletteOptions"),saveGlobalColorPaletteButton:e.querySelector("#saveGlobalColorPalette"),addQuestionButton:e.querySelector("#addQuestion"),deleteQuestionButton:e.querySelector("#deleteQuestion"),questionModalOptions:e.querySelector("#questionModalOptions")}}export{o as createQuestionnaireView};
+  `,{element:e,addQuestionBtn:e.querySelector("#addQuestionBtn"),questionModal:e.querySelector("#questionModal"),questionModalTitle:e.querySelector("#questionModalTitle"),closeQuestionModalButton:e.querySelector("#closeQuestionModal"),cancelQuestionModalButton:e.querySelector("#cancelQuestionModal"),languageSelect:e.querySelector("#languageSelect"),questionsBody:e.querySelector("#questionsBody"),newQuestionKey:e.querySelector("#newQuestionKey"),newQuestionType:e.querySelector("#newQuestionType"),newQuestionRequired:e.querySelector("#newQuestionRequired"),newQuestionActive:e.querySelector("#newQuestionActive"),newQuestionTranslations:e.querySelector("#newQuestionTranslations"),newQuestionMin:e.querySelector("#newQuestionMin"),newQuestionMax:e.querySelector("#newQuestionMax"),newQuestionStep:e.querySelector("#newQuestionStep"),newQuestionDefault:e.querySelector("#newQuestionDefault"),newQuestionUseForColor:e.querySelector("#newQuestionUseForColor"),newQuestionSingleChoice:e.querySelector("#newQuestionSingleChoice"),newQuestionAllowOther:e.querySelector("#newQuestionAllowOther"),newQuestionOtherMax:e.querySelector("#newQuestionOtherMax"),newQuestionRows:e.querySelector("#newQuestionRows"),globalColorPaletteOptions:e.querySelector("#globalColorPaletteOptions"),saveGlobalColorPaletteButton:e.querySelector("#saveGlobalColorPalette"),addQuestionButton:e.querySelector("#addQuestion"),deleteQuestionButton:e.querySelector("#deleteQuestion"),questionModalOptions:e.querySelector("#questionModalOptions")}}export{o as createQuestionnaireView};
