@@ -149,11 +149,32 @@ try {
   building = await createBuildingProvider(scene, 'procedural')
 }
 
+function hasBrandDefaultView() {
+  const cam = brand?.viewer?.defaultCamera
+  const tgt = brand?.viewer?.defaultTarget
+  const ok = (o) => o && ['x', 'y', 'z'].every((k) => Number.isFinite(Number(o[k])))
+  return ok(cam) && ok(tgt)
+}
+
+function applyBrandDefaultView() {
+  if (!hasBrandDefaultView()) return false
+  const cam = brand.viewer.defaultCamera
+  const tgt = brand.viewer.defaultTarget
+  camera.position.set(Number(cam.x), Number(cam.y), Number(cam.z))
+  controls.target.set(Number(tgt.x), Number(tgt.y), Number(tgt.z))
+  const dist = camera.position.distanceTo(controls.target)
+  if (dist > controls.maxDistance) {
+    controls.maxDistance = dist * 1.15
+  }
+  controls.update()
+  return true
+}
+
 /**
  * Imported (glTF) models: single source of truth for zoom limits + clipping planes.
  * Clear min/max distance (hard stop), no overlapping contradictory blocks.
  */
-function applyImportedModelCameraLimits(b) {
+function applyImportedModelCameraLimits(b, { preserveView = false } = {}) {
   const D = b?.suggestedCameraDistance
   if (!D || !Number.isFinite(D)) return
 
@@ -185,6 +206,8 @@ function applyImportedModelCameraLimits(b) {
   camera.far = Math.max(farHint, maxDist * 2.5, D * 10)
   camera.updateProjectionMatrix()
 
+  if (preserveView) return
+
   const target = controls.target
   const cp = camera.position
   const dist = cp.distanceTo(target)
@@ -206,7 +229,11 @@ function applyImportedModelCameraLimits(b) {
   controls.update()
 }
 
-applyImportedModelCameraLimits(building)
+// Brand default view must run AFTER zoom limits: OrbitControls clamps to
+// maxDistance (initially 40) on update(), which would crush a ~200 m campus view.
+const brandDefaultViewConfigured = hasBrandDefaultView()
+applyImportedModelCameraLimits(building, { preserveView: brandDefaultViewConfigured })
+if (brandDefaultViewConfigured) applyBrandDefaultView()
 
 /** Orb radius from `pinMesh.js` — used for lift so scaled pins sit on the plate, not inside it. */
 const PIN_ORB_RADIUS = PIN_VISUAL_ORB_RADIUS

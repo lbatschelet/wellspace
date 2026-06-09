@@ -45,6 +45,9 @@ export const brand = {
     closestZoom: 0.02,
     closestRelativeMin: 0.005,
     defaultViewMult: 0.12,
+    // Default orbit on load and title-bar reset (captured from admin).
+    defaultCamera: { x: 83.79, y: 128.92, z: 129.86 },
+    defaultTarget: { x: 84.64, y: 3.0, z: -20.2 },
   },
 
   viewerTitle: 'wohlOpti',
