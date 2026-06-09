@@ -1,4 +1,4 @@
-import{g as o}from"./webappBase-BY1y8dkG.js";import"./config-D5iCvTv8.js";const t=o()||"",s=t?`${t}/feedback/?source=admin`:"#";function c(){const e=document.createElement("footer");e.className="app-footer";const r=new Date().getFullYear(),a="v1.0.0-beta.14-33-g09f2358";return e.innerHTML=`
+import{g as o}from"./webappBase-BY1y8dkG.js";import"./config-D5iCvTv8.js";const t=o()||"",s=t?`${t}/feedback/?source=admin`:"#";function c(){const e=document.createElement("footer");e.className="app-footer";const r=new Date().getFullYear(),a="v1.0.0-beta.14-35-g9567182";return e.innerHTML=`
     <div class="footer-left">
       <span class="footer-credit">
         © ${r}
