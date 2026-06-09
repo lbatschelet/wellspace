@@ -63,11 +63,39 @@ Build war OK, nur SSH schlägt fehl. Typische Ursachen:
 3. **SSH-Key statt Passwort** — `SSH_PRIVATE_KEY` setzen (ed25519, kein RSA).
 4. **Lokal testen:** `ssh uid373276@u58gso.ftp.infomaniak.com` — erst wenn das klappt, erneut den Workflow starten.
 
-### feelvonRoll
+## feelvonRoll
 
-Automatischer Hostinger-Deploy-Branch bleibt über [.github/workflows/publish-hostinger-auto.yml](.github/workflows/publish-hostinger-auto.yml) (`deploy/feelvonroll`). wohlopti ist dort **entfernt** — kein Doppel-Deploy.
+| Umgebung | Ziel | Workflow |
+|----------|------|----------|
+| **Produktion** | Hostinger deploy branch | [.github/workflows/publish-hostinger-auto.yml](.github/workflows/publish-hostinger-auto.yml) (`deploy/feelvonroll`) |
+| **Test/Staging** | [test.feelvonroll.ch](https://test.feelvonroll.ch) auf Infomaniak | [.github/workflows/deploy-feelvonroll-test-infomaniak.yml](.github/workflows/deploy-feelvonroll-test-infomaniak.yml) |
 
 Manueller Hostinger-Publish (beliebige Brand): [.github/workflows/publish-hostinger.yml](.github/workflows/publish-hostinger.yml).
+
+### test.feelvonroll.ch → Infomaniak
+
+| | |
+|---|---|
+| Domain | test.feelvonroll.ch |
+| Brand-Build | `BRAND=feelvonroll` `APP=all` (Von-Roll-Campus, Multi-Floor) |
+| Trigger | Push auf `main` (Pfade `brands/feelvonroll/**`, `apps/**`, …) oder **workflow_dispatch** |
+| Ziel auf dem Server | `sites/test.feelvonroll.ch/` (relativ zum SSH-Login) |
+| GitHub Secrets | dieselben wie wohlopti (`SSH_HOST`, `SSH_USERNAME`, `SSH_PASSWORD` oder `SSH_PRIVATE_KEY`) |
+
+**Einmalig auf dem Server:** Site in Infomaniak anlegen, DNS (A-Record auf `185.125.27.243` wie wohlopti), dann
+`sites/test.feelvonroll.ch/api/config.local.php` hochladen (DB, `jwt_secret`, `admin_token`, SMTP — analog Hostinger/wohlopti).
+Der Deploy überschreibt diese Datei **nicht** (`rsync --exclude=api/config.local.php`).
+
+Erster Deploy manuell starten: GitHub → Actions → **Deploy feelvonroll test to Infomaniak** → Run workflow.
+
+Migrationen nach Deploy (wie wohlopti):
+
+```bash
+ssh uid373276@u58gso.ftp.infomaniak.com
+cd sites/test.feelvonroll.ch/api
+php bin/migrate.php --status
+php bin/migrate.php
+```
 
 ### Server
 
@@ -83,7 +111,8 @@ Fehler `mkdir: cannot create directory '/home/uid373276'`: absoluter Pfad im Dep
 |----------|--------|
 | **CI** | Tests + Build-Matrix (feelvonroll + wohlopti) — bei jedem Push auf `main` |
 | **Deploy wohlopti to Infomaniak** | Produktion wohlopti.ch (nur bei relevanten Pfaden) |
-| **Publish to deploy branches (auto)** | feelvonRoll → Hostinger-Branch (nur bei feelvonroll-relevanten Pfaden) |
+| **Deploy feelvonroll test to Infomaniak** | Staging test.feelvonroll.ch (feelvonroll-Build) |
+| **Publish to deploy branches (auto)** | feelvonRoll Produktion → Hostinger-Branch |
 
 Reine wohlopti-Änderungen lösen **keinen** Hostinger-Publish mehr aus.
 

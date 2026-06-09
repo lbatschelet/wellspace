@@ -1,0 +1,146 @@
+name: Deploy feelvonroll test to Infomaniak
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'brands/feelvonroll/**'
+      - 'services/api/**'
+      - 'infra/**'
+      - '.github/workflows/deploy-feelvonroll-test-infomaniak.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-feelvonroll-test-infomaniak-${{ github.repository }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BRAND: feelvonroll
+  # Relative to SSH login dir (Infomaniak: ~/sites/<domain>/). Do not use /home/uid… absolut.
+  SSH_TARGET_PATH: sites/test.feelvonroll.ch/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build + rsync → test.feelvonroll.ch
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check required secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          missing=0
+          [ -n "$SSH_HOST" ] || { echo "::error::Secret fehlt: SSH_HOST"; missing=1; }
+          [ -n "$SSH_USER" ] || { echo "::error::Secret fehlt: SSH_USERNAME"; missing=1; }
+          if [ -z "$SSH_PASS" ] && [ -z "$SSH_KEY" ]; then
+            echo "::error::Secret fehlt: SSH_PASSWORD oder SSH_PRIVATE_KEY"
+            missing=1
+          fi
+          exit "$missing"
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (viewer + admin + issue + API tree)
+        env:
+          BRAND: feelvonroll
+          APP: all
+        run: pnpm run build
+
+      - name: Prepare deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-root
+          mkdir -p deploy-root
+          # rsync (not cp) so dotfiles like .htaccess are included (SPA /s/… routes).
+          rsync -a dist/ deploy-root/
+          mkdir -p deploy-root/api
+          rsync -a --delete \
+            --exclude='config.local.php' \
+            --exclude='.gitignore' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='vendor' \
+            services/api/ deploy-root/api/
+          rm -f deploy-root/api/.gitignore
+
+      - name: Composer install (API vendor)
+        working-directory: services/api
+        run: composer install --no-interaction --prefer-dist --no-dev
+
+      - name: Copy API vendor into deploy folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deploy-root/api/vendor
+          cp -R services/api/vendor/* deploy-root/api/vendor/
+
+      - name: Install rsync + sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync sshpass
+
+      - name: Deploy via SSH (rsync)
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_TARGET: ${{ env.SSH_TARGET_PATH }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          SSH_BASE="-p ${PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+
+          if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            RSYNC_RSH="ssh ${SSH_BASE} -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
+          else
+            # Trim accidental newlines from gh secret set -f / .env files
+            export SSHPASS="$(printf '%s' "${SSHPASS}" | tr -d '\r\n')"
+            PASS_FILE="$(mktemp)"
+            chmod 600 "$PASS_FILE"
+            printf '%s' "$SSHPASS" > "$PASS_FILE"
+            RSYNC_RSH="sshpass -f ${PASS_FILE} ssh ${SSH_BASE} -o PreferredAuthentications=password -o PubkeyAuthentication=no"
+            trap 'rm -f "$PASS_FILE"' EXIT
+          fi
+
+          TARGET="${SSH_TARGET#/}"
+          TARGET="${TARGET%/}"
+          # Relative path: avoids Permission denied on /home/uid… when chrooted to $HOME.
+          $RSYNC_RSH "${SSH_USER}@${SSH_HOST}" "mkdir -p $(printf '%q' "$TARGET")"
+
+          # --delete syncs to deploy-root; exclude server-only secrets (not in bundle).
+          rsync -avz --delete \
+            --exclude='api/config.local.php' \
+            -e "$RSYNC_RSH" \
+            deploy-root/ "${SSH_USER}@${SSH_HOST}:${TARGET}/"
