@@ -108,7 +108,7 @@ const modelFloorIndices = Array.from(
 const modelDir = typeof brand?.modelDir === 'string' && brand.modelDir.length
   ? brand.modelDir
   : '/models'
-const hideBasePlanes = brand?.viewer?.hideBasePlanes !== false
+const hideBasePlanes = brand?.viewer?.hideBasePlanes === true
 const materialSide =
   brand?.viewer?.materialSide === 'double' || brand?.viewer?.materialSide === 'back'
     ? brand.viewer.materialSide

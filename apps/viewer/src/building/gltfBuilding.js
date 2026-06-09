@@ -287,7 +287,7 @@ export async function createGltfBuilding(
   {
     modelUrl,
     debugSimulateFloors,
-    hideBasePlanes = true,
+    hideBasePlanes = false,
     materialSide = 'front',
     groundPlateColor = null,
     pinReferenceSurface = 'auto',
@@ -456,7 +456,7 @@ export async function createStackedGltfBuilding(
   scene,
   {
     modelUrlsByFloorIndex,
-    hideBasePlanes = true,
+    hideBasePlanes = false,
     materialSide = 'front',
     groundPlateColor = null,
     pinReferenceSurface = 'auto',
