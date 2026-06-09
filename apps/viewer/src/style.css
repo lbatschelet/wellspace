@@ -1491,7 +1491,7 @@ button:focus-visible {
 .about-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -1523,10 +1523,12 @@ button:focus-visible {
 }
 
 .about-header-logos img {
-  height: 36px;
+  height: 96px;
+  max-width: min(50vw, 280px);
   width: auto;
+  object-fit: contain;
   display: block;
-  opacity: 0.75;
+  opacity: 0.85;
   transition: opacity 0.15s;
 }
 
@@ -1589,10 +1591,12 @@ button:focus-visible {
   }
 
   .about-logos-mobile img {
-    height: 28px;
+    height: 72px;
+    max-width: min(70vw, 260px);
     width: auto;
+    object-fit: contain;
     display: block;
-    opacity: 0.75;
+    opacity: 0.85;
   }
 
   .about-footer {
