@@ -1,7 +1,7 @@
-import{g as o}from"./webappBase-BY1y8dkG.js";import"./config-D5iCvTv8.js";const t=o()||"",s=t?`${t}/feedback/?source=admin`:"#";function c(){const e=document.createElement("footer");e.className="app-footer";const r=new Date().getFullYear(),a="v1.0.0-beta.14-35-g9567182";return e.innerHTML=`
+import{g as o}from"./webappBase-BY1y8dkG.js";import"./config-D5iCvTv8.js";const t=o()||"",s=t?`${t}/feedback/?source=admin`:"#";function c(){const e=document.createElement("footer");e.className="app-footer";const a=new Date().getFullYear(),r="v1.0.0-beta.14-36-g23d682a";return e.innerHTML=`
     <div class="footer-left">
       <span class="footer-credit">
-        © ${r}
+        © ${a}
         <a href="https://lukasbatschelet.ch" target="_blank" rel="noopener">Lukas Batschelet</a>
         for
         <a href="https://www.phbern.ch" target="_blank" rel="noopener" class="footer-phbern" title="PHBern"><strong>PH</strong>&thinsp;Bern</a>
@@ -10,7 +10,7 @@ import{g as o}from"./webappBase-BY1y8dkG.js";import"./config-D5iCvTv8.js";const 
         Licensed under <a href="https://github.com/lbatschelet/wellspace/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a>
       </span>
       <a class="footer-version" href="https://wellspace.ch" target="_blank" rel="noopener">
-        Wellspace ${a}
+        Wellspace ${r}
       </a>
     </div>
     <a class="footer-bug" href="${s}" target="_blank" rel="noopener" title="Report a bug or request a feature">
