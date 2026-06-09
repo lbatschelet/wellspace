@@ -5,6 +5,7 @@ import { createPinFormWizard } from './pinFormWizard'
 
 function setup(questions, displayMode) {
   const form = document.createElement('form')
+  form.className = 'ui-form'
   const formContent = document.createElement('div')
   formContent.className = 'ui-form-content'
   const error = document.createElement('div')
@@ -56,11 +57,11 @@ describe('pinFormWizard - step mode', () => {
   })
 
   it('advances to the next question and resets scroll', () => {
-    const { formContent, nextButton } = setup(Q, 'step')
-    formContent.scrollTop = 200
+    const { form, nextButton } = setup(Q, 'step')
+    form.scrollTop = 200
     nextButton.click()
-    expect(visibleGroups(formContent)[0].dataset.questionKey).toBe('note1')
-    expect(formContent.scrollTop).toBe(0)
+    expect(visibleGroups(form.querySelector('.ui-form-content'))[0].dataset.questionKey).toBe('note1')
+    expect(form.scrollTop).toBe(0)
   })
 
   it('blocks Next when a required question is empty', () => {

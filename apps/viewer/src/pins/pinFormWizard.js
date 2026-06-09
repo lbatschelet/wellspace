@@ -51,7 +51,7 @@ export function createPinFormWizard({ form, formContent, submitButton, formNav, 
     showSubmit(isLast)
 
     // Bring the active question into view without manual scrolling.
-    formContent.scrollTop = 0
+    form.scrollTop = 0
     const activeGroup = all[stepIndex]
     if (activeGroup) {
       const focusable = activeGroup.querySelector('input, textarea, select')

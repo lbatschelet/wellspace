@@ -42,6 +42,17 @@ export function createModal() {
 
   let isVisible = false
 
+  const scrollFocusedFieldIntoView = () => {
+    const active = document.activeElement
+    if (!active || !backdrop.contains(active)) return
+    if (!active.closest('.ui-form')) return
+    if (
+      active.matches('textarea, input.ui-multi-other-text, input[type="text"], input:not([type])')
+    ) {
+      active.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }
+
   // Track visibility via class changes
   const observer = new MutationObserver(() => {
     const nowVisible = backdrop.classList.contains('is-visible')
@@ -67,6 +78,7 @@ export function createModal() {
   backdrop.addEventListener('focusin', () => {
     requestAnimationFrame(() => {
       window.scrollTo(0, 0)
+      scrollFocusedFieldIntoView()
     })
   })
 
@@ -84,6 +96,7 @@ export function createModal() {
         // Align to the top so the modal stays above the keyboard
         backdrop.style.alignItems = 'flex-start'
         backdrop.style.paddingTop = Math.max(0, vv.offsetTop + 16) + 'px'
+        scrollFocusedFieldIntoView()
       } else {
         modal.style.maxHeight = ''
         backdrop.style.alignItems = ''

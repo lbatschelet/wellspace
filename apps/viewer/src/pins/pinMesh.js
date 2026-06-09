@@ -9,6 +9,15 @@ import * as THREE from 'three'
 // Slightly larger pins for better legibility.
 export const PIN_VISUAL_ORB_RADIUS = 0.24
 const SPHERE_RADIUS = PIN_VISUAL_ORB_RADIUS
+const HIT_SPHERE_MULT_DEFAULT = 1.25
+const HIT_SPHERE_MULT_COARSE = 1.8
+
+export function getHitSphereMultiplier() {
+  if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) {
+    return HIT_SPHERE_MULT_COARSE
+  }
+  return HIT_SPHERE_MULT_DEFAULT
+}
 let _sharedGeo = null
 
 function getSharedSphereGeometry() {
@@ -57,7 +66,7 @@ export function createPinMesh(pin, headColor) {
 
   // Slightly larger invisible sphere for easier click/hover targeting
   const hitSphere = new THREE.Mesh(
-    new THREE.SphereGeometry(SPHERE_RADIUS * 1.25, 8, 6),
+    new THREE.SphereGeometry(SPHERE_RADIUS * getHitSphereMultiplier(), 8, 6),
     new THREE.MeshBasicMaterial({ visible: false })
   )
   hitSphere.userData.pinData = pin

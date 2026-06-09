@@ -789,6 +789,8 @@ aboutOverlay.backdrop.addEventListener('click', (event) => {
 
 // ── Capture mode ─────────────────────────────────────────────
 function bootCaptureMode() {
+  document.body.classList.add('capture-mode')
+
   // Hide pin system UI in capture mode
   pinSystem.ui.style.display = 'none'
 
@@ -885,8 +887,14 @@ function bootCaptureMode() {
     })
   }
 
-  document.getElementById('captureCancelBtn').addEventListener('click', () => {
+  const exitCaptureMode = () => {
+    document.body.classList.remove('capture-mode')
     window.close()
+  }
+
+  document.getElementById('captureCancelBtn').addEventListener('click', exitCaptureMode)
+  window.addEventListener('pagehide', () => {
+    document.body.classList.remove('capture-mode')
   })
 }
 

@@ -1624,6 +1624,13 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  pointer-events: none;
+}
+
+.capture-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
   pointer-events: all;
 }
 
@@ -1632,10 +1639,9 @@ button:focus-visible {
   font-size: 14px;
 }
 
-.capture-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
+body.capture-mode .ui-floor {
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  z-index: 1001;
 }
 
 .capture-btn {

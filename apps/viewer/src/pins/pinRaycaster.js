@@ -14,8 +14,35 @@ import { intersectFloorFromRay } from './floorPick'
 // that a normal finger tap reliably places a pin.
 const TAP_MAX_MS = 550
 const TAP_MOVE_PX = 18
-// Floor placement uses the same movement threshold (keep name for clarity in that path).
-const PIN_FLOOR_TAP_MOVE_PX = TAP_MOVE_PX
+const TAP_MOVE_PX_COARSE = 32
+
+/** @param {string | undefined} pointerType */
+export function getTapMovePx(pointerType) {
+  if (pointerType === 'touch' || pointerType === 'pen') return TAP_MOVE_PX_COARSE
+  if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) {
+    return TAP_MOVE_PX_COARSE
+  }
+  return TAP_MOVE_PX
+}
+
+/**
+ * @param {THREE.Intersection[]} hits
+ * @returns {{ kind: 'empty' } | { kind: 'cluster', clusterKey: string } | { kind: 'pin', pin: object }}
+ */
+export function pickSceneCandidateFromHits(hits) {
+  if (!hits.length) return { kind: 'empty' }
+  let obj = hits[0].object
+  while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
+    obj = obj.parent
+  }
+  if (obj?.userData?.clusterKey) {
+    return { kind: 'cluster', clusterKey: obj.userData.clusterKey }
+  }
+  if (obj?.userData?.pinData) {
+    return { kind: 'pin', pin: obj.userData.pinData }
+  }
+  return { kind: 'empty' }
+}
 
 /**
  * Collect all hit-sphere meshes from a pin group (for hover raycasting).
@@ -121,6 +148,15 @@ export function setupPinRaycaster({
     pendingSceneTap = null
   }
 
+  function pickSceneCandidateAt(clientX, clientY) {
+    const rect = domElement.getBoundingClientRect()
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
+    raycaster.setFromCamera(pointer, camera)
+    const hits = raycaster.intersectObjects(pinGroup.children, true)
+    return pickSceneCandidateFromHits(hits)
+  }
+
   function attachSceneTapListeners() {
     const doc = domElement.ownerDocument || document
 
@@ -128,7 +164,8 @@ export function setupPinRaycaster({
       if (!pendingSceneTap || e.pointerId !== pendingSceneTap.pointerId) return
       const dx = e.clientX - pendingSceneTap.startX
       const dy = e.clientY - pendingSceneTap.startY
-      if (dx * dx + dy * dy > TAP_MOVE_PX * TAP_MOVE_PX) {
+      const movePx = getTapMovePx(pendingSceneTap.pointerType)
+      if (dx * dx + dy * dy > movePx * movePx) {
         cancelPendingSceneTap()
         // If we cancelled due to movement, detach listeners immediately to avoid leaks.
         detach()
@@ -153,15 +190,18 @@ export function setupPinRaycaster({
       const suppressTouchSynthClick = isDeferredPinFloorTouch(e) && e.cancelable
       if (suppressTouchSynthClick) e.preventDefault()
 
-      if (candidate?.kind === 'cluster' && typeof onClusterClick === 'function') {
-        onClusterClick(candidate.clusterKey)
+      const upCandidate = pickSceneCandidateAt(e.clientX, e.clientY)
+      const finalCandidate = upCandidate.kind !== 'empty' ? upCandidate : candidate
+
+      if (finalCandidate?.kind === 'cluster' && typeof onClusterClick === 'function') {
+        onClusterClick(finalCandidate.clusterKey)
         return
       }
-      if (candidate?.kind === 'pin') {
-        onPinClick(candidate.pin)
+      if (finalCandidate?.kind === 'pin') {
+        onPinClick(finalCandidate.pin)
         return
       }
-      if (candidate?.kind === 'empty' && typeof onEmptyClick === 'function') {
+      if (finalCandidate?.kind === 'empty' && typeof onEmptyClick === 'function') {
         onEmptyClick()
       }
     }
@@ -194,9 +234,10 @@ export function setupPinRaycaster({
       }
       const dx = e.clientX - startClientX
       const dy = e.clientY - startClientY
+      const movePx = getTapMovePx(pendingPinFloorTouch.pointerType)
       if (
         dx * dx + dy * dy >
-        PIN_FLOOR_TAP_MOVE_PX * PIN_FLOOR_TAP_MOVE_PX
+        movePx * movePx
       ) {
         teardownDeferredFloorTap()
       }
@@ -312,23 +353,12 @@ export function setupPinRaycaster({
       const suppressTouchSynthClick = isDeferredPinFloorTouch(event) && event.cancelable
 
       if (!state.pinMode) {
-        const hits = raycaster.intersectObjects(pinGroup.children, true)
-        let candidate = { kind: 'empty' }
-        if (hits.length) {
-          let obj = hits[0].object
-          while (obj && !obj.userData?.pinData && !obj.userData?.clusterKey) {
-            obj = obj.parent
-          }
-          if (obj?.userData?.clusterKey) {
-            candidate = { kind: 'cluster', clusterKey: obj.userData.clusterKey }
-          } else if (obj?.userData?.pinData) {
-            candidate = { kind: 'pin', pin: obj.userData.pinData }
-          }
-        }
+        const candidate = pickSceneCandidateAt(event.clientX, event.clientY)
 
         // Defer all opens to pointerup and cancel on move/hold.
         pendingSceneTap = {
           pointerId: event.pointerId,
+          pointerType: event.pointerType,
           startX: event.clientX,
           startY: event.clientY,
           startedAt: performance.now(),
@@ -428,7 +458,7 @@ export function setupPinRaycaster({
     if (!mouseTap) return
     const dx = event.clientX - mouseTap.startX
     const dy = event.clientY - mouseTap.startY
-    if (dx * dx + dy * dy > TAP_MOVE_PX * TAP_MOVE_PX) {
+    if (dx * dx + dy * dy > getTapMovePx('touch') * getTapMovePx('touch')) {
       mouseTap.moved = true
     }
   }, true)
