@@ -3,7 +3,7 @@
         'name' => 'wellspace/api',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '3a7a7915c2322594e39156ce2b25b9c654aec29b',
+        'reference' => '6ffb36ff56db4e72377e68b3ffc2ecaec35775ab',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'wellspace/api' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '3a7a7915c2322594e39156ce2b25b9c654aec29b',
+            'reference' => '6ffb36ff56db4e72377e68b3ffc2ecaec35775ab',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
