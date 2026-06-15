@@ -1,8 +1,8 @@
 <?php return array(
     'root' => array(
         'name' => 'wellspace/api',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
+        'pretty_version' => 'v1.0.0',
+        'version' => '1.0.0.0',
         'reference' => '6ffb36ff56db4e72377e68b3ffc2ecaec35775ab',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
@@ -20,8 +20,8 @@
             'dev_requirement' => false,
         ),
         'wellspace/api' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
+            'pretty_version' => 'v1.0.0',
+            'version' => '1.0.0.0',
             'reference' => '6ffb36ff56db4e72377e68b3ffc2ecaec35775ab',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
