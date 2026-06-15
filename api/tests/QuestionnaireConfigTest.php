@@ -39,6 +39,7 @@ final class QuestionnaireConfigTest extends TestCase
                 description TEXT,
                 is_default INTEGER NOT NULL DEFAULT 0,
                 is_active INTEGER NOT NULL DEFAULT 1,
+                display_mode VARCHAR(16) NOT NULL DEFAULT \'scroll\',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
@@ -165,6 +166,74 @@ final class QuestionnaireConfigTest extends TestCase
 
         $row = $this->pdo->query("SELECT name FROM questionnaires WHERE questionnaire_key = 'default'")->fetchColumn();
         $this->assertSame('Default Updated', $row);
+    }
+
+    // ── Display mode tests ────────────────────────────────────────
+
+    public function testCreateDefaultsToScrollDisplayMode(): void
+    {
+        admin_questionnaires_upsert($this->pdo, null, [
+            'questionnaire_key' => 'dm_default',
+            'name' => 'DM Default',
+        ]);
+
+        $mode = $this->pdo->query("SELECT display_mode FROM questionnaires WHERE questionnaire_key = 'dm_default'")->fetchColumn();
+        $this->assertSame('scroll', $mode);
+    }
+
+    public function testCreateWithStepDisplayMode(): void
+    {
+        admin_questionnaires_upsert($this->pdo, null, [
+            'questionnaire_key' => 'dm_step',
+            'name' => 'DM Step',
+            'display_mode' => 'step',
+        ]);
+
+        $mode = $this->pdo->query("SELECT display_mode FROM questionnaires WHERE questionnaire_key = 'dm_step'")->fetchColumn();
+        $this->assertSame('step', $mode);
+    }
+
+    public function testUpdateDisplayModeRoundtrip(): void
+    {
+        $id = $this->pdo->query("SELECT id FROM questionnaires WHERE questionnaire_key = 'default'")->fetchColumn();
+
+        admin_questionnaires_upsert($this->pdo, null, [
+            'id' => intval($id),
+            'questionnaire_key' => 'default',
+            'name' => 'Default',
+            'display_mode' => 'step',
+        ]);
+
+        $mode = $this->pdo->query("SELECT display_mode FROM questionnaires WHERE questionnaire_key = 'default'")->fetchColumn();
+        $this->assertSame('step', $mode);
+    }
+
+    public function testSaveFullPersistsDisplayMode(): void
+    {
+        $result = admin_questionnaire_save_full($this->pdo, null, [
+            'questionnaire_key' => 'dm_full',
+            'name' => 'DM Full',
+            'display_mode' => 'step',
+            'slots' => [
+                ['sort' => 10, 'mode' => 'fixed', 'pool_count' => 1, 'required' => true, 'questions' => ['wellbeing']],
+            ],
+        ]);
+
+        $this->assertTrue($result['ok']);
+        $mode = $this->pdo->query("SELECT display_mode FROM questionnaires WHERE questionnaire_key = 'dm_full'")->fetchColumn();
+        $this->assertSame('step', $mode);
+    }
+
+    public function testInvalidDisplayModeNormalizesToScroll(): void
+    {
+        admin_questionnaires_upsert($this->pdo, null, [
+            'questionnaire_key' => 'dm_bogus',
+            'name' => 'DM Bogus',
+            'display_mode' => 'nonsense',
+        ]);
+
+        $mode = $this->pdo->query("SELECT display_mode FROM questionnaires WHERE questionnaire_key = 'dm_bogus'")->fetchColumn();
+        $this->assertSame('scroll', $mode);
     }
 
     // ── Delete tests ──────────────────────────────────────────────

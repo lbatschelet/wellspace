@@ -312,6 +312,9 @@ function admin_pins_attach_generic_answers(PDO $pdo, array &$pins): void
     );
     $stmt->execute($ids);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $types = pin_answers_load_types($pdo, array_map(fn($r) => (string)($r['question_key'] ?? ''), $rows));
+
     $byPin = [];
     foreach ($rows as $r) {
         $pid = intval($r['pin_id'] ?? 0);
@@ -319,7 +322,7 @@ function admin_pins_attach_generic_answers(PDO $pdo, array &$pins): void
         if ($pid <= 0 || $qk === '') continue;
         $val = null;
         if (isset($r['answer_text']) && $r['answer_text'] !== null && $r['answer_text'] !== '') {
-            $val = $r['answer_text'];
+            $val = pin_answers_decode_value($types[$qk] ?? null, $r['answer_text']);
         } elseif (isset($r['answer_numeric']) && $r['answer_numeric'] !== null && $r['answer_numeric'] !== '') {
             $val = floatval($r['answer_numeric']);
         }
@@ -394,7 +397,26 @@ function admin_pins_collect_answers_from_pin(array $pin): array
 function admin_pins_format_answer_for_csv($value)
 {
     if (is_array($value)) {
-        return json_encode($value, JSON_UNESCAPED_UNICODE);
+        $isList = array_keys($value) === range(0, count($value) - 1);
+        if ($isList) {
+            // Simple multi-select / reasons list.
+            return implode('; ', array_map(fn($v) => is_scalar($v) ? (string)$v : json_encode($v, JSON_UNESCAPED_UNICODE), $value));
+        }
+        // Extended multi answer: { selected: [...], other_text: "..." }.
+        if (array_key_exists('selected', $value)) {
+            $selected = is_array($value['selected']) ? $value['selected'] : [];
+            $parts = array_map(fn($v) => (string)$v, $selected);
+            if (isset($value['other_text']) && $value['other_text'] !== '') {
+                $parts[] = 'other: "' . str_replace('"', "'", (string)$value['other_text']) . '"';
+            }
+            return implode('; ', $parts);
+        }
+        // Influence-style map: { option: value }.
+        $parts = [];
+        foreach ($value as $k => $v) {
+            $parts[] = $k . ': ' . (is_scalar($v) ? (string)$v : json_encode($v, JSON_UNESCAPED_UNICODE));
+        }
+        return implode('; ', $parts);
     }
     if (is_bool($value)) {
         return $value ? 1 : 0;

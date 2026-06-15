@@ -20,25 +20,41 @@ require_once __DIR__ . '/../lib/translations.php';
  * @param PDO    $pdo
  * @param string $questionnaireKey
  * @param string $lang
- * @return array  List of question objects with translations and options resolved.
+ * @return array  { display_mode: string, questions: array } with translations and options resolved.
  * @throws ApiError If questionnaire not found or inactive.
  */
 function resolve_questionnaire(PDO $pdo, string $questionnaireKey, string $lang): array
 {
     $questionnaire = load_questionnaire($pdo, $questionnaireKey);
+    $displayMode = questionnaire_normalize_display_mode($questionnaire['display_mode'] ?? null);
+
     $slots = load_slots($pdo, intval($questionnaire['id']));
     $resolvedSlots = resolve_slots($slots);
 
     $allKeys = collect_resolved_keys($resolvedSlots);
     if (empty($allKeys)) {
-        return [];
+        return ['display_mode' => $displayMode, 'questions' => []];
     }
 
     $questions = load_questions_by_keys($pdo, $allKeys);
     $optionsByQuestion = load_options_for_questions($pdo, $allKeys);
     $translations = load_question_translations($pdo, $lang, $questions, $optionsByQuestion);
 
-    return assemble_question_list($resolvedSlots, $questions, $optionsByQuestion, $translations);
+    return [
+        'display_mode' => $displayMode,
+        'questions' => assemble_question_list($resolvedSlots, $questions, $optionsByQuestion, $translations),
+    ];
+}
+
+/**
+ * Normalizes a questionnaire display mode to a supported value.
+ *
+ * @param mixed $mode
+ * @return string  'scroll' | 'step'
+ */
+function questionnaire_normalize_display_mode($mode): string
+{
+    return $mode === 'step' ? 'step' : 'scroll';
 }
 
 /**
@@ -255,6 +271,14 @@ function load_question_translations(PDO $pdo, string $lang, array $questions, ar
             $translationKeys[] = "questions.$key.legend_negative";
             $translationKeys[] = "questions.$key.legend_positive";
         }
+        if ($q['type'] === 'multi') {
+            $config = $q['config'] ? json_decode($q['config'], true) : [];
+            if (!empty($config['allow_other'])) {
+                $translationKeys[] = "questions.$key.other_placeholder";
+                $otherKey = $config['other_option_key'] ?? 'other';
+                $translationKeys[] = "options.$key.$otherKey";
+            }
+        }
         if (!empty($optionsByQuestion[$key])) {
             foreach ($optionsByQuestion[$key] as $opt) {
                 $translationKeys[] = "options.$key.{$opt['option_key']}";
@@ -322,6 +346,13 @@ function assemble_question_list(array $resolvedSlots, array $questions, array $o
                         'label' => $translations[$labelKey] ?? $opt['option_key'],
                     ];
                 }, $optionsByQuestion[$key]);
+            }
+
+            if ($q['type'] === 'multi' && !empty($config['allow_other'])) {
+                $otherKey = $config['other_option_key'] ?? 'other';
+                $entry['other_placeholder'] = $translations["questions.$key.other_placeholder"]
+                    ?? $translations["options.$key.$otherKey"]
+                    ?? '';
             }
 
             $result[] = $entry;

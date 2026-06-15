@@ -1,30 +1,16 @@
-# Routing support for static webapp deployment (Apache)
-#
-# Why:
-# - iOS home screen shortcuts may drop query params.
-# - We therefore support path-based routes like /kiosk/<station> and /station/<station>.
-# - These routes must resolve to index.html so the app can parse window.location.pathname.
-
+# Feedback app deployed under /feedback/.
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
+  RewriteBase /feedback/
 
-  # Serve existing files/directories directly.
+  # Serve existing files/directories directly (assets, 404.html, etc.).
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # /issue is legacy; redirect to /feedback (new).
-  RewriteRule ^issue/?$ /feedback/ [R=301,L]
-  # Keep /feedback/ SPA entry stable.
-  RewriteRule ^feedback$ /feedback/ [R=301,L]
+  # Custom 404 document for unknown paths.
+  ErrorDocument 404 /feedback/404.html
 
-  # Custom 404 document (static hosts that respect it).
-  ErrorDocument 404 /404.html
-
-  # Path-based station/kiosk routes (used especially for iOS home-screen mode).
-  RewriteRule ^kiosk/[^/]+/?$ /index.html [L]
-  RewriteRule ^station/[^/]+/?$ /index.html [L]
-  # Short station route for QR codes: /s/<station>
-  RewriteRule ^s/[^/]+/?$ /index.html [L]
+  # Root of the feedback app.
+  RewriteRule ^$ index.html [L]
 </IfModule>

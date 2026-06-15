@@ -57,7 +57,8 @@ final class QuestionnaireResolverTest extends TestCase
                 name VARCHAR(128) NOT NULL,
                 description TEXT,
                 is_default INTEGER NOT NULL DEFAULT 0,
-                is_active INTEGER NOT NULL DEFAULT 1
+                is_active INTEGER NOT NULL DEFAULT 1,
+                display_mode VARCHAR(16) NOT NULL DEFAULT \'scroll\'
             )
         ');
 
@@ -171,7 +172,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testFixedSlotAlwaysReturnsSameQuestion(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertCount(3, $result);
         $this->assertSame('wellbeing', $result[0]['key']);
@@ -181,7 +182,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testFixedSlotPreservesQuestionType(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertSame('slider', $result[0]['type']);
         $this->assertSame('multi', $result[1]['type']);
@@ -190,7 +191,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testFixedSlotPreservesRequiredFlag(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertTrue($result[0]['required']);
         $this->assertFalse($result[1]['required']);
@@ -199,7 +200,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testFixedSlotIncludesConfig(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertArrayHasKey('config', $result[0]);
         $this->assertSame(0.5, $result[0]['config']['default']);
@@ -209,7 +210,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testTranslationsAreResolved(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertSame('How do you feel here?', $result[0]['label']);
         $this->assertSame('What contributes?', $result[1]['label']);
@@ -218,7 +219,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testSliderLegendTranslations(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertSame('Not good', $result[0]['legend_low']);
         $this->assertSame('Very good', $result[0]['legend_high']);
@@ -229,7 +230,7 @@ final class QuestionnaireResolverTest extends TestCase
         // Delete a translation to test fallback
         $this->pdo->exec("DELETE FROM translations WHERE translation_key = 'questions.note.label' AND lang = 'en'");
 
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $this->assertSame('note', $result[2]['label']);
     }
@@ -238,7 +239,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testMultiChoiceOptionsIncluded(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $reasons = $result[1];
         $this->assertArrayHasKey('options', $reasons);
@@ -247,7 +248,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testOptionLabelsTranslated(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $options = $result[1]['options'];
         $this->assertSame('Light', $options[0]['label']);
@@ -256,7 +257,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testOptionsSortedCorrectly(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $options = $result[1]['options'];
         $this->assertSame('licht', $options[0]['key']);
@@ -267,7 +268,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testPoolSlotReturnsExactPoolCount(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'with_pool', 'en');
+        $result = resolve_questionnaire($this->pdo, 'with_pool', 'en')['questions'];
 
         // Slot 1: fixed (wellbeing), Slot 2: pool pick 1 from 3
         $this->assertCount(2, $result);
@@ -279,7 +280,7 @@ final class QuestionnaireResolverTest extends TestCase
 
         // Run multiple times to account for randomness
         for ($i = 0; $i < 10; $i++) {
-            $result = resolve_questionnaire($this->pdo, 'with_pool', 'en');
+            $result = resolve_questionnaire($this->pdo, 'with_pool', 'en')['questions'];
             $poolQuestion = $result[1];
             $this->assertContains($poolQuestion['key'], $validKeys, "Pool selected unexpected question: {$poolQuestion['key']}");
         }
@@ -293,7 +294,7 @@ final class QuestionnaireResolverTest extends TestCase
             WHERE mode = 'pool'
         ");
 
-        $result = resolve_questionnaire($this->pdo, 'with_pool', 'en');
+        $result = resolve_questionnaire($this->pdo, 'with_pool', 'en')['questions'];
 
         $this->assertCount(3, $result); // 1 fixed + 2 pool
         $poolKeys = [$result[1]['key'], $result[2]['key']];
@@ -308,10 +309,39 @@ final class QuestionnaireResolverTest extends TestCase
             WHERE mode = 'pool'
         ");
 
-        $result = resolve_questionnaire($this->pdo, 'with_pool', 'en');
+        $result = resolve_questionnaire($this->pdo, 'with_pool', 'en')['questions'];
 
         // Should return all 3 pool questions + 1 fixed = 4
         $this->assertCount(4, $result);
+    }
+
+    // ── Display mode tests ────────────────────────────────────────
+
+    public function testResolveReturnsDefaultScrollDisplayMode(): void
+    {
+        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+
+        $this->assertArrayHasKey('display_mode', $result);
+        $this->assertSame('scroll', $result['display_mode']);
+        $this->assertArrayHasKey('questions', $result);
+    }
+
+    public function testResolveReturnsStepDisplayMode(): void
+    {
+        $this->pdo->exec("UPDATE questionnaires SET display_mode = 'step' WHERE questionnaire_key = 'default'");
+
+        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+
+        $this->assertSame('step', $result['display_mode']);
+    }
+
+    public function testResolveNormalizesUnknownDisplayMode(): void
+    {
+        $this->pdo->exec("UPDATE questionnaires SET display_mode = 'bogus' WHERE questionnaire_key = 'default'");
+
+        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+
+        $this->assertSame('scroll', $result['display_mode']);
     }
 
     // ── Error handling tests ──────────────────────────────────────
@@ -334,7 +364,7 @@ final class QuestionnaireResolverTest extends TestCase
 
     public function testQuestionsReturnedInSlotSortOrder(): void
     {
-        $result = resolve_questionnaire($this->pdo, 'default', 'en');
+        $result = resolve_questionnaire($this->pdo, 'default', 'en')['questions'];
 
         $sorts = [];
         foreach ($result as $i => $q) {

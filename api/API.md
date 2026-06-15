@@ -55,6 +55,36 @@ Body:
 
 Response: the created pin (same shape as `GET /pins.php`).
 
+#### Answer formats per question type
+
+Answers are passed inside `answers` (legacy keys `wellbeing`, `reasons`, `group`, `note`)
+or `generic_answers` (any other question key). Storage in `pin_answers.answer_text`:
+
+| Type | Accepted input | Stored as |
+|------|----------------|-----------|
+| `slider` | number | `answer_numeric` |
+| `text` | string | `answer_text` |
+| `influence` | object `{ "<option>": -1..1 }` | JSON in `answer_text` |
+| `multi` | string, array of keys, or object | JSON `{"selected":[...], "other_text"?:"..."}` in `answer_text` |
+
+For `multi` the canonical input/output is:
+
+```json
+{ "selected": ["a", "b", "other"], "other_text": "free text when 'other' is selected" }
+```
+
+A bare string (`"a"`) or array (`["a","b"]`) is also accepted and normalized to the
+object form. Validation rules:
+
+- Selected keys must be active `question_options` of the question.
+- `other` may only be selected when the question has `allow_other: true`.
+- When `other` is selected, `other_text` is required and limited to `other_max_length`
+  (otherwise `400`).
+- Empty selections (no options, no other text) are dropped (not stored).
+
+When read back (in `generic_answers` of `GET /pins.php` and admin listings), `multi`
+and `influence` answers are returned as decoded JSON objects/arrays.
+
 ### `GET /questions.php`
 Fetch the active questionnaire configuration.
 
@@ -87,6 +117,23 @@ Response:
   }
 ]
 ```
+
+#### `multi` question type
+
+`config` fields for `type: "multi"`:
+
+| Field | Type | Default | Meaning |
+|-------|------|---------|---------|
+| `allow_multiple` | bool | `false` | Allow selecting more than one option (checkboxes vs. radios). |
+| `allow_other` | bool | `false` | Show an additional "Other" option with a free-text field. |
+| `other_option_key` | string | `"other"` | Option key used for the "Other" choice. A real `question_options` row with this key is created so the label is translatable (`options.{question}.other`). |
+| `other_max_length` | int | `500` | Maximum length of the free-text entered for "Other". |
+
+The viewer shows the free-text alternative as an inline text field (no separate
+"Other" checkbox). Its placeholder comes from the translation key
+`questions.{question_key}.other_placeholder` per language (editable in the admin
+question editor when «Allow Other» is enabled). Until that key exists, the API
+falls back to `options.{question_key}.other`.
 
 ### `GET /languages.php`
 List enabled languages for the webapp switcher.
@@ -121,7 +168,19 @@ Query params:
 - `key` (optional, defaults to `default`)
 - `lang` (optional, defaults to `de`)
 
-Response: same shape as `GET /questions.php`.
+Response: an object with the questionnaire metadata and the resolved question list.
+
+```json
+{
+  "display_mode": "scroll",
+  "questions": [ /* same shape as GET /questions.php */ ]
+}
+```
+
+- `display_mode`: `"scroll"` (all questions on one scrollable form, default) or
+  `"step"` (the viewer shows one question per step with Back/Next navigation).
+- Clients should read `questions` from this object. The viewer normalizes a legacy
+  bare-array response to `{ questions, displayMode: "scroll" }` for backward compatibility.
 
 ### `GET /stations.php`
 Get station info by key.
@@ -351,9 +410,18 @@ Export all pins as wide CSV file. Includes dynamic answer columns (`answer__{que
 `asked_questions`, and unified `answers_json` (legacy + generic answers).
 Returns `Content-Type: text/csv` with a timestamped filename.
 
+JSON-backed answers are rendered human-readable in the `answer__{key}` columns:
+
+- `multi`: selected option keys joined with `; `; an "Other" entry is appended as
+  `other: "free text"` (e.g. `licht; ruhe; other: "zu warm"`).
+- `influence`: `option: value` pairs joined with `; ` (e.g. `licht: 0.5; laerm: -1`).
+
+The full structured value is always available in the `answers_json` column.
+
 ### `GET /admin_pins.php?action=export_csv_long`
 Export all pins as long CSV file (one row per asked question per pin) with
-`answer_kind`, `answer_text`, `answer_numeric`, and `answer_json`.
+`answer_kind`, `answer_text`, `answer_numeric`, and `answer_json`. For `multi` and
+`influence` questions `answer_kind` is `json` and the decoded value is in `answer_json`.
 
 ### `GET /admin_questionnaires.php`
 List all questionnaires with their slots.
@@ -367,6 +435,7 @@ Response:
     "name": "Default",
     "description": null,
     "is_default": 1,
+    "display_mode": "scroll",
     "slots": [
       { "id": 1, "sort": 10, "is_active": 1, "is_required": 0, "question_key": "wellbeing" }
     ]
@@ -379,8 +448,12 @@ Manage questionnaires.
 
 **Upsert questionnaire:**
 ```json
-{ "action": "upsert", "questionnaire_key": "my-survey", "name": "My Survey", "description": "..." }
+{ "action": "upsert", "questionnaire_key": "my-survey", "name": "My Survey", "description": "...", "display_mode": "step" }
 ```
+
+`display_mode` is optional and defaults to `"scroll"`. Valid values: `"scroll"` |
+`"step"` (invalid values are normalized to `"scroll"`). The same field is accepted by
+the `save_full` action used by the admin questionnaire editor.
 
 **Delete questionnaire:**
 ```json
