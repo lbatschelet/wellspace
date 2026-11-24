@@ -76,10 +76,16 @@ jobs:
           foreach ($pdo->query("SELECT id, questionnaire_key, is_default, is_active FROM questionnaires") as $row) {
             echo json_encode($row), "\n";
           }
-          $n = $pdo->exec("UPDATE questionnaires SET is_active = 1 WHERE questionnaire_key IN (\"default\", \"musikhaus_test\")");
-          echo "Updated rows: ", $n, "\n";
-          echo "After:\n";
+          $nq = $pdo->exec("UPDATE questionnaires SET is_active = 1 WHERE questionnaire_key IN (\"default\", \"musikhaus_test\")");
+          // Hostinger dump also had questions.is_active=0 for every row.
+          $nquest = $pdo->exec("UPDATE questions SET is_active = 1");
+          echo "Updated questionnaires: ", $nq, ", questions: ", $nquest, "\n";
+          echo "After questionnaires:\n";
           foreach ($pdo->query("SELECT id, questionnaire_key, is_default, is_active FROM questionnaires") as $row) {
+            echo json_encode($row), "\n";
+          }
+          echo "After questions:\n";
+          foreach ($pdo->query("SELECT question_key, type, is_active FROM questions ORDER BY sort") as $row) {
             echo json_encode($row), "\n";
           }
           '
