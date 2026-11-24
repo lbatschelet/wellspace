@@ -1,0 +1,86 @@
+name: Ops — activate feelvonroll default questionnaire
+
+# One-shot: Hostinger dump had questionnaires.is_active=0, which breaks
+# public questionnaire.php and pin influence rendering ([object Object]).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type ACTIVATE to set is_active=1 on default (+ musikhaus_test)
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-feelvonroll-activate-questionnaire
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    name: Activate questionnaires via SSH
+    steps:
+      - name: Confirm
+        run: |
+          if [[ "${{ inputs.confirm }}" != "ACTIVATE" ]]; then
+            echo "::error::Refusing without confirm=ACTIVATE"
+            exit 1
+          fi
+
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Update is_active on Infomaniak DB
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          SSH_BASE="-p ${PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            RSH="ssh ${SSH_BASE} -i ~/.ssh/deploy_key -o IdentitiesOnly=yes"
+          else
+            export SSHPASS="$(printf '%s' "${SSHPASS}" | tr -d '\r\n')"
+            PASS_FILE="$(mktemp)"
+            chmod 600 "$PASS_FILE"
+            printf '%s' "$SSHPASS" > "$PASS_FILE"
+            RSH="sshpass -f ${PASS_FILE} ssh ${SSH_BASE} -o PreferredAuthentications=password -o PubkeyAuthentication=no"
+            trap 'rm -f "$PASS_FILE"' EXIT
+          fi
+
+          $RSH "${SSH_USER}@${SSH_HOST}" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd "$HOME/sites/feelvonroll.ch/api"
+          php -r '
+          $c = require "config.local.php";
+          $pdo = new PDO(
+            sprintf("mysql:host=%s;dbname=%s;charset=utf8mb4", $c["db_host"], $c["db_name"]),
+            $c["db_user"],
+            $c["db_pass"],
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+          );
+          echo "Before:\n";
+          foreach ($pdo->query("SELECT id, questionnaire_key, is_default, is_active FROM questionnaires") as $row) {
+            echo json_encode($row), "\n";
+          }
+          $n = $pdo->exec("UPDATE questionnaires SET is_active = 1 WHERE questionnaire_key IN (\"default\", \"musikhaus_test\")");
+          echo "Updated rows: ", $n, "\n";
+          echo "After:\n";
+          foreach ($pdo->query("SELECT id, questionnaire_key, is_default, is_active FROM questionnaires") as $row) {
+            echo json_encode($row), "\n";
+          }
+          '
+          REMOTE

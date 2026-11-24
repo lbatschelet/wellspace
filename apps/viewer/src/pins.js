@@ -781,7 +781,15 @@ export function createPinSystem({
       return String(value).trim() !== ''
     }
     const formatAnswered = (question, raw) => {
-      if (!question) return String(raw)
+      // Without a question definition (e.g. inactive questionnaire), never stringify objects.
+      if (!question) {
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+          return Object.entries(raw)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(', ') || t('ui.empty')
+        }
+        return String(raw ?? t('ui.empty'))
+      }
       if (question.type === 'slider') {
         const min = Number.isFinite(Number(question.config?.min)) ? Number(question.config.min) : 0
         const max = Number.isFinite(Number(question.config?.max)) ? Number(question.config.max) : 1
