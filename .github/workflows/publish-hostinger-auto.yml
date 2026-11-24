@@ -1,10 +1,14 @@
 name: Publish to deploy branches (auto)
 
+# feelvonroll production now deploys via deploy-feelvonroll-infomaniak.yml.
+# This workflow is kept disabled (empty matrix) so Hostinger Git no longer
+# receives automatic updates. Manual publish-hostinger.yml still works if needed.
+
 on:
   push:
     branches:
       - main
-      - chore/monorepo # optional long-lived integration branch name
+      - chore/monorepo
     paths:
       - 'apps/**'
       - 'brands/feelvonroll/**'
@@ -13,6 +17,7 @@ on:
       - '.github/workflows/publish-hostinger-auto.yml'
       - 'package.json'
       - 'pnpm-lock.yaml'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -26,6 +31,7 @@ concurrency:
 
 jobs:
   publish:
+    if: false # Hostinger auto-publish retired; feelvonroll → Infomaniak
     concurrency:
       group: deploy-${{ matrix.deploy_branch }}
       cancel-in-progress: false
@@ -34,7 +40,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # wohlopti → Infomaniak (.github/workflows/deploy-wohlopti-infomaniak.yml)
           - brand: feelvonroll
             app: all
             deploy_branch: deploy/feelvonroll
@@ -74,7 +79,6 @@ jobs:
           rm -rf deploy-root
           mkdir -p deploy-root
 
-          # Use rsync (not cp dist/*) so dotfiles like .htaccess are included (SPA /s/… routes).
           if [[ "${{ matrix.app }}" == "all" ]]; then
             rsync -a dist/ deploy-root/
           elif [[ "${{ matrix.app }}" == "viewer" ]]; then
@@ -96,7 +100,6 @@ jobs:
             --exclude='vendor' \
             services/api/ deploy-root/api/
 
-          # Ensure vendor/ can be committed to deploy branch (services/api/.gitignore ignores it)
           rm -f deploy-root/api/.gitignore
 
       - name: Composer install (API vendor)
@@ -116,4 +119,3 @@ jobs:
           branch: ${{ matrix.deploy_branch }}
           folder: deploy-root
           clean: true
-

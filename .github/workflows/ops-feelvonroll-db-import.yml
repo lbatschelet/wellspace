@@ -1,0 +1,209 @@
+name: Ops — import feelvonroll DB to Infomaniak
+
+# One-shot cutover: download draft-release SQL → SSH import into u58gso_feelvonroll
+# → apply 013 → mark-applied → write sites/feelvonroll.ch/api/config.local.php
+#
+# Prep:
+#   gh release create feelvonroll-db-cutover --draft --title "temp" path/to.dump.sql
+#   gh secret set FEELVONROLL_CONFIG_LOCAL < prod-config.local.php
+# Run: Actions → this workflow → confirm=OVERWRITE
+# Cleanup: gh release delete feelvonroll-db-cutover -y
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Draft release tag that holds the .sql asset
+        required: true
+        default: feelvonroll-db-cutover
+      confirm:
+        description: Type OVERWRITE to wipe Infomaniak DB u58gso_feelvonroll
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-feelvonroll-db-import
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    name: Import SQL + write config.local.php
+    steps:
+      - name: Confirm overwrite
+        run: |
+          if [[ "${{ inputs.confirm }}" != "OVERWRITE" ]]; then
+            echo "::error::Refusing to run without confirm=OVERWRITE"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          CFG: ${{ secrets.FEELVONROLL_CONFIG_LOCAL }}
+        run: |
+          missing=0
+          [ -n "$SSH_HOST" ] || { echo "::error::SSH_HOST fehlt"; missing=1; }
+          [ -n "$SSH_USER" ] || { echo "::error::SSH_USERNAME fehlt"; missing=1; }
+          if [ -z "$SSH_PASS" ] && [ -z "$SSH_KEY" ]; then
+            echo "::error::SSH_PASSWORD oder SSH_PRIVATE_KEY fehlt"; missing=1
+          fi
+          [ -n "$CFG" ] || { echo "::error::FEELVONROLL_CONFIG_LOCAL fehlt"; missing=1; }
+          exit "$missing"
+
+      - name: Install sshpass + rsync
+        run: sudo apt-get update && sudo apt-get install -y rsync sshpass
+
+      - name: Download SQL dump from draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cutover
+          gh release download "${{ inputs.release_tag }}" \
+            --repo "${{ github.repository }}" \
+            --dir /tmp/cutover
+          SQL="$(find /tmp/cutover -type f -name '*.sql' | head -1)"
+          [ -n "$SQL" ] || { echo "::error::No .sql asset in release"; exit 1; }
+          cp "$SQL" /tmp/cutover/dump.sql
+          echo "Found dump ($(wc -c < /tmp/cutover/dump.sql) bytes)"
+
+      - name: Write config.local.php from secret
+        env:
+          CFG: ${{ secrets.FEELVONROLL_CONFIG_LOCAL }}
+        run: |
+          printf '%s\n' "$CFG" > /tmp/cutover/config.local.php
+          grep -q "db_name" /tmp/cutover/config.local.php
+
+      - name: Build SSH wrapper
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          SSH_BASE="-p ${PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          if [ -n "${SSH_PRIVATE_KEY:-}" ]; then
+            mkdir -p ~/.ssh
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+            echo "ssh ${SSH_BASE} -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" > /tmp/rsh.sh
+          else
+            export SSHPASS="$(printf '%s' "${SSHPASS}" | tr -d '\r\n')"
+            PASS_FILE="$(mktemp)"
+            chmod 600 "$PASS_FILE"
+            printf '%s' "$SSHPASS" > "$PASS_FILE"
+            echo "sshpass -f ${PASS_FILE} ssh ${SSH_BASE} -o PreferredAuthentications=password -o PubkeyAuthentication=no" > /tmp/rsh.sh
+          fi
+          chmod +x /tmp/rsh.sh
+          echo "RSH=$(cat /tmp/rsh.sh)" 
+
+      - name: Upload dump, migrations, config, import script
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+        run: |
+          set -euo pipefail
+          RSH="$(cat /tmp/rsh.sh)"
+          $RSH "${SSH_USER}@${SSH_HOST}" "mkdir -p tmp/feelvonroll-cutover sites/feelvonroll.ch/api/bin sites/feelvonroll.ch/api/migrations"
+          rsync -avz -e "$RSH" \
+            /tmp/cutover/dump.sql \
+            /tmp/cutover/config.local.php \
+            services/api/migrations/ \
+            services/api/bin/migrate.php \
+            "${SSH_USER}@${SSH_HOST}:tmp/feelvonroll-cutover/"
+
+          # Import runner (executed on Infomaniak)
+          cat > /tmp/cutover/run_import.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+          $dir = __DIR__;
+          $cfg = require $dir . '/config.local.php';
+          $dsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $cfg['db_host'], $cfg['db_name']);
+          $pdo = new PDO($dsn, $cfg['db_user'], $cfg['db_pass'], [
+              PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+          ]);
+
+          $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+          $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+          foreach ($tables as $t) {
+              $pdo->exec('DROP TABLE IF EXISTS `' . str_replace('`', '``', $t) . '`');
+          }
+          $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+          echo 'Dropped ' . count($tables) . " tables\n";
+
+          $sql = file_get_contents($dir . '/dump.sql');
+          if ($sql === false) {
+              fwrite(STDERR, "Cannot read dump.sql\n");
+              exit(1);
+          }
+          $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
+          $pdo->exec($sql);
+          echo "Import OK\n";
+          $n = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+          echo 'Tables now: ' . count($n) . "\n";
+
+          $col = $pdo->query("SHOW COLUMNS FROM questionnaires LIKE 'display_mode'")->fetch();
+          if (!$col) {
+              $pdo->exec(file_get_contents($dir . '/013_questionnaire_display_mode.sql'));
+              echo "013 applied\n";
+          } else {
+              echo "display_mode already present\n";
+          }
+
+          $pins = (int) $pdo->query('SELECT COUNT(*) FROM pins')->fetchColumn();
+          echo "pins=$pins\n";
+          PHP
+          rsync -avz -e "$RSH" /tmp/cutover/run_import.php "${SSH_USER}@${SSH_HOST}:tmp/feelvonroll-cutover/"
+
+      - name: Run import + install config + mark-applied
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+        run: |
+          set -euo pipefail
+          RSH="$(cat /tmp/rsh.sh)"
+          $RSH "${SSH_USER}@${SSH_HOST}" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd "$HOME/tmp/feelvonroll-cutover"
+          php run_import.php
+
+          API="$HOME/sites/feelvonroll.ch/api"
+          mkdir -p "$API/bin" "$API/migrations"
+          cp -f config.local.php "$API/config.local.php"
+          cp -f migrate.php "$API/bin/migrate.php"
+          cp -f *.sql "$API/migrations/" 2>/dev/null || true
+          # Prefer numbered migrations from the uploaded set
+          for f in 00*.sql 01*.sql; do
+            [ -f "$f" ] && cp -f "$f" "$API/migrations/"
+          done
+
+          cat > "$API/config.php" <<'PHP'
+          <?php
+          $local = __DIR__ . '/config.local.php';
+          if (!is_file($local)) {
+              fwrite(STDERR, "config.local.php missing\n");
+              exit(1);
+          }
+          return require $local;
+          PHP
+
+          cd "$API"
+          php bin/migrate.php --mark-applied
+          php bin/migrate.php --status
+          echo "Done."
+          REMOTE

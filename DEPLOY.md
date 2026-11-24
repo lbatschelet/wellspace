@@ -67,12 +67,29 @@ Build war OK, nur SSH schlägt fehl. Typische Ursachen:
 
 | Umgebung | Ziel | Workflow |
 |----------|------|----------|
-| **Produktion** | Hostinger deploy branch | [.github/workflows/publish-hostinger-auto.yml](.github/workflows/publish-hostinger-auto.yml) (`deploy/feelvonroll`) |
+| **Produktion** | [feelvonroll.ch](https://feelvonroll.ch) auf Infomaniak | [.github/workflows/deploy-feelvonroll-infomaniak.yml](.github/workflows/deploy-feelvonroll-infomaniak.yml) |
 | **Test/Staging** | [test.feelvonroll.ch](https://test.feelvonroll.ch) auf Infomaniak | [.github/workflows/deploy-feelvonroll-test-infomaniak.yml](.github/workflows/deploy-feelvonroll-test-infomaniak.yml) |
 
-Manueller Hostinger-Publish (beliebige Brand): [.github/workflows/publish-hostinger.yml](.github/workflows/publish-hostinger.yml).
+Hostinger-Auto-Publish ist abgeschaltet (`publish-hostinger-auto.yml` → `if: false`). Manueller Fallback: [.github/workflows/publish-hostinger.yml](.github/workflows/publish-hostinger.yml).
 
-### test.feelvonroll.ch → Infomaniak
+### feelvonroll.ch → Infomaniak (Produktion)
+
+| | |
+|---|---|
+| Domain | feelvonroll.ch |
+| Brand-Build | `BRAND=feelvonroll` `APP=all` |
+| Trigger | Push auf `main` (Pfade `brands/feelvonroll/**`, `apps/**`, …) oder **workflow_dispatch** |
+| Ziel auf dem Server | `sites/feelvonroll.ch/` (relativ zum SSH-Login) |
+| DB | Infomaniak MySQL `u58gso_feelvonroll` (gemeinsam mit Staging nach Cutover) |
+| GitHub Secrets | dieselben wie wohlopti (`SSH_HOST`, `SSH_USERNAME`, `SSH_PASSWORD` oder `SSH_PRIVATE_KEY`) |
+
+**Einmalig:** Site in Infomaniak anlegen, `sites/feelvonroll.ch/api/config.local.php` ablegen (DB, `jwt_secret`, `admin_token`, SMTP). Deploy überschreibt diese Datei **nicht**.
+
+DNS (Cloudflare): Apex/`www` **A** → `185.125.27.243` (erst nach erfolgreichem Smoke-Test auf dem Infomaniak-Pfad).
+
+Erster / manueller Deploy: Actions → **Deploy feelvonroll to Infomaniak** → Run workflow.
+
+### test.feelvonroll.ch → Infomaniak (Staging)
 
 | | |
 |---|---|
@@ -80,41 +97,22 @@ Manueller Hostinger-Publish (beliebige Brand): [.github/workflows/publish-hostin
 | Brand-Build | `BRAND=feelvonroll` `APP=all` (Von-Roll-Campus, Multi-Floor) |
 | Trigger | Push auf `main` (Pfade `brands/feelvonroll/**`, `apps/**`, …) oder **workflow_dispatch** |
 | Ziel auf dem Server | `sites/test.feelvonroll.ch/` (relativ zum SSH-Login) |
-| GitHub Secrets | dieselben wie wohlopti (`SSH_HOST`, `SSH_USERNAME`, `SSH_PASSWORD` oder `SSH_PRIVATE_KEY`) |
-
-**Einmalig auf dem Server:** Site in Infomaniak anlegen, DNS (A-Record auf `185.125.27.243` wie wohlopti), dann
-`sites/test.feelvonroll.ch/api/config.local.php` hochladen (DB, `jwt_secret`, `admin_token`, SMTP — analog Hostinger/wohlopti).
-Der Deploy überschreibt diese Datei **nicht** (`rsync --exclude=api/config.local.php`).
-
-Erster Deploy manuell starten: GitHub → Actions → **Deploy feelvonroll test to Infomaniak** → Run workflow.
-
-Migrationen nach Deploy (wie wohlopti):
-
-```bash
-ssh uid373276@u58gso.ftp.infomaniak.com
-cd sites/test.feelvonroll.ch/api
-php bin/migrate.php --status
-php bin/migrate.php
-```
+| GitHub Secrets | dieselben wie wohlopti |
 
 ### Server
 
-Site-Ordner: **`sites/wohlopti.ch/`** relativ zum SSH-Login (nicht `/home/uid373276/…` im rsync — sonst `Permission denied`).
+Site-Ordner relativ zum SSH-Login: `sites/wohlopti.ch/`, `sites/feelvonroll.ch/`, `sites/test.feelvonroll.ch/` (nicht `/home/uid373276/…` im rsync — sonst `Permission denied`).
 
-Im Manager steht oft der absolute Pfad `/home/uid373276/sites/wohlopti.ch/`; per SSH/rsync nutzt ihr den relativen Teil unter eurem Home.
+Im Manager steht oft der absolute Pfad `/home/uid373276/sites/…`; per SSH/rsync nutzt ihr den relativen Teil unter eurem Home.
 
-Fehler `mkdir: cannot create directory '/home/uid373276'`: absoluter Pfad im Deploy — mit relativem `sites/wohlopti.ch/` beheben.
-
-### Drei GitHub Actions bei Push?
+### GitHub Actions bei Push
 
 | Workflow | Zweck |
 |----------|--------|
 | **CI** | Tests + Build-Matrix (feelvonroll + wohlopti) — bei jedem Push auf `main` |
-| **Deploy wohlopti to Infomaniak** | Produktion wohlopti.ch (nur bei relevanten Pfaden) |
-| **Deploy feelvonroll test to Infomaniak** | Staging test.feelvonroll.ch (feelvonroll-Build) |
-| **Publish to deploy branches (auto)** | feelvonRoll Produktion → Hostinger-Branch |
-
-Reine wohlopti-Änderungen lösen **keinen** Hostinger-Publish mehr aus.
+| **Deploy wohlopti to Infomaniak** | Produktion wohlopti.ch |
+| **Deploy feelvonroll to Infomaniak** | Produktion feelvonroll.ch |
+| **Deploy feelvonroll test to Infomaniak** | Staging test.feelvonroll.ch |
 
 Nach erfolgreichen Deploy: `index.html`, `admin/`, `api/`, `models/`, …
 
